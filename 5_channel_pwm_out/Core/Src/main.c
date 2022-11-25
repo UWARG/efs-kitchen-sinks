@@ -39,8 +39,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-SPI_HandleTypeDef hspi1;
-
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 
@@ -56,13 +54,32 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
-static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+const static uint16_t CounterPeriod = 64000;//same for both tim1 and tim3
+const static uint16_t DutyCycle_min = 5;//the duty cycle for the pwm output is 5%
+const static uint16_t DutyCycle_max = 10;//To the max value which is 10%
+
+uint8_t calc_pwm_out (int percentage);
+//This value calculate the value for the timer to compare with in order to determine pwm output
+//percentage is a value from 0..100
+
+uint8_t calc_pwm_out(int percentage){
+			int pwm_output;
+			double duty_cycle_counter;
+
+		  	pwm_output = (percentage * (DutyCycle_max) + DutyCycle_min);//get the value in range from duty cycle max - min and get the amount of counter to compare
+
+		  	duty_cycle_counter = (double)(pwm_output) / 100 * CounterPeriod;
+
+		  	return (uint16_t)duty_cycle_counter;
+
+}
+
 
 /* USER CODE END 0 */
 
@@ -73,24 +90,6 @@ static void MX_SPI1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	const static uint16_t adc_max = 0X03FF;//adc each cycle transmit 10 bit of data
-	//3FF represent 00000011 11111111, later used for bit wise operation
-	const static uint16_t GPIO_port = 8;
-
-	const static uint16_t CounterPeriod = 64000;//same for both tim1 and tim3
-	const static uint16_t DutyCycle_min = 0.05;//the duty cycle for the pwm output is 5%
-	const static uint16_t DutyCycle_max = 0.1;
-
-	//config based on the data sheet
-	uint8_t data_transmit[3];
-	uint8_t data_recieve[3];
-
-	//transmit config data for MCV3004
-	data_transmit[0] = 0X01;//00000001
-	data_transmit[1] = 0X80;//10000000
-
-	//get the return adc value
-	uint16_t ADC_in;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -114,50 +113,37 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
-  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   //pwm timer start
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 
-  //pull up the CS line
-  HAL_GPIO_WritePin(GPIOA, GPIO_port , GPIO_PIN_SET);
+    //pull up the CS line
+    //HAL_GPIO_WritePin(GPIOA, GPIO_port , GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  	  uint16_t pwm_output;
+	  	  pwm_output = calc_pwm_out(70);
 
-  //pull down the cs line to init the communication
-	  HAL_GPIO_WritePin(GPIOA, GPIO_port, GPIO_PIN_RESET);
-
-	//send the config to adc and then get the return value
-	  HAL_SPI_TransmitReceive(&hspi1, data_transmit, data_recieve, 3, 200);
-
-	//pull up the cs line to stop the communication
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-
-	//get the most significant two digits of data bit wise operation
-	  ADC_in = (data_recieve[1] & 0X11);
-	  ADC_in = (ADC_in << 8) | data_recieve[2];
-
-	  double pwm_output = (double)ADC_in / adc_max;//in range 0 to 1
-	  pwm_output = (pwm_output * (DutyCycle_max - DutyCycle_min) + DutyCycle_min) * CounterPeriod;//get the value in range from duty cycle max - min and get the amount of counter to compare
-
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pwm_output);
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, pwm_output);
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pwm_output);
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, pwm_output);
-	  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, pwm_output);
+	  	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, &pwm_output);//(0.7*0.5+0.5)*64000
+	  	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, &pwm_output);
+	  	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, &pwm_output);
+	  	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, &pwm_output);
+	  	  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, &pwm_output);
 
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		  HAL_Delay(10);
   }
   /* USER CODE END 3 */
 }
@@ -171,11 +157,6 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
-
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
@@ -184,10 +165,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 16;
-  RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
-  RCC_OscInitStruct.PLL.PLLQ = 7;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
+  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -196,54 +175,15 @@ void SystemClock_Config(void)
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+                              |RCC_CLOCKTYPE_PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI1_Init(void)
-{
-
-  /* USER CODE BEGIN SPI1_Init 0 */
-
-  /* USER CODE END SPI1_Init 0 */
-
-  /* USER CODE BEGIN SPI1_Init 1 */
-
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI1_Init 2 */
-
-  /* USER CODE END SPI1_Init 2 */
-
 }
 
 /**
@@ -381,7 +321,7 @@ static void MX_TIM3_Init(void)
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -408,13 +348,15 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 38400;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
   huart2.Init.Mode = UART_MODE_TX_RX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
   if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
@@ -436,7 +378,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -458,6 +400,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA6 PA7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB8 */
   GPIO_InitStruct.Pin = GPIO_PIN_8;
