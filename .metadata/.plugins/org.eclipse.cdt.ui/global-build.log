@@ -1,0 +1,182 @@
+13:42:55 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29124	     20	   2692	  31836	   7c5c	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+22:57:41 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+   text	   data	    bss	    dec	    hex	filename
+  29124	     20	   2692	  31836	   7c5c	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+23:02:42 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29124	     20	   2692	  31836	   7c5c	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:03:30 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29128	     20	   2692	  31840	   7c60	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:04:27 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29128	     20	   2692	  31840	   7c60	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:05:09 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+   text	   data	    bss	    dec	    hex	filename
+  29128	     20	   2692	  31840	   7c60	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+23:05:34 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29128	     20	   2692	  31840	   7c60	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:06:49 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29128	     20	   2692	  31840	   7c60	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:07:36 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29128	     20	   2692	  31840	   7c60	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:08:08 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29128	     20	   2692	  31840	   7c60	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:08:49 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29164	     20	   2692	  31876	   7c84	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:09:33 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29164	     20	   2692	  31876	   7c84	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:10:28 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29164	     20	   2692	  31876	   7c84	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 
+23:10:55 **** Incremental Build of configuration Debug for project Antenna_tracking_motor ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Antenna_tracking_motor.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\Antenna_tracking_motor\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Antenna_tracking_motor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Antenna_tracking_motor.elf
+ 
+arm-none-eabi-size   Antenna_tracking_motor.elf 
+arm-none-eabi-objdump -h -S  Antenna_tracking_motor.elf  > "Antenna_tracking_motor.list"
+   text	   data	    bss	    dec	    hex	filename
+  29160	     20	   2692	  31872	   7c80	Antenna_tracking_motor.elf
+Finished building: default.size.stdout
+ 
+Finished building: Antenna_tracking_motor.list
+ 

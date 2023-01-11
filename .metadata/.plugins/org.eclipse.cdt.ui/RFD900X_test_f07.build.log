@@ -1,0 +1,10 @@
+01:29:51 **** Build of configuration Debug for project RFD900X_test_f07 ****
+make -j16 all 
+arm-none-eabi-size   RFD900X_test_f07.elf 
+   text	   data	    bss	    dec	    hex	filename
+   9192	     20	   1836	  11048	   2b28	RFD900X_test_f07.elf
+Finished building: default.size.stdout
+ 
+
+01:29:52 Build Finished. 0 errors, 0 warnings. (took 455ms)
+

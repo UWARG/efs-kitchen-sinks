@@ -1,0 +1,13 @@
+class StressTest {
+
+};
+
+class Characterization{
+	global:
+		int* ret_sender () {return rand_seed};
+	private:
+		rand_seed* create_value();
+		int rand_seed[20];
+
+};
+
