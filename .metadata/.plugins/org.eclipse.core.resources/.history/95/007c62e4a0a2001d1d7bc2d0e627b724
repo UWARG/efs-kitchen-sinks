@@ -1,0 +1,9 @@
+#include "main.h"
+
+#define correction 1.0f /*this correction is used in psc and arr calculation*/
+
+uint16_t microsecs_to_counter(uint16_t time_length, uint16_t psc) {
+	float tick_length;
+	tick_length = BASE_FREQUENCY / (psc + correction);
+	tick_length = tick_length / sec_to_microsec;
+}

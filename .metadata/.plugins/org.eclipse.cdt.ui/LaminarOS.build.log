@@ -1,0 +1,30 @@
+20:30:26 **** Incremental Build of configuration Debug for project LaminarOS ****
+make -j16 all 
+arm-none-eabi-g++ "C:/Users/linyu/ZP_Proto_Port/AttitudeManager/Src/AM_States.cpp" -mcpu=cortex-m4 -std=gnu++14 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F401xE -c -I../Core/Inc -I"C:/Users/linyu/ZP_Proto_Port/LaminarOS/Interfaces" -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Drivers/CMSIS/Include -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -O0 -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -fno-use-cxa-atexit -Wall -fstack-usage -MMD -MP -MF"AttitudeManager/Src/AM_States.d" -MT"AttitudeManager/Src/AM_States.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "AttitudeManager/Src/AM_States.o"
+In file included from c:\users\linyu\zp_proto_port\attitudemanager\inc\am_states.hpp:12,
+                 from C:/Users/linyu/ZP_Proto_Port/AttitudeManager/Src/AM_States.cpp:12:
+c:\users\linyu\zp_proto_port\attitudemanager\inc\AM_DataTypes.hpp:43:1: warning: 'typedef' was ignored in this declaration
+   43 | typedef struct Output_Mix_t {
+      | ^~~~~~~
+C:/Users/linyu/ZP_Proto_Port/AttitudeManager/Src/AM_States.cpp: In member function 'virtual void SensorFusionMode::execute(AttitudeManager*)':
+C:/Users/linyu/ZP_Proto_Port/AttitudeManager/Src/AM_States.cpp:122:15: warning: variable '_SFError' set but not used [-Wunused-but-set-variable]
+  122 |     SFError_t _SFError = SF_GetResult(&_sf_output);
+      |               ^~~~~~~~
+C:/Users/linyu/ZP_Proto_Port/AttitudeManager/Src/AM_States.cpp: In member function 'virtual void ControlLoopMode::execute(AttitudeManager*)':
+C:/Users/linyu/ZP_Proto_Port/AttitudeManager/Src/AM_States.cpp:142:16: warning: unused variable 'pid_out' [-Wunused-variable]
+  142 |  PID_Output_t *pid_out = nullptr;
+      |                ^~~~~~~
+arm-none-eabi-g++ -o "LaminarOS.elf" @"objects.list"   -mcpu=cortex-m4 -T"C:\Users\linyu\ZP_Proto_Port\LaminarOS\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="LaminarOS.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+Finished building target: LaminarOS.elf
+ 
+arm-none-eabi-size   LaminarOS.elf 
+arm-none-eabi-objdump -h -S  LaminarOS.elf  > "LaminarOS.list"
+   text	   data	    bss	    dec	    hex	filename
+  49208	    428	  20680	  70316	  112ac	LaminarOS.elf
+Finished building: default.size.stdout
+ 
+Finished building: LaminarOS.list
+ 
+
+20:30:27 Build Finished. 0 errors, 3 warnings. (took 1s.530ms)
+

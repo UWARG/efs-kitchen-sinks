@@ -1,0 +1,15 @@
+#include "main.h"
+
+#ifndef PPM_SIG
+#define correction 1.0f /*this correction is used in psc and arr calculation*/
+#endif /*PPM_SIG*/
+
+uint32_t microsecs_to_counter(uint16_t time_length, uint16_t psc) {
+	float tick_length, tick_count;
+	tick_length = BASE_FREQUENCY_PPM / (psc + correction);
+	tick_length = tick_length / SEC_TO_MICROSEC_PPM;
+
+	tick_count = time_length / tick_length;
+
+	return (uint16_t) tick_count;
+}

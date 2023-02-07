@@ -1,0 +1,10 @@
+10:26:17 **** Incremental Build of configuration Debug for project ppm_generation ****
+make -j16 all 
+arm-none-eabi-size   ppm_generation.elf 
+   text	   data	    bss	    dec	    hex	filename
+  28420	     64	   2704	  31188	   79d4	ppm_generation.elf
+Finished building: default.size.stdout
+ 
+
+10:26:17 Build Finished. 0 errors, 0 warnings. (took 218ms)
+

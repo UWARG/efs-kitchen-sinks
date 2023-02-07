@@ -1,0 +1,38 @@
+10:25:23 **** Incremental Build of configuration Debug for project ppm_generation ****
+make -j16 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc "../Core/Src/ppm.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/ppm.d" -MT"Core/Src/ppm.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/ppm.o"
+arm-none-eabi-gcc "../Core/Src/stm32l5xx_hal_msp.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/stm32l5xx_hal_msp.d" -MT"Core/Src/stm32l5xx_hal_msp.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/stm32l5xx_hal_msp.o"
+arm-none-eabi-gcc "../Core/Src/stm32l5xx_it.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DUSE_HAL_DRIVER -DSTM32L552xx -c -I../Core/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc -I../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L5xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/stm32l5xx_it.d" -MT"Core/Src/stm32l5xx_it.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/stm32l5xx_it.o"
+arm-none-eabi-gcc -o "ppm_generation.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\linyu\kitchen-sinks\ppm_generation\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="ppm_generation.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: ppm_generation.elf
+ 
+arm-none-eabi-size   ppm_generation.elf 
+arm-none-eabi-objdump -h -S  ppm_generation.elf  > "ppm_generation.list"
+   text	   data	    bss	    dec	    hex	filename
+  28420	     64	   2704	  31188	   79d4	ppm_generation.elf
+Finished building: default.size.stdout
+ 
+Finished building: ppm_generation.list
+ 
+10:25:30 **** Incremental Build of configuration Debug for project ppm_generation ****
+make -j16 all 
+arm-none-eabi-size   ppm_generation.elf 
+   text	   data	    bss	    dec	    hex	filename
+  28420	     64	   2704	  31188	   79d4	ppm_generation.elf
+Finished building: default.size.stdout
+ 
+10:25:57 **** Incremental Build of configuration Debug for project ppm_generation ****
+make -j16 all 
+arm-none-eabi-size   ppm_generation.elf 
+   text	   data	    bss	    dec	    hex	filename
+  28420	     64	   2704	  31188	   79d4	ppm_generation.elf
+Finished building: default.size.stdout
+ 
+10:26:17 **** Incremental Build of configuration Debug for project ppm_generation ****
+make -j16 all 
+arm-none-eabi-size   ppm_generation.elf 
+   text	   data	    bss	    dec	    hex	filename
+  28420	     64	   2704	  31188	   79d4	ppm_generation.elf
+Finished building: default.size.stdout
+ 
