@@ -1,0 +1,2 @@
+#define NODE_ID 1
+#define CANARD_MEMORY_BUFFER_SIZE 1024
