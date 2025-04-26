@@ -179,8 +179,8 @@ int main(void)
 	  uint8_t heartbeat_payload[7] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
 
 	  can.canardBroadcast(
-			  UAVCAN_PROTOCOL_GETNODEINFO_SIGNATURE,
-			  UAVCAN_PROTOCOL_GETNODEINFO_ID,
+			  UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
+			  UAVCAN_PROTOCOL_NODESTATUS_ID,
 			  &transfer_id,
 			  CANARD_TRANSFER_PRIORITY_HIGH,
 			  heartbeat_payload,
