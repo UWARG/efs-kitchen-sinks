@@ -13,6 +13,13 @@ RM := rm -rf
 -include Drivers/BSP/STM32L5xx_Nucleo/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include Core/Inc/rtos/threads/subdir.mk
+-include Core/Inc/rtos/museq/subdir.mk
+-include Core/Inc/dsdlc_generated/src/subdir.mk
+-include Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/subdir.mk
+-include Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/subdir.mk
+-include Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/subdir.mk
+-include Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -85,8 +92,8 @@ all: main-build
 main-build: cpp_can_initial_test.elf secondary-outputs
 
 # Tool invocations
-cpp_can_initial_test.elf cpp_can_initial_test.map: $(OBJS) $(USER_OBJS) C:\Users\adity\STM32CubeIDE\workspace_1.17.0\WARGCAN\cpp_can_initial_test\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "cpp_can_initial_test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\adity\STM32CubeIDE\workspace_1.17.0\WARGCAN\cpp_can_initial_test\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="cpp_can_initial_test.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+cpp_can_initial_test.elf cpp_can_initial_test.map: $(OBJS) $(USER_OBJS) C:\Users\ronak\OneDrive\ -\ University\ of\ Waterloo\Desktop\Files\Warg\efs-kitchen-sinks\ZP_CAN\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "cpp_can_initial_test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\ronak\OneDrive - University of Waterloo\Desktop\Files\Warg\efs-kitchen-sinks\ZP_CAN\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="cpp_can_initial_test.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

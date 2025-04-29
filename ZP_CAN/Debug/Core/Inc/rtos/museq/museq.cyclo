@@ -1,0 +1,3 @@
+../Core/Inc/rtos/museq/museq.cpp:17:6:void initMutexes()	1
+../Core/Inc/rtos/museq/museq.cpp:31:6:void initSemphrs()	1
+../Core/Inc/rtos/museq/museq.cpp:40:6:void initQueues()	1

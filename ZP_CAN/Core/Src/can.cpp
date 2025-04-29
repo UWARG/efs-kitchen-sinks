@@ -1,6 +1,15 @@
-#include <uavcan.protocol.dynamic_node_id.Allocation.h>
-#include <string.h>
+
 #include "can.hpp"
+
+static void StaticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
+    CAN* self = static_cast<CAN*>(ins->user_reference);
+    self->CanardOnTransferReception(ins, transfer);
+}
+
+static bool StaticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* out_sig, uint16_t id, CanardTransferType type, uint8_t src) {
+
+	return static_cast<CAN*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, out_sig, id, type, src);
+}
 
 CAN::CAN(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 	static uint8_t canardMemoryPool[1024];
@@ -13,20 +22,14 @@ CAN::CAN(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 			this
 	);
 
+	nodeStatus = {0};
+
 	canard.node_id = NODE_ID;
 }
 
 CAN::~CAN() {}
 
-static void StaticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
-    CAN* self = static_cast<CAN*>(ins->user_reference);
-    self->CanardOnTransferReception(ins, transfer);
-}
 
-static bool StaticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* out_sig, uint16_t id, CanardTransferType type, uint8_t src) {
-
-	return static_cast<CAN*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, out_sig, id, type, src);
-}
 
 bool CAN::CanardShouldAcceptTransfer(
 	const CanardInstance *ins,
@@ -83,10 +86,11 @@ void CAN::CanardOnTransferReception(CanardInstance *ins, CanardRxTransfer *trans
     }
 }
 
+
 void CAN::handleNodeStatus(CanardRxTransfer *transfer) {
 	uint32_t tick = HAL_GetTick();
 
-	canNode node {};
+	canNode node {0};
 
 	node.lastSeenTick = tick;
 
@@ -133,12 +137,15 @@ void CAN::handleNodeAllocation(CanardRxTransfer *transfer){
 	uint8_t decode_buffer[UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_SIZE];
 	uavcan_protocol_dynamic_node_id_Allocation_encode(&msg, decode_buffer);
 
+
+
 	broadcast(
+			CanardTransferTypeResponse,
 		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
 		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
 		0,
 		CANARD_TRANSFER_PRIORITY_LOW,
-		&decode_buffer,
+		decode_buffer,
 		sizeof(decode_buffer)
 	);
 
@@ -208,20 +215,22 @@ void CAN::sendNodeStatus() {
     // put whatever you like in here for display in GUI
     nodeStatus.vendor_specific_status_code = 1234;
 
-    uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer);
+    uint32_t len = uavcan_protocol_NodeStatus_encode(&nodeStatus, buffer);
 
     // we need a static variable for the transfer ID. This is
     // incremeneted on each transfer, allowing for detection of packet
     // loss
     static uint8_t transfer_id;
 
-    canardBroadcast(&canard,
-                    UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
-                    UAVCAN_PROTOCOL_NODESTATUS_ID,
-                    &transfer_id,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    buffer,
-                    len);
+
+    broadcast(CanardTransferTypeBroadcast,
+			UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
+			UAVCAN_PROTOCOL_NODESTATUS_ID,
+			&transfer_id,
+			CANARD_TRANSFER_PRIORITY_LOW,
+			buffer,
+			len
+	);
 }
 
 void CAN::process1HzTasks() {

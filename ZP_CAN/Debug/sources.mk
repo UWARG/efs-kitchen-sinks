@@ -38,6 +38,13 @@ CPP_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
+Core/Inc/Middlewares/Third_Party/FreeRTOS/Source \
+Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure \
+Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang \
+Core/Inc/dsdlc_generated/src \
+Core/Inc/rtos/museq \
+Core/Inc/rtos/threads \
 Core/Src \
 Core/Startup \
 Drivers/BSP/STM32L5xx_Nucleo \
