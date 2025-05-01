@@ -12,7 +12,7 @@
 ../Core/Src/can.cpp:108:6:void CAN::handleNodeAllocation(CanardRxTransfer*)	3
 ../Core/Src/can.cpp:154:8:int8_t CAN::allocateNode()	2
 ../Core/Src/can.cpp:172:6:void CAN::sendCANTx()	4
-../Core/Src/can.cpp:197:6:bool CAN::routineTasks()	2
+../Core/Src/can.cpp:197:6:bool CAN::routineTasks()	1
 ../Core/Src/can.cpp:208:6:void CAN::sendNodeStatus()	1
 ../Core/Src/can.cpp:236:6:void CAN::process1HzTasks()	3
 ../Core/Src/can.cpp:258:9:int16_t CAN::broadcastObj(CanardTxTransfer*)	2

@@ -1,6 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (12.3.rel1)
+# Toolchain: GNU Tools for STM32 (13.3.rel1)
 ################################################################################
 
 -include ../makefile.init
@@ -9,6 +9,10 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/subdir.mk
+-include Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/subdir.mk
+-include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/subdir.mk
+-include Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 -include Drivers/STM32L5xx_HAL_Driver/Src/subdir.mk
 -include Drivers/BSP/STM32L5xx_Nucleo/subdir.mk
 -include Core/Startup/subdir.mk
@@ -16,10 +20,6 @@ RM := rm -rf
 -include Core/Inc/rtos/threads/subdir.mk
 -include Core/Inc/rtos/museq/subdir.mk
 -include Core/Inc/dsdlc_generated/src/subdir.mk
--include Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/subdir.mk
--include Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure/subdir.mk
--include Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/subdir.mk
--include Core/Inc/Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
