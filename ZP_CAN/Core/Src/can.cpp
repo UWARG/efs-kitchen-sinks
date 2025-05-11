@@ -170,8 +170,10 @@ Function to convert all canard CAN frames and send them through HAL
 Consider removing for loop
 */
 void CAN::sendCANTx() {
-	bool success = true;
-	for (const CanardCANFrame *frame; frame != nullptr; frame = canardPeekTxQueue(&canard)) {
+	while (1) {
+		CanardCANFrame* frame = canardPeekTxQueue(&canard);
+		if (frame == nullptr) break;
+
 		if (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0) {
 			FDCAN_TxHeaderTypeDef txHeader;
 
@@ -203,6 +205,8 @@ bool CAN::routineTasks() {
 		last1HzTick = tick;
 		process1HzTasks();
 	}
+
+	return true;
 }
 
 void CAN::sendNodeStatus() {
@@ -256,14 +260,14 @@ void CAN::process1HzTasks() {
 Wrapper function with mutex
 */
 int16_t CAN::broadcastObj(CanardTxTransfer* transfer) {
-	osStatus_t status = osMutexAcquire(canBroadcastMutex, CAN_BROADCAST_MUTEX_TIMEOUT);
+//	osStatus_t status = osMutexAcquire(canBroadcastMutex, CAN_BROADCAST_MUTEX_TIMEOUT);
 
-	if (status != osOK){
-		return -1; // handle failure
-	}
+//	if (status != osOK){
+//		return -1; // handle failure
+//	}
 
 	int16_t res = canardBroadcastObj(&canard, transfer);
-	osMutexRelease(canBroadcastMutex);
+//	osMutexRelease(canBroadcastMutex);
 
 	return res;
 }

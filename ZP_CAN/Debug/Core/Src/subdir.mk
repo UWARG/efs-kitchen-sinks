@@ -11,7 +11,6 @@ CPP_SRCS += \
 C_SRCS += \
 ../Core/Src/app_freertos.c \
 ../Core/Src/canard.c \
-../Core/Src/main.c \
 ../Core/Src/stm32l5xx_hal_msp.c \
 ../Core/Src/stm32l5xx_it.c \
 ../Core/Src/syscalls.c \
@@ -21,7 +20,6 @@ C_SRCS += \
 C_DEPS += \
 ./Core/Src/app_freertos.d \
 ./Core/Src/canard.d \
-./Core/Src/main.d \
 ./Core/Src/stm32l5xx_hal_msp.d \
 ./Core/Src/stm32l5xx_it.d \
 ./Core/Src/syscalls.d \
