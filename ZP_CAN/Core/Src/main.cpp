@@ -112,6 +112,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 }
 
 uint8_t transfer_id = 0;
+
+
 /* USER CODE END 0 */
 
 /**

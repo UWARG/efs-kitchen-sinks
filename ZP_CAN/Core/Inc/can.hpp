@@ -5,8 +5,6 @@
 #include <canard.h>
 #include "stm32l5xx_hal.h"
 #include "can_defines.hpp"
-#include "cmsis_os2.h"
-#include "rtos/museq/museq.hpp"
 #include <cstdint>
 #include "can_datatypes.hpp"
 #include "dsdlc_generated/include/dronecan_msgs.h"

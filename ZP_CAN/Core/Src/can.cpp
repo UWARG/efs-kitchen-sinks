@@ -65,25 +65,23 @@ bool CAN::CanardShouldAcceptTransfer(
 
 void CAN::CanardOnTransferReception(CanardInstance *ins, CanardRxTransfer *transfer)
 {
-    if (transfer->transfer_type == CanardTransferTypeRequest) {
-        // check if we want to handle a specific service request
-        switch (transfer->data_type_id) {
-			case UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID:
-			/* case UAVCAN_PROTOCOL_GETNODEINFO_ID: */ {
-				if (transfer->transfer_type == CanardTransferTypeResponse) {
-					// handleGetNodeInfo here
-				}
-				else if (transfer->transfer_type == CanardTransferTypeBroadcast) {
-					handleNodeAllocation(transfer);
-				}
-				break;
+	switch (transfer->data_type_id) {
+		case UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID:
+		/* case UAVCAN_PROTOCOL_GETNODEINFO_ID: */ {
+			if (transfer->transfer_type == CanardTransferTypeResponse) {
+				// handleGetNodeInfo here
 			}
-			case UAVCAN_PROTOCOL_NODESTATUS_ID: {
-				handleNodeStatus(transfer);
-				break;
+			else if (transfer->transfer_type == CanardTransferTypeBroadcast) {
+				handleNodeAllocation(transfer);
 			}
-        }
-    }
+			break;
+		}
+		case UAVCAN_PROTOCOL_NODESTATUS_ID: {
+			handleNodeStatus(transfer);
+			break;
+		}
+	}
+
 }
 
 
@@ -138,9 +136,8 @@ void CAN::handleNodeAllocation(CanardRxTransfer *transfer){
 	uavcan_protocol_dynamic_node_id_Allocation_encode(&msg, decode_buffer);
 
 
-
 	broadcast(
-			CanardTransferTypeResponse,
+		CanardTransferTypeResponse,
 		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
 		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
 		0,
@@ -170,30 +167,29 @@ Function to convert all canard CAN frames and send them through HAL
 Consider removing for loop
 */
 void CAN::sendCANTx() {
-	while (1) {
-		CanardCANFrame* frame = canardPeekTxQueue(&canard);
-		if (frame == nullptr) break;
+	CanardCANFrame* frame = canardPeekTxQueue(&canard);
+	if (frame == nullptr) return;
 
-		if (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0) {
-			FDCAN_TxHeaderTypeDef txHeader;
+	if (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0) {
+		FDCAN_TxHeaderTypeDef txHeader;
 
-			txHeader.Identifier = frame->id;
-			txHeader.IdType = FDCAN_EXTENDED_ID;
-			txHeader.TxFrameType = FDCAN_DATA_FRAME;
-			txHeader.DataLength = FDCAN_DLC_BYTES_8;
-			txHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-			txHeader.BitRateSwitch = FDCAN_BRS_OFF;
-			txHeader.FDFormat = FDCAN_CLASSIC_CAN;
+		txHeader.Identifier = frame->id;
+		txHeader.IdType = FDCAN_EXTENDED_ID;
+		txHeader.TxFrameType = FDCAN_DATA_FRAME;
+		txHeader.DataLength = FDCAN_DLC_BYTES_8;
+		txHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+		txHeader.BitRateSwitch = FDCAN_BRS_OFF;
+		txHeader.FDFormat = FDCAN_CLASSIC_CAN;
 
-			const uint8_t *txData = frame->data;
+		const uint8_t *txData = frame->data;
 
-			bool success = HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txHeader, txData) == HAL_OK;
+		bool success = HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txHeader, txData) == HAL_OK;
 
-			if (success) {
-				canardPopTxQueue(&canard);
-			}
+		if (success) {
+			canardPopTxQueue(&canard);
 		}
 	}
+
 }
 
 bool CAN::routineTasks() {
