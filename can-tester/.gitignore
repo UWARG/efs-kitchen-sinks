@@ -1,0 +1,13 @@
+
+# system folders and files
+.DS_Store
+
+# editor folders and files
+.settings/
+.vscode/
+/.project
+
+# build and debug artifacts
+build/
+Debug/
+*.launch
