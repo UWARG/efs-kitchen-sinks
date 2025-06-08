@@ -1,0 +1,14 @@
+../Core/Src/main.cpp:72:6:void FDCAN_Config()	2
+../Core/Src/main.cpp:87:6:void FDCAN_Activate()	2
+../Core/Src/main.cpp:93:6:void FDCAN_Transmit()	2
+../Core/Src/main.cpp:99:6:void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef*, uint32_t)	3
+../Core/Src/main.cpp:119:6:void request_node_id(CAN*)	1
+../Core/Src/main.cpp:153:5:int main()	2
+../Core/Src/main.cpp:243:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:293:13:void MX_FDCAN1_Init()	2
+../Core/Src/main.cpp:337:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:357:6:void Error_Handler()	1
+../Core/Src/main.cpp:366:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:366:1:void __static_initialization_and_destruction_1()	1
+../Core/Src/main.cpp:366:1:cpp)	1
+../Core/Src/main.cpp:366:1:cpp)	1

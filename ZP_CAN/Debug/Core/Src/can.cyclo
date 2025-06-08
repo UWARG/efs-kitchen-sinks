@@ -1,0 +1,19 @@
+../Core/Src/can.cpp:4:13:void StaticOnTransferReception(CanardInstance*, CanardRxTransfer*)	1
+../Core/Src/can.cpp:9:13:bool StaticShouldAcceptTransfer(const CanardInstance*, uint64_t*, uint16_t, CanardTransferType, uint8_t)	1
+../Core/Inc/can_iface.hpp:7:2:constexpr ICAN::ICAN()	1
+../Core/Inc/can_iface.hpp:10:10:ICAN::~ICAN()	1
+../Core/Inc/can_iface.hpp:10:10:virtual ICAN::~ICAN()	1
+../Core/Src/can.cpp:14:1:CAN::CAN(FDCAN_HandleTypeDef*)	1
+../Core/Src/can.cpp:30:1:CAN::~CAN()	1
+../Core/Src/can.cpp:30:1:virtual CAN::~CAN()	1
+../Core/Src/can.cpp:34:6:bool CAN::CanardShouldAcceptTransfer(const CanardInstance*, uint64_t*, uint16_t, CanardTransferType, uint8_t)	7
+../Core/Src/can.cpp:66:6:void CAN::CanardOnTransferReception(CanardInstance*, CanardRxTransfer*)	5
+../Core/Src/can.cpp:88:6:void CAN::handleNodeStatus(CanardRxTransfer*)	4
+../Core/Src/can.cpp:106:6:void CAN::handleNodeAllocation(CanardRxTransfer*)	3
+../Core/Src/can.cpp:151:8:int8_t CAN::allocateNode()	2
+../Core/Src/can.cpp:169:6:void CAN::sendCANTx()	4
+../Core/Src/can.cpp:195:6:bool CAN::routineTasks()	2
+../Core/Src/can.cpp:208:6:void CAN::sendNodeStatus()	1
+../Core/Src/can.cpp:236:6:void CAN::process1HzTasks()	3
+../Core/Src/can.cpp:258:9:int16_t CAN::broadcastObj(CanardTxTransfer*)	1
+../Core/Src/can.cpp:271:9:int16_t CAN::broadcast(CanardTransferType, uint64_t, uint16_t, uint8_t*, uint8_t, const uint8_t*, uint16_t)	1

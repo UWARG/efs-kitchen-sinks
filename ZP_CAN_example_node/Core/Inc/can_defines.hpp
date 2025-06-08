@@ -1,0 +1,6 @@
+#define NODE_ID 0
+
+#define CANARD_MEMORY_BUFFER_SIZE 1024
+
+// need to handle
+#define CAN_BROADCAST_MUTEX_TIMEOUT HAL_MAX_DELAY
