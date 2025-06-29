@@ -1,8 +1,8 @@
 import numpy as np
-from NominalState import NominalState
-from utils import GRAVITY_INERTIAL
+from app.NominalState import NominalState
+from app.utils import GRAVITY_INERTIAL
 
-def main():
+def test1():
     # Initial State
     initial_position = [0.0, 0.0, 0.0]  # meters
     initial_velocity = [0.0, 0.0, 0.0]  # meters/second
@@ -56,7 +56,3 @@ def main():
     print("-" * 30)
 
     print("\nSimulation Complete.")
-
-
-if __name__ == "__main__":
-    main()
