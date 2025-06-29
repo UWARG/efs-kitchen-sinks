@@ -24,7 +24,7 @@ def skew_symmetric(v: NDArray[np.float64]) -> NDArray[np.float64]:
 
 def b_to_i_frame_rot_matrix(q: NDArray[np.float64]):
     q = normalize_quaternion(q) # Ensure it's normalized
-    w, x, y, z = q
+    w, x, y, z = q[0, 0], q[1, 0], q[2, 0], q[3, 0]
 
     # Rotation matrix from body frame to inertial frame (C_b^i)
     C = np.array([

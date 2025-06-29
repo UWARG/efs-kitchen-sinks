@@ -35,6 +35,9 @@ class NominalState:
             dt: np.float64
         ):
 
+        gyro_measurement = np.asarray(gyro_measurement, dtype=float).reshape(3, 1)
+        accel_measurement = np.asarray(accel_measurement, dtype=float).reshape(3, 1)
+
         quaternion_new = self._update_quaternion(gyro_measurement, dt)
         velocity_new = self._update_velocity(quaternion_new, accel_measurement, dt)
         displacement_new = self._update_displacement(velocity_new, dt)
@@ -53,12 +56,13 @@ class NominalState:
         gyro_bar = (gyro_measurement + self.prev_gyro_measurement) / 2
         omega_matrix = self._omega_matrix(gyro_bar, dt)
 
-        quaternion_new = np.dot(omega_matrix, self.prev_quaternion).flatten()
+        quaternion_new = np.dot(omega_matrix, self.prev_quaternion)
 
-        # Normalize the new quaternion (good practice for numerical stability over many steps)
+        # Normalize the new quaternion to account for floating point errors
         return quaternion_new / np.linalg.norm(quaternion_new)
 
     def _omega_matrix(
+            self,
             gyro_bar: NDArray[np.float64],
             dt: np.float64
         ):
@@ -71,7 +75,7 @@ class NominalState:
             # The matrix becomes identity for zero rotation.
             return np.eye(4)
         
-        gx, gy, gz = gyro_bar[0], gyro_bar[1], gyro_bar[2]
+        gx, gy, gz = gyro_bar[0, 0], gyro_bar[1, 0], gyro_bar[2, 0]
         gyro_mult_matrix = np.array((
             [0, -gx, -gy, -gz],
             [gx, 0, gz, -gy],
