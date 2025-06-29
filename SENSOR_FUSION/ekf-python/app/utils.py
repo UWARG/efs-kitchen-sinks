@@ -2,6 +2,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 IDENTITY_QUATERNION = np.array([[1.0], [0.0], [0.0], [0.0]], dtype=np.float64)
+GRAVITY_INERTIAL = np.array([[0.0], [0.0], [9.81]], dtype=np.float64)
 
 def normalize_quaternion(q: NDArray[np.float64]) -> NDArray[np.float64]:
     norm = np.linalg.norm(q)
@@ -20,3 +21,15 @@ def skew_symmetric(v: NDArray[np.float64]) -> NDArray[np.float64]:
         [v[2, 0], 0, -v[0, 0]],
         [-v[1, 0], v[0, 0], 0]
     ], dtype=np.float64)
+
+def b_to_i_frame_rot_matrix(q: NDArray[np.float64]):
+    q = normalize_quaternion(q) # Ensure it's normalized
+    w, x, y, z = q
+
+    # Rotation matrix from body frame to inertial frame (C_b^i)
+    C = np.array([
+        [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w,     2*x*z + 2*y*w],
+        [2*x*y + 2*z*w,     1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w],
+        [2*x*z - 2*y*w,     2*y*z + 2*x*w,     1 - 2*x**2 - 2*y**2]
+    ])
+    return C
