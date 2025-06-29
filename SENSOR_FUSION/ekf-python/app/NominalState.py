@@ -54,14 +54,14 @@ class NominalState:
             dt: np.float64        
         ):
         gyro_bar = (gyro_measurement + self.prev_gyro_measurement) / 2
-        omega_matrix = self._omega_matrix(gyro_bar, dt)
+        omega_matrix = self._exp_omega_matrix(gyro_bar, dt)
 
         quaternion_new = np.dot(omega_matrix, self.prev_quaternion)
 
         # Normalize the new quaternion to account for floating point errors
         return quaternion_new / np.linalg.norm(quaternion_new)
 
-    def _omega_matrix(
+    def _exp_omega_matrix(
             self,
             gyro_bar: NDArray[np.float64],
             dt: np.float64
