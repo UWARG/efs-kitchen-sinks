@@ -1,11 +1,13 @@
 import numpy as np
 from numpy.typing import NDArray
 
+IDENTITY_QUATERNION = np.array([[1.0], [0.0], [0.0], [0.0]], dtype=np.float64)
+
 def normalize_quaternion(q: NDArray[np.float64]) -> NDArray[np.float64]:
     norm = np.linalg.norm(q)
     if norm < 1e-9:
         # Handle very small quaternions (e.g., zero vector)
-        return np.array([[1.0], [0.0], [0.0], [0.0]], dtype=np.float64)
+        return IDENTITY_QUATERNION
     return q / norm
 
 def skew_symmetric(v: NDArray[np.float64]) -> NDArray[np.float64]:
