@@ -5,7 +5,7 @@ from utils import skew_symmetric, normalize_quaternion, IDENTITY_QUATERNION, GRA
 class NominalState:
     def __init__(
             self,
-            position: NDArray[np.float64] = np.zeros((3, 1)),
+            displacement: NDArray[np.float64] = np.zeros((3, 1)),
             velocity: NDArray[np.float64] = np.zeros((3, 1)),
             quaternion: NDArray[np.float64] = IDENTITY_QUATERNION,
             prev_gyro_measurement: NDArray[np.float64] = np.zeros((3, 1)),
@@ -13,7 +13,7 @@ class NominalState:
             gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL
         ):
 
-        self.prev_displacement = np.asarray(position, dtype=float).reshape(3, 1)
+        self.prev_displacement = np.asarray(displacement, dtype=float).reshape(3, 1)
         self.prev_velocity = np.asarray(velocity, dtype=float).reshape(3, 1)
         self.prev_quaternion = normalize_quaternion(np.asarray(quaternion, dtype=float)).reshape(4, 1)
         self.prev_gyro_measurement = np.asarray(prev_gyro_measurement, dtype=float).reshape(3, 1)
@@ -93,7 +93,7 @@ class NominalState:
         ):
 
         accel_inertial_new = np.dot(b_to_i_frame_rot_matrix(quaternion_new), accel_body_new)
-        accel_inertial_old = np.dot(b_to_i_frame_rot_matrix(self.prev_quaternion), self.prev_velocity)
+        accel_inertial_old = np.dot(b_to_i_frame_rot_matrix(self.prev_quaternion), self.prev_accel_measurement)
         return (((accel_inertial_new + accel_inertial_old) / 2) + self.gravity_inertial) * dt + self.prev_velocity
 
     def _update_displacement(
