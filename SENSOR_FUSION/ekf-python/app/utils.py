@@ -3,6 +3,7 @@ from numpy.typing import NDArray
 
 IDENTITY_QUATERNION = np.array([[1.0], [0.0], [0.0], [0.0]], dtype=np.float64)
 GRAVITY_INERTIAL = np.array([[0.0], [0.0], [9.81]], dtype=np.float64)
+MAGNETOMETER_INERTIAL = np.array([[1.0], [0.0], [0.0]], dtype=np.float64)
 
 def normalize_quaternion(q: NDArray[np.float64]) -> NDArray[np.float64]:
     norm = np.linalg.norm(q)
@@ -10,6 +11,12 @@ def normalize_quaternion(q: NDArray[np.float64]) -> NDArray[np.float64]:
         # Handle very small quaternions (e.g., zero vector)
         return IDENTITY_QUATERNION
     return q / norm
+
+def normalize_vector(v: NDArray[np.float64]) -> NDArray[np.float64]:
+    norm = np.linalg.norm(v)
+    if norm == 0:
+        raise ValueError("Cannot normalize zero vector")
+    return v / norm
 
 def skew_symmetric(v: NDArray[np.float64]) -> NDArray[np.float64]:
     if not isinstance(v, np.ndarray):
