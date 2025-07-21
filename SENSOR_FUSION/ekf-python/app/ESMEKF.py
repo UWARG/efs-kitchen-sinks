@@ -60,11 +60,11 @@ class ESMEKF:
     def predict(self):
         pass
 
-    # make I + delta_t * F
+    # make I + dt * F
     def _state_transition_matrix(self):
         pass
 
-    def _process_noise_cov_matrix(self):
+    def _process_noise_cov_matrix(self, dt):
         pass
 
     def correct(self):
