@@ -81,8 +81,8 @@ class ESMEKF:
         gyro_measurement_new = np.asarray(gyro_measurement_new, dtype=float).reshape(3, 1)
         accel_measurement_new = np.asarray(accel_measurement_new, dtype=float).reshape(3, 1)
 
-        gyro_measurement_prev = self.nominal_state.prev_gyro_measurement
-        accel_measurement_prev = self.nominal_state.prev_accel_measurement
+        gyro_measurement_prev: NDArray[np.float64] = self.nominal_state.prev_gyro_measurement
+        accel_measurement_prev: NDArray[np.float64] = self.nominal_state.prev_accel_measurement
 
         self.nominal_state.update(
             gyro_measurement=gyro_measurement_new,
@@ -91,7 +91,7 @@ class ESMEKF:
         )
 
         # only computing non-zero terms
-        gyro_bar = (gyro_measurement_new + gyro_measurement_prev) / 2
+        gyro_bar: NDArray[np.float64] = (gyro_measurement_new + gyro_measurement_prev) / 2
 
     # make I + dt * F
     def _state_transition_matrix(self):
