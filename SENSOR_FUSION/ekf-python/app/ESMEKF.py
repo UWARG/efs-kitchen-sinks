@@ -21,6 +21,11 @@ class ESMEKF:
             initial_accel_measurement: NDArray[np.float64] = np.zeros((3, 1)),
             gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
             magnetometer_inertial: NDArray[np.float64] = MAGNETOMETER_INERTIAL,
+            gyro_cov: np.float64 = np.float64(0.0),
+            accel_cov: np.float64 = np.float64(0.0),
+            gyro_bias_cov: np.float64 = np.float64(0.0),
+            accel_bias_cov: np.float64 = np.float64(0.0),
+            magnetometer_bias_cov: np.float64 = np.float64(0.0),
         ):
 
         # Nominal State
@@ -33,6 +38,10 @@ class ESMEKF:
             gravity_inertial=gravity_inertial
         )
 
+        # TODO: remove gyro_measurement_prev and accel measurement from nominal state, pass through mekf
+        self.gyro_measurement_prev = np.asarray(initial_gyro_measurement, dtype=float).reshape(3, 1)
+        self.accel_measurement_prev = np.asarray(initial_accel_measurement, dtype=float).reshape(3, 1)
+
         # magnetometer WMM inertial vector
         self.magnetometer_inertial = np.asarray(normalize_vector(magnetometer_inertial), dtype=float).reshape(3, 1)
 
@@ -43,6 +52,15 @@ class ESMEKF:
         self.gyro_bias: NDArray[np.float64] = np.zeros((3, 1))
         self.accelerometer_bias: NDArray[np.float64] = np.zeros((3, 1))
         self.magnetometer_bias: NDArray[np.float64] = np.zeros((3, 1))
+
+        # Sensor covariance tuning params
+        # Assuming assuming identical independent covariance across x,y,z axises
+        self.gyro_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(gyro_cov)
+        self.accel_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(accel_cov)
+        self.gyro_bias_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(gyro_bias_cov)
+        self.accel_bias_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(accel_bias_cov)
+        self.magnetometer_bias_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(magnetometer_bias_cov)
+
 
     def __str__(self):
         return (
@@ -57,8 +75,34 @@ class ESMEKF:
             f"{self.nominal_state}"
         )
     
-    def predict(self):
-        pass
+    def predict(
+            self,
+            gyro_measurement_new: NDArray[np.float64],
+            accel_measurement_new: NDArray[np.float64],
+            dt: np.float64
+        ):
+
+        gyro_measurement_new = np.asarray(gyro_measurement_new, dtype=float).reshape(3, 1)
+        accel_measurement_new = np.asarray(accel_measurement_new, dtype=float).reshape(3, 1)
+
+        self.nominal_state.update(
+            gyro_measurement=gyro_measurement_new,
+            accel_measurement=accel_measurement_new,
+            dt=dt
+        )
+
+        # only computing non-zero terms
+        # TODO: remove standardize either gyro_measurement_new or gyro_measurement
+        gyro_bar = (gyro_measurement_new + self.gyro_measurement_prev) / 2
+
+
+
+        self.gyro_measurement_prev = gyro_measurement_new
+        self.accel_measurement_prev = accel_measurement_new
+        self.prev_quaternion = quaternion_new
+        self.prev_velocity = velocity_new
+        self.prev_displacement = displacement_new
+
 
     # make I + dt * F
     def _state_transition_matrix(self):
@@ -79,7 +123,7 @@ class ESMEKF:
         Q[12:15, 3:6] = -self.accel_bias_cov_mat*(dt**2)/2.0
         Q[12:15, 6:9] = -self.accel_bias_cov_mat*(dt**3)/6.0
         Q[12:15, 12:15] = self.accel_bias_cov_mat*dt
-        Q[15:18, 15:18] = self.mag_bias_cov_mat*dt
+        Q[15:18, 15:18] = self.magnetometer_bias_cov_mat*dt
 
         return Q
 
