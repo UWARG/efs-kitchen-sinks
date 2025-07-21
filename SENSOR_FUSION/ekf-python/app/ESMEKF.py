@@ -65,7 +65,23 @@ class ESMEKF:
         pass
 
     def _process_noise_cov_matrix(self, dt):
-        pass
+        Q = np.zeros(shape=(18, 18), dtype=float)
+        Q[0:3, 0:3] = self.gyro_cov_mat*dt + self.gyro_bias_cov_mat*(dt**3)/3.0
+        Q[0:3, 9:12] = -self.gyro_bias_cov_mat*(dt**2)/2.0
+        Q[3:6, 3:6] = self.accel_cov_mat*dt + self.accel_bias_cov_mat*(dt**3)/3.0
+        Q[3:6, 6:9] = self.accel_bias_cov_mat*(dt**4)/8.0 + self.accel_cov_mat*(dt**2)/2.0
+        Q[3:6, 12:15] = -self.accel_bias_cov_mat*(dt**2)/2.0
+        Q[6:9, 3:6] = self.accel_cov_mat*(dt**2)/2.0 + self.accel_bias_cov_mat*(dt**4)/8.0
+        Q[6:9, 6:9] = self.accel_cov_mat*(dt**3)/3.0 + self.accel_bias_cov_mat*(dt**5)/20.0
+        Q[6:9, 12:15] = -self.accel_bias_cov_mat*(dt**3)/6.0
+        Q[9:12, 0:3] = -self.gyro_bias_cov_mat*(dt**2)/2.0
+        Q[9:12, 9:12] = self.gyro_bias_cov_mat*dt
+        Q[12:15, 3:6] = -self.accel_bias_cov_mat*(dt**2)/2.0
+        Q[12:15, 6:9] = -self.accel_bias_cov_mat*(dt**3)/6.0
+        Q[12:15, 12:15] = self.accel_bias_cov_mat*dt
+        Q[15:18, 15:18] = self.mag_bias_cov_mat*dt
+
+        return Q
 
     def correct(self):
         pass
