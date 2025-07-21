@@ -81,7 +81,6 @@ class ESMEKF:
         Q[12:15, 12:15] = self.accel_bias_cov_mat*dt
         Q[15:18, 15:18] = self.mag_bias_cov_mat*dt
 
-
         return Q
 
     def correct(self):
