@@ -38,10 +38,6 @@ class ESMEKF:
             gravity_inertial=gravity_inertial
         )
 
-        # TODO: remove gyro_measurement_prev and accel measurement from nominal state, pass through mekf
-        self.gyro_measurement_prev = np.asarray(initial_gyro_measurement, dtype=float).reshape(3, 1)
-        self.accel_measurement_prev = np.asarray(initial_accel_measurement, dtype=float).reshape(3, 1)
-
         # magnetometer WMM inertial vector
         self.magnetometer_inertial = np.asarray(normalize_vector(magnetometer_inertial), dtype=float).reshape(3, 1)
 
@@ -85,6 +81,9 @@ class ESMEKF:
         gyro_measurement_new = np.asarray(gyro_measurement_new, dtype=float).reshape(3, 1)
         accel_measurement_new = np.asarray(accel_measurement_new, dtype=float).reshape(3, 1)
 
+        gyro_measurement_prev = self.nominal_state.prev_gyro_measurement
+        accel_measurement_prev = self.nominal_state.prev_accel_measurement
+
         self.nominal_state.update(
             gyro_measurement=gyro_measurement_new,
             accel_measurement=accel_measurement_new,
@@ -92,17 +91,7 @@ class ESMEKF:
         )
 
         # only computing non-zero terms
-        # TODO: remove standardize either gyro_measurement_new or gyro_measurement
-        gyro_bar = (gyro_measurement_new + self.gyro_measurement_prev) / 2
-
-
-
-        self.gyro_measurement_prev = gyro_measurement_new
-        self.accel_measurement_prev = accel_measurement_new
-        self.prev_quaternion = quaternion_new
-        self.prev_velocity = velocity_new
-        self.prev_displacement = displacement_new
-
+        gyro_bar = (gyro_measurement_new + gyro_measurement_prev) / 2
 
     # make I + dt * F
     def _state_transition_matrix(self):
