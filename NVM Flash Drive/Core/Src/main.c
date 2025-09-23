@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdlib.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,7 +32,14 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define WRITE_ENABLE 0x06
+#define WRITE_DISABLE 0x04
+#define WRITE 0x02
+#define READ 0x03
+#define READ_STATUS 0x05
 
+#define RX_TX
+#define RX_RX
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -61,6 +69,89 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void txTest() {
+	uint8_t address[3] = {0x00, 0x00, 0x01};
+	uint8_t* write_cmd = malloc(4 * sizeof(uint8_t));
+	write_cmd[0] = WRITE;
+	memcpy(write_cmd + 1, address, 3 * sizeof(uint8_t));
+	uint8_t* read_cmd = malloc(4 * sizeof(uint8_t));
+	read_cmd[0] = READ;
+	memcpy(read_cmd + 1, address, 3 * sizeof(uint8_t));
+
+	uint8_t tx[4] = {0xA6, 0x13, 0x15, 0x1B};
+	uint8_t rx[4] = {0x00, 0x00, 0x00, 0x00};
+
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, (uint8_t*) WRITE_ENABLE, 1, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, write_cmd, 4, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(&hspi1, tx, 4, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, (uint8_t*) WRITE_DISABLE, 1, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	uint8_t status;
+	do {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) READ_STATUS, &status, 1, HAL_MAX_DELAY);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+		HAL_Delay(100);
+	} while (status & 0x01);
+
+	HAL_Delay(300);
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi1, read_cmd, rx, 4, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+}
+
+void rxTest() {
+	uint8_t address[3] = {0x00, 0x00, 0x01};
+
+#ifdef RX_TX
+	uint8_t tx[4] = {0xA6, 0x13, 0x15, 0x1B};
+	uint8_t* write_cmd = malloc(4 * sizeof(uint8_t));
+	write_cmd[0] = WRITE;
+	memcpy(write_cmd + 1, address, 3 * sizeof(uint8_t));
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, (uint8_t*) WRITE_ENABLE, 1, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, write_cmd, 4, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(&hspi1, tx, 4, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, (uint8_t*) WRITE_DISABLE, 1, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	uint8_t status;
+	do {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+		HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) READ_STATUS, &status, 1, HAL_MAX_DELAY);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+		HAL_Delay(100);
+	} while (status & 0x01);
+#endif
+
+#ifdef RX_RX
+	uint8_t* read_cmd = malloc(4 * sizeof(uint8_t));
+	read_cmd[0] = READ;
+	memcpy(read_cmd + 1, address, 3 * sizeof(uint8_t));
+	uint8_t rx[4] = {0x00, 0x00, 0x00, 0x00};
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi1, read_cmd, rx, 4, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+#endif
+}
 /* USER CODE END 0 */
 
 /**
@@ -96,12 +187,6 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  uint8_t cmd[4];
-  cmd[0] = 0x02;  // PAGE PROGRAM
-  cmd[1] = (address >> 16) & 0xFF;
-  cmd[2] = (address >> 8) & 0xFF;
-  cmd[3] = address & 0xFF;
-
   /* USER CODE END 2 */
 
   /* Initialize leds */
@@ -125,34 +210,12 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t enable_cmd = 0x06;
-  uint8_t disable_cmd = 0x04;
-  uint8_t cmd[4] = {0x02, 0x00, 0x00, 0x00};
 
-  //uint8_t tx = 0b00000110;
-  //uint8_t tx = 0b00000000;
-  uint8_t tx = 0x06;
-  uint8_t rx[4] = {0x00};
+//  txTest();
+//  rxTest();
 
   while (1)
   {
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
-	  HAL_SPI_Transmit(&hspi1, &enable_cmd, 1, HAL_MAX_DELAY);
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
-	  HAL_SPI_Transmit(&hspi1, &cmd, 4, HAL_MAX_DELAY);
-	  HAL_SPI_Transmit(&hspi1, &tx, 1, HAL_MAX_DELAY);
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
-	  HAL_SPI_Transmit(&hspi1, &disable_cmd, 1, HAL_MAX_DELAY);
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-
-
-
-      HAL_Delay(100);
-      //HAL_SPI_TransmitReceive(&hspi1, &tx, &rx, 2, 100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
