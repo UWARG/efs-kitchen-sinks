@@ -1,0 +1,3 @@
+../Core/Src/mahony_ahrs.c:11:6:Mahony_init	2
+../Core/Src/mahony_ahrs.c:31:7:Mahony_invSqrt	2
+../Core/Src/mahony_ahrs.c:53:6:Mahony_updateIMU	6

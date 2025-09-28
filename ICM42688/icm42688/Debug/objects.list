@@ -3,6 +3,7 @@
 "./Core/Fusion/FusionOffset.o"
 "./Core/Src/adc.o"
 "./Core/Src/gpio.o"
+"./Core/Src/mahony_ahrs.o"
 "./Core/Src/main.o"
 "./Core/Src/rtc.o"
 "./Core/Src/spi.o"

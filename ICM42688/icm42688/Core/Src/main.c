@@ -17,6 +17,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <mahony_ahrs.h>
 #include "main.h"
 #include "adc.h"
 #include "rtc.h"
@@ -60,8 +61,8 @@ void setAccelFS(uint8_t fssel);
 /* USER CODE BEGIN PTD */
 int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest){
 
-	uint8_t tx = subAddress | 0x80;
-	uint8_t dummy_tx[count];
+	uint8_t tx = subAddress | 0x80; //
+	uint8_t dummy_tx[count]; //
 	memset(dummy_tx, 0, count*sizeof(dummy_tx[0]));
 	uint8_t dummy_rx;
 	HAL_StatusTypeDef ret;
@@ -439,12 +440,23 @@ float lowPassFilter(float raw_value, int select) {
 /* USER CODE BEGIN PV */
   uint8_t myBuffer[14];
   int16_t rawMeas[7];
-  double accel[4];
+  double accel[4]; // x,y,z,magnitude
   double gyro[3];
 //  FusionEuler euler;
   double roll = 0.0;
   double pitch = 0.0;
   double yaw = 0.0;
+
+  float test_roll = 0.0f;
+  float test_pitch = 0.0f;
+  float test_yaw = 0.0f;
+
+  float ax = 0.0f;
+  float ay = 0.0f;
+  float az = 0.0f;
+  float gx = 0.0f;
+  float gy = 0.0f;
+  float gz = 0.0f;
 
 /* USER CODE END PV */
 
@@ -473,6 +485,180 @@ ITM_SendChar(*ptr++);
 return len;
 
 }
+//
+//#define TWO_KP  (2.0f * 0.5f)   // 2 * proportional gain
+//#define TWO_KI  (2.0f * 0.0f)   // 2 * integral gain (0 to disable)
+//
+//// Quaternion state
+//static float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
+//static float integralFBx = 0.0f, integralFBy = 0.0f, integralFBz = 0.0f;
+//
+//void GetEulerAngles(float *roll, float *pitch, float *yaw)
+//{
+//    *roll  = atan2f(2.0f*(q0*q1 + q2*q3), 1.0f - 2.0f*(q1*q1 + q2*q2)) * 57.2958f;
+//    *pitch = asinf (2.0f*(q0*q2 - q3*q1)) * 57.2958f;
+//    *yaw   = atan2f(2.0f*(q0*q3 + q1*q2), 1.0f - 2.0f*(q2*q2 + q3*q3)) * 57.2958f;
+//}
+//
+//void MahonyAHRSupdate(
+//		float gx,
+//		float gy,
+//		float gz,
+//		float ax,
+//		float ay,
+//		float az,
+//        float dt
+//)
+//{
+//    float recipNorm;
+//    float halfvx, halfvy, halfvz;
+//    float halfex, halfey, halfez;
+//    float qa, qb, qc;
+//
+//    // Normalize accelerometer
+//    recipNorm = 1.0f / sqrtf(ax * ax + ay * ay + az * az);
+//    ax *= recipNorm;
+//    ay *= recipNorm;
+//    az *= recipNorm;
+//
+//    // Estimated gravity direction
+//    halfvx = q1 * q3 - q0 * q2;
+//    halfvy = q0 * q1 + q2 * q3;
+//    halfvz = q0 * q0 - 0.5f + q3 * q3;
+//
+//    // Error = cross product (measured vs estimated gravity)
+//    halfex = (ay * halfvz - az * halfvy);
+//    halfey = (az * halfvx - ax * halfvz);
+//    halfez = (ax * halfvy - ay * halfvx);
+//
+//    // Integral feedback
+//    if (TWO_KI > 0.0f) {
+//        integralFBx += TWO_KI * halfex * dt;
+//        integralFBy += TWO_KI * halfey * dt;
+//        integralFBz += TWO_KI * halfez * dt;
+//        gx += integralFBx;
+//        gy += integralFBy;
+//        gz += integralFBz;
+//    }
+//
+//    // Proportional feedback
+//    gx += TWO_KP * halfex;
+//    gy += TWO_KP * halfey;
+//    gz += TWO_KP * halfez;
+//
+//    // Integrate quaternion rate
+//    gx *= (0.5f * dt);
+//    gy *= (0.5f * dt);
+//    gz *= (0.5f * dt);
+//    qa = q0;
+//    qb = q1;
+//    qc = q2;
+//    q0 += (-qb * gx - qc * gy - q3 * gz);
+//    q1 += (qa * gx + qc * gz - q3 * gy);
+//    q2 += (qa * gy - qb * gz + q3 * gx);
+//    q3 += (qa * gz + qb * gy - qc * gx);
+//
+//    // Normalize quaternion
+//    recipNorm = 1.0f / sqrtf(q0*q0 + q1*q1 + q2*q2 + q3*q3);
+//    q0 *= recipNorm;
+//    q1 *= recipNorm;
+//    q2 *= recipNorm;
+//    q3 *= recipNorm;
+//}
+
+// Quaternion state (global)
+static float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
+
+// Mahony filter gains
+#define TWO_KP (2.0f * 0.5f)   // proportional gain
+#define TWO_KI (2.0f * 0.1f)   // integral gain
+
+// Integral error terms
+static float integralFBx = 0.0f, integralFBy = 0.0f, integralFBz = 0.0f;
+
+void MahonyAHRSupdate(float gx, float gy, float gz,
+                      float ax, float ay, float az,
+                      float dt) {
+    float recipNorm;
+    float halfvx, halfvy, halfvz;
+    float halfex, halfey, halfez;
+
+    // Normalize accelerometer
+    recipNorm = sqrtf(ax * ax + ay * ay + az * az);
+    if (recipNorm > 1e-6f) {
+        ax /= recipNorm;
+        ay /= recipNorm;
+        az /= recipNorm;
+    } else {
+        return;
+    }
+
+    // Estimated direction of gravity
+    halfvx = q1 * q3 - q0 * q2;
+    halfvy = q0 * q1 + q2 * q3;
+    halfvz = q0 * q0 - 0.5f + q3 * q3;
+
+    // Error is cross product between estimated and measured direction of gravity
+    halfex = (ay * halfvz - az * halfvy);
+    halfey = (az * halfvx - ax * halfvz);
+    halfez = (ax * halfvy - ay * halfvx);
+
+    // Integral feedback
+    if (TWO_KI > 0.0f) {
+        integralFBx += TWO_KI * halfex * dt;
+        integralFBy += TWO_KI * halfey * dt;
+        integralFBz += TWO_KI * halfez * dt;
+        gx += integralFBx;
+        gy += integralFBy;
+        gz += integralFBz;
+    }
+
+    // Proportional feedback
+    gx += TWO_KP * halfex;
+    gy += TWO_KP * halfey;
+    gz += TWO_KP * halfez;
+
+    // Integrate rate of change of quaternion
+    gx *= 0.5f * dt;
+    gy *= 0.5f * dt;
+    gz *= 0.5f * dt;
+
+    float qa = q0;
+    float qb = q1;
+    float qc = q2;
+
+    q0 += (-qb * gx - qc * gy - q3 * gz);
+    q1 += (qa * gx + qc * gz - q3 * gy);
+    q2 += (qa * gy - qb * gz + q3 * gx);
+    q3 += (qa * gz + qb * gy - qc * gx);
+
+    // Normalize quaternion
+    recipNorm = 1.0f / sqrtf(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    q0 *= recipNorm;
+    q1 *= recipNorm;
+    q2 *= recipNorm;
+    q3 *= recipNorm;
+}
+
+// Convert quaternion to Euler angles (NED frame) with doubles
+void GetEulerAngles(double *roll, double *pitch, double *yaw) {
+    // Roll (x-axis = East)
+    *roll  = atan2((double)(2.0f * (q0 * q1 + q2 * q3)),
+                   (double)(1.0f - 2.0f * (q1 * q1 + q2 * q2)));
+
+    // Pitch (y-axis = North)
+    *pitch = asin((double)(2.0f * (q0 * q2 - q3 * q1)));
+
+    // Yaw (z-axis = Down)
+    *yaw   = atan2((double)(2.0f * (q0 * q3 + q1 * q2)),
+                   (double)(1.0f - 2.0f * (q2 * q2 + q3 * q3)));
+
+    // Convert to degrees
+    *roll  *= 180.0 / M_PI;
+    *pitch *= 180.0 / M_PI;
+    *yaw   *= 180.0 / M_PI;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -518,8 +704,13 @@ int main(void)
   uint8_t new_buffer[1];
   uint8_t new_buffer_accel[1];
 
+
   int sample = readRegisters(0x4F, 1, new_buffer);
   int sample_accel = readRegisters(0x50, 1, new_buffer_accel);
+
+  Mahony ahrs;
+  Mahony_init(&ahrs);
+
 
   // writeRegister(0x4F, (sample & 0xF0) | 0x0B);	// Increase Gyro ODR to 2000Hz
   /* USER CODE END 2 */
@@ -543,22 +734,40 @@ int main(void)
 		  gyro[i] = lowPassFilter((float)rawMeas[i+4] / 16.4, i);
 	  }
 
-	  printf("Gyro X: %.2f, Y: %.2f, Z: %.2f\r\n", gyro[0], gyro[1], gyro[2]);
+	      // Convert to physical units
+	  	  // ENU
+//	      ax = (float)accel[0];                    // g
+//	      ay = (float)accel[1];
+//	      az = (float)-accel[2];
+//	      gx = ((float)-gyro[0]);        // rad/s
+//	      gy = ((float)-gyro[1]);
+//	      gz = ((float)gyro[2]);
 
-	  HAL_Delay(50);
+	      // NED
+	      ax = (float)accel[1];                    // g
+		  ay = (float)accel[0];
+		  az = ((float)accel[2]);
+		  gx = ((float)-gyro[1]);        // rad/s
+		  gy = ((float)-gyro[0]);
+		  gz = ((float)-gyro[2]);
 
-	  //when holding the icm42688 flat on the table with it oriented
-	  //so that you can read the words and assuming a positive value,
-	  //the following are true:
-	  //accel[0] is to the right
-	  //accel[1] is forwards
-	  //accel[2] is downwards
+	      Mahony_updateIMU(&ahrs, gx, gy, gz, ax, ay, az);
 
-	  //same orientation
-	  //gyro[0] rotating forward-down
-	  //gyro[1] rotating left-down
-	  //gyro[2] is rotating counter clock wise
+	      test_roll = ahrs.roll;
+	      test_pitch = ahrs.pitch;
+	      test_yaw = ahrs.yaw;
 
+	      // Update Mahony filter (dt matches loop rate)
+	      MahonyAHRSupdate(gx, gy, gz, ax, ay, az, 0.05f); // East North Down for some reason??
+
+	      printf("Roll: %.2f  Pitch: %.2f  Yaw: %.2f\r\n", test_roll, test_pitch, test_yaw);
+	      // Get Euler angles
+
+	      GetEulerAngles(&roll, &pitch, &yaw);
+
+	      printf("Roll: %.2f  Pitch: %.2f  Yaw: %.2f\r\n", roll, pitch, yaw);
+
+	      HAL_Delay(50);   // 50 ms loop → dt = 0.05
 
 
 
