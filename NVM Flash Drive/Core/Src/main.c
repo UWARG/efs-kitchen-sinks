@@ -90,14 +90,14 @@ static inline void spi_tx(const uint8_t *buf, uint16_t n) { HAL_SPI_Transmit(&hs
 static void spi_rx(uint8_t *buf, uint16_t n) { HAL_SPI_Receive(&hspi1, buf, n, HAL_MAX_DELAY);}
 
 // function to read the ID of the NVM chip with command 9f
-HAL_StatusTypeDef readID(uint8_t id[3]){
+HAL_StatusTypeDef readID(uint8_t id[20]){
 	// read the ID
 	uint8_t id_cmd = 0x9f;
 	HAL_StatusTypeDef stat;
 	CS_LOW();
 	stat = HAL_SPI_Transmit(&hspi1, &id_cmd, 1, HAL_MAX_DELAY);
 	if (stat == HAL_OK){
-		stat = HAL_SPI_Receive(&hspi1, id, 4, HAL_MAX_DELAY);
+		stat = HAL_SPI_Receive(&hspi1, id, 20, HAL_MAX_DELAY);
 	}
 	CS_HIGH();
 	if (stat == HAL_OK) {
@@ -467,12 +467,15 @@ int main(void)
 
 //  txTest();
 //  rxTest();
+  uint8_t id[20] = {0};
 
   while (1)
   {
+	  printf("hello world\r\n");
+	  HAL_Delay(1000);
+	  readID(id);
 
 	  // make sure to wait 1 ms for power up time befoe using the chip
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
