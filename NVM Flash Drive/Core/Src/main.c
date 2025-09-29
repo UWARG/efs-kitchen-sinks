@@ -90,14 +90,18 @@ static inline void spi_tx(const uint8_t *buf, uint16_t n) { HAL_SPI_Transmit(&hs
 static void spi_rx(uint8_t *buf, uint16_t n) { HAL_SPI_Receive(&hspi1, buf, n, 1000);}
 
 // function to read the ID of the NVM chip with command 9f
-HAL_StatusTypeDef readID(uint8_t id[3]){
+HAL_StatusTypeDef readID(uint8_t id[20]){
 	// read the ID
 	uint8_t id_cmd = 0x9f;
 	HAL_StatusTypeDef stat;
 	CS_LOW();
 	stat = HAL_SPI_Transmit(&hspi1, &id_cmd, 1, 100);
 	if (stat == HAL_OK){
+<<<<<<< HEAD
 		stat = HAL_SPI_Receive(&hspi1, id, 4, 100);
+=======
+		stat = HAL_SPI_Receive(&hspi1, id, 20, HAL_MAX_DELAY);
+>>>>>>> e2c82894c66124032745c271513f866d48bd483c
 	}
 	CS_HIGH();
 	if (stat == HAL_OK) {
@@ -468,6 +472,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+<<<<<<< HEAD
   for (int i = 0; i < 5; i++){
 	  BSP_LED_Toggle(LED_RED);
 	  BSP_LED_Toggle(LED_BLUE);
@@ -500,17 +505,28 @@ int main(void)
 
 
 
+=======
+//  txTest();
+//  rxTest();
+  uint8_t id[20] = {0};
+>>>>>>> e2c82894c66124032745c271513f866d48bd483c
 
   while (1)
   {
+	  printf("hello world\r\n");
+	  HAL_Delay(1000);
+	  readID(id);
 
 	  // currently any rx is failing
 
 	  // make sure to wait 1 ms for power up time befoe using the chip
+<<<<<<< HEAD
 	  printf("in while loop, done test \r\n");
 	  BSP_LED_Toggle(LED_GREEN);
 	  HAL_Delay(3000);
 
+=======
+>>>>>>> e2c82894c66124032745c271513f866d48bd483c
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
