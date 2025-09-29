@@ -87,7 +87,7 @@ static inline void CS_HIGH(void) { HAL_GPIO_WritePin(FLASH_CS_PORT, FLASH_CS_PIN
 // low-level helper functions
 static inline void spi_tx1(uint8_t v) { HAL_SPI_Transmit(&hspi1, &v, 1, HAL_MAX_DELAY);}
 static inline void spi_tx(const uint8_t *buf, uint16_t n) { HAL_SPI_Transmit(&hspi1, (uint8_t*)buf, n, HAL_MAX_DELAY);}
-static void spi_rx(uint8_t *buf, uint16_t n) { HAL_SPI_Receive(&hspi1, buf, n, HAL_MAX_DELAY);}
+static void spi_rx(uint8_t *buf, uint16_t n) { HAL_SPI_Receive(&hspi1, buf, n, 1000);}
 
 // function to read the ID of the NVM chip with command 9f
 HAL_StatusTypeDef readID(uint8_t id[3]){
@@ -95,9 +95,9 @@ HAL_StatusTypeDef readID(uint8_t id[3]){
 	uint8_t id_cmd = 0x9f;
 	HAL_StatusTypeDef stat;
 	CS_LOW();
-	stat = HAL_SPI_Transmit(&hspi1, &id_cmd, 1, HAL_MAX_DELAY);
+	stat = HAL_SPI_Transmit(&hspi1, &id_cmd, 1, 100);
 	if (stat == HAL_OK){
-		stat = HAL_SPI_Receive(&hspi1, id, 4, HAL_MAX_DELAY);
+		stat = HAL_SPI_Receive(&hspi1, id, 4, 100);
 	}
 	CS_HIGH();
 	if (stat == HAL_OK) {
@@ -244,8 +244,8 @@ static void read_data(uint32_t addr24, uint8_t *out, uint16_t len) {
  */
 void ReceiveTransmitTest(void)
 {
-    const uint32_t addr = 0x00000001; // 3B address
-    const uint8_t tx[4] = {0xA6, 0x13, 0x15, 0x1B};
+    const uint32_t addr = 0x00000008; // 3B address
+    const uint8_t tx[4] = {0xAA, 0xAA, 0xAA, 0xAA};
     uint8_t rx[4] = {0};
 
     uint32_t base4k = addr & ~0x0FFFU;
@@ -253,15 +253,15 @@ void ReceiveTransmitTest(void)
 
     // ---------------- ERASE ---------------------
     if (!write_enable()) {
-        // printf("write enable failed before erase\r\n");
+         printf("write enable failed before erase\r\n");
         return;
     }
     if (erase_4k(base4k) != HAL_OK) {         // send 0x20, 3B address
-        // printf("unable to erase subsector\r\n");
+         printf("unable to erase subsector\r\n");
         return;
     }
     if (wait_ready(3000) != HAL_OK) {         // poll SR.WIP=0, timeout
-        // printf("didn't receive ready after erase\r\n");
+         printf("didn't receive ready after erase\r\n");
         return;
     }
 
@@ -269,17 +269,17 @@ void ReceiveTransmitTest(void)
     // ------------------- WRITE  ---------------------
 
     if (!write_enable()) {
-        // printf("unable to enable write after erasing\r\n");
+         printf("unable to enable write after erasing\r\n");
         return;
     }
 
     if (page_program(addr, tx, sizeof(tx)) != HAL_OK) { // send 0x02 + data
-        // printf("unable to write to page \r\n");
+         printf("unable to write to page \r\n");
         return;
     }
 
     if (wait_ready(10) != HAL_OK) {           // poll until program finishes
-        // printf("timeout after %d ms \r\n", 10);
+         printf("timeout after %d ms \r\n", 10);
         return;
     }
 
@@ -292,6 +292,9 @@ void ReceiveTransmitTest(void)
     } else {
         printf("FAIL: mismatch at 0x%06lX\n", (unsigned long)addr);
     }
+
+    printf("END OF TEST FUNCTION\r\n");
+    return;
 }
 
 
@@ -465,13 +468,48 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-//  txTest();
-//  rxTest();
+  for (int i = 0; i < 5; i++){
+	  BSP_LED_Toggle(LED_RED);
+	  BSP_LED_Toggle(LED_BLUE);
+  }
+  printf("starting...");
+  uint8_t id[3];
+  HAL_StatusTypeDef st = readID(id);
+
+  if (st == HAL_OK) {
+	  if (id[0] == 0x20 && id[1] == 0xBA && id[2] == 0x19) {
+		  printf("Flash OK (Micron N25Q256A)\r\n");
+	  } else {
+		  printf("Unexpected JEDEC: %02X %02X %02X\r\n", id[0], id[1], id[2]);
+	  }
+  } else {
+	  printf("readID failed: %d\r\n", (int)st);
+  }
+
+  uint8_t sr = read_fsr();
+  if (sr & 0x01) {
+      // WIP=1 → busy
+	  printf("busy \r\n");
+  } else {
+      // WIP=0 → ready
+	  printf("ready\r\n");
+  }
+
+  ReceiveTransmitTest();
+
+
+
+
 
   while (1)
   {
 
+	  // currently any rx is failing
+
 	  // make sure to wait 1 ms for power up time befoe using the chip
+	  printf("in while loop, done test \r\n");
+	  BSP_LED_Toggle(LED_GREEN);
+	  HAL_Delay(3000);
 
     /* USER CODE END WHILE */
 
@@ -585,7 +623,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
