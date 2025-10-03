@@ -84,8 +84,8 @@ all: main-build
 main-build: zp3_gps_driver.elf secondary-outputs
 
 # Tool invocations
-zp3_gps_driver.elf zp3_gps_driver.map: $(OBJS) $(USER_OBJS) C:\Users\ronak\STM32CubeIDE\workspace_1.16.1\zp3_gps_driver\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "zp3_gps_driver.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\ronak\STM32CubeIDE\workspace_1.16.1\zp3_gps_driver\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="zp3_gps_driver.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+zp3_gps_driver.elf zp3_gps_driver.map: $(OBJS) $(USER_OBJS) C:\Users\epicm\OneDrive\ -\ University\ of\ Waterloo\WARG\efs\efs-kitchen-sinks\zp3_gps_driver\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "zp3_gps_driver.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\epicm\OneDrive - University of Waterloo\WARG\efs\efs-kitchen-sinks\zp3_gps_driver\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="zp3_gps_driver.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

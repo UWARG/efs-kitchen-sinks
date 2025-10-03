@@ -3,16 +3,24 @@
 ../Core/Inc/gps_iface.hpp:15:10:virtual IGPS::~IGPS()	1
 ../Core/Src/zp_d_gps.cpp:5:1:GPS::GPS(UART_HandleTypeDef*)	1
 ../Core/Src/zp_d_gps.cpp:7:6:bool GPS::init()	1
-../Core/Src/zp_d_gps.cpp:19:11:virtual GpsData_t GPS::readData()	1
-../Core/Src/zp_d_gps.cpp:31:6:bool GPS::processGPSData()	3
-../Core/Src/zp_d_gps.cpp:42:6:bool GPS::parseRMC()	17
-../Core/Src/zp_d_gps.cpp:103:6:bool GPS::parseGGA()	9
-../Core/Src/zp_d_gps.cpp:128:6:bool GPS::getTimeRMC(int&)	1
-../Core/Src/zp_d_gps.cpp:142:6:bool GPS::getLatitudeRMC(int&)	7
-../Core/Src/zp_d_gps.cpp:177:6:bool GPS::getLongitudeRMC(int&)	7
-../Core/Src/zp_d_gps.cpp:211:6:bool GPS::getSpeedRMC(int&)	4
-../Core/Src/zp_d_gps.cpp:231:6:bool GPS::getTrackAngleRMC(int&)	5
-../Core/Src/zp_d_gps.cpp:257:6:bool GPS::getDateRMC(int&)	1
-../Core/Src/zp_d_gps.cpp:271:6:bool GPS::getNumSatellitesGGA(int&)	2
-../Core/Inc/zp_d_gps.hpp:8:7:GPS::~GPS()	1
-../Core/Inc/zp_d_gps.hpp:8:7:virtual GPS::~GPS()	1
+../Core/Src/zp_d_gps.cpp:21:19:HAL_StatusTypeDef GPS::enableMessage(uint8_t, uint8_t)	2
+../Core/Src/zp_d_gps.cpp:40:6:void GPS::calcChecksum(uint8_t*, uint16_t)	2
+../Core/Src/zp_d_gps.cpp:50:6:bool GPS::sendUBX(uint8_t*, uint16_t)	2
+../Core/Src/zp_d_gps.cpp:58:11:virtual GpsData_t GPS::readData()	1
+../Core/Src/zp_d_gps.cpp:69:6:bool GPS::processGPSData()	4
+../Core/Src/zp_d_gps.cpp:81:6:bool GPS::parseUBX()	9
+../Core/Src/zp_d_gps.cpp:119:6:bool GPS::parseRMC()	17
+../Core/Src/zp_d_gps.cpp:194:6:bool GPS::parseGGA()	12
+../Core/Src/zp_d_gps.cpp:227:6:bool GPS::getTimeRMC(int&)	1
+../Core/Src/zp_d_gps.cpp:241:6:bool GPS::getLatitudeRMC(int&)	7
+../Core/Src/zp_d_gps.cpp:276:6:bool GPS::getLongitudeRMC(int&)	7
+../Core/Src/zp_d_gps.cpp:310:6:bool GPS::getSpeedRMC(int&)	4
+../Core/Src/zp_d_gps.cpp:330:6:bool GPS::getTrackAngleRMC(int&)	5
+../Core/Src/zp_d_gps.cpp:356:6:bool GPS::getDateRMC(int&)	1
+../Core/Src/zp_d_gps.cpp:370:6:bool GPS::getNumSatellitesGGA(int&)	2
+../Core/Src/zp_d_gps.cpp:383:6:bool GPS::getAltitudeGGA(int&)	4
+../Core/Src/zp_d_gps.cpp:403:6:bool GPS::getVx(int&)	1
+../Core/Src/zp_d_gps.cpp:413:6:bool GPS::getVy(int&)	1
+../Core/Src/zp_d_gps.cpp:423:6:bool GPS::getVz(int&)	1
+../Core/Inc/zp_d_gps.hpp:9:7:GPS::~GPS()	1
+../Core/Inc/zp_d_gps.hpp:9:7:virtual GPS::~GPS()	1
