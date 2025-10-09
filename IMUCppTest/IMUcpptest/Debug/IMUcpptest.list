@@ -27,25 +27,25 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000036  00000000  00000000  0000c084  2**0
                   CONTENTS, READONLY
- 12 .debug_info   0002444d  00000000  00000000  0000c0ba  2**0
+ 12 .debug_info   00024574  00000000  00000000  0000c0ba  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 0000463d  00000000  00000000  00030507  2**0
+ 13 .debug_abbrev 00004626  00000000  00000000  0003062e  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 000019e0  00000000  00000000  00034b48  2**3
+ 14 .debug_aranges 000019e8  00000000  00000000  00034c58  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_rnglists 000013d4  00000000  00000000  00036528  2**0
+ 15 .debug_rnglists 000013db  00000000  00000000  00036640  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  00032cbc  00000000  00000000  000378fc  2**0
+ 16 .debug_macro  00032cbc  00000000  00000000  00037a1b  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   0001feeb  00000000  00000000  0006a5b8  2**0
+ 17 .debug_line   0002004d  00000000  00000000  0006a6d7  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    00132163  00000000  00000000  0008a4a3  2**0
+ 18 .debug_str    001321bd  00000000  00000000  0008a724  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  001bc606  2**0
+ 19 .comment      00000043  00000000  00000000  001bc8e1  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  0000752c  00000000  00000000  001bc64c  2**2
+ 20 .debug_frame  00007550  00000000  00000000  001bc924  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000076  00000000  00000000  001c3b78  2**0
+ 21 .debug_line_str 00000076  00000000  00000000  001c3e74  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -1831,6 +1831,10 @@ void IMU::calibrateGyro() {
 
 08001390 <_ZN3IMU20configureNotchFilterEv>:
 
+    // Restore original full-scale setting
+    setAccelFS(currentFS);
+}
+
 void IMU::configureNotchFilter(){
  8001390:	b5b0      	push	{r4, r5, r7, lr}
  8001392:	b08c      	sub	sp, #48	@ 0x30
@@ -2438,8 +2442,8 @@ int IMU::begin() {
     setLowNoiseMode();
  8001856:	6878      	ldr	r0, [r7, #4]
  8001858:	f7ff fc09 	bl	800106e <_ZN3IMU15setLowNoiseModeEv>
-    setAccelFS(0x01);
- 800185c:	2101      	movs	r1, #1
+    setAccelFS(0b01101001);
+ 800185c:	2169      	movs	r1, #105	@ 0x69
  800185e:	6878      	ldr	r0, [r7, #4]
  8001860:	f7ff fcbe 	bl	80011e0 <_ZN3IMU10setAccelFSEh>
     configureNotchFilter();

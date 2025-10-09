@@ -117,6 +117,51 @@ void IMU::calibrateGyro() {
     setGyroFS(current_fssel);
 }
 
+void IMU::calibrateAccel() {
+    // Store current full-scale setting to restore later
+    uint8_t currentFS = _accelFS;
+
+    // Temporarily set to highest sensitivity for calibration
+    setAccelFS(0x03); // ±2g mode, for example
+
+    float accSum[3] = {0.0f, 0.0f, 0.0f};
+    const int samples = 1000;
+    uint8_t dataBuffer[14];
+    int16_t rawAccel[3];
+
+    // Collect multiple samples for averaging
+    for (int i = 0; i < samples; i++) {
+        readAGT(dataBuffer);
+        rawAccel[0] = ((int16_t)dataBuffer[0] << 8) | dataBuffer[1];
+        rawAccel[1] = ((int16_t)dataBuffer[2] << 8) | dataBuffer[3];
+        rawAccel[2] = ((int16_t)dataBuffer[4] << 8) | dataBuffer[5];
+
+        // Convert to 'g'
+        float ax = (float)rawAccel[0] * _accelScale;
+        float ay = (float)rawAccel[1] * _accelScale;
+        float az = (float)rawAccel[2] * _accelScale;
+
+        accSum[0] += ax;
+        accSum[1] += ay;
+        accSum[2] += az;
+
+        HAL_Delay(1);
+    }
+
+    // Compute average offsets (assuming stationary on flat surface)
+    float avgX = accSum[0] / samples;
+    float avgY = accSum[1] / samples;
+    float avgZ = accSum[2] / samples;
+
+    // Gravity compensation: when stationary, Z should read ~+1g
+    _accB[0] = avgX;
+    _accB[1] = avgY;
+    _accB[2] = avgZ - 1.0f;  // assuming +Z axis points upward
+
+    // Restore original full-scale setting
+    setAccelFS(currentFS);
+}
+
 void IMU::configureNotchFilter(){
 	uint8_t BW_SEL = 7;
 	uint32_t f_des = 1300;
@@ -256,7 +301,7 @@ int IMU::begin() {
     reset();
     uint8_t address = whoAmI();
     setLowNoiseMode();
-    setAccelFS(0x01);
+    setAccelFS(0b01101001);
     configureNotchFilter();
 	setAntiAliasFilter(213, true, true);
     calibrateGyro();

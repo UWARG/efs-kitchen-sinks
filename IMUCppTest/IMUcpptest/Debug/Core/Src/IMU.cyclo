@@ -11,8 +11,9 @@ C:\ST\STM32CubeIDE_1.17.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.external
 ../Core/Src/IMU.cpp:78:6:void IMU::setGyroFS(uint8_t)	1
 ../Core/Src/IMU.cpp:88:6:void IMU::setAccelFS(uint8_t)	1
 ../Core/Src/IMU.cpp:98:6:void IMU::calibrateGyro()	5
-../Core/Src/IMU.cpp:120:6:void IMU::configureNotchFilter()	4
-../Core/Src/IMU.cpp:190:26:const AAF_Config* getAAFConfig(uint16_t)	3
-../Core/Src/IMU.cpp:201:6:void IMU::setAntiAliasFilter(uint16_t, bool, bool)	3
-../Core/Src/IMU.cpp:254:5:int IMU::begin()	1
-../Core/Src/IMU.cpp:266:6:void IMU::getAccelGyro(float&, float&, float&, float&, float&, float&)	2
+../Core/Src/IMU.cpp:120:6:void IMU::calibrateAccel()	2
+../Core/Src/IMU.cpp:165:6:void IMU::configureNotchFilter()	4
+../Core/Src/IMU.cpp:235:26:const AAF_Config* getAAFConfig(uint16_t)	3
+../Core/Src/IMU.cpp:246:6:void IMU::setAntiAliasFilter(uint16_t, bool, bool)	3
+../Core/Src/IMU.cpp:299:5:int IMU::begin()	1
+../Core/Src/IMU.cpp:311:6:void IMU::getAccelGyro(float&, float&, float&, float&, float&, float&)	2
