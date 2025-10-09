@@ -1,0 +1,3 @@
+../Core/Src/MahonyAHRS.cpp:41:1:Mahony::Mahony()	1
+../Core/Src/MahonyAHRS.cpp:58:6:void Mahony::updateIMU(float, float, float, float, float, float)	5
+../Core/Src/MahonyAHRS.cpp:139:7:static float Mahony::invSqrt(float)	1

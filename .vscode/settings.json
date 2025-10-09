@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "format": "cpp",
+        "initializer_list": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "vector": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xmemory": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
+    }
+}

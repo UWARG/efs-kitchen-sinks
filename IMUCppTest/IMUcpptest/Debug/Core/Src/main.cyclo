@@ -1,0 +1,32 @@
+../Drivers/STM32L5xx_HAL_Driver/Inc/stm32l5xx_ll_bus.h:433:22:void LL_AHB2_GRP1_EnableClock(uint32_t)	1
+../Drivers/STM32L5xx_HAL_Driver/Inc/stm32l5xx_ll_bus.h:914:22:void LL_APB1_GRP2_EnableClock(uint32_t)	1
+C:\ST\STM32CubeIDE_1.17.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.win32_1.1.0.202410251130\tools\bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/include/c++/12.3.1/bits/std_abs.h:71:3:constexpr double std::abs(double)	1
+../Core/Inc/MahonyAHRS.hpp:37:8:float Mahony::getRoll()	1
+../Core/Inc/MahonyAHRS.hpp:40:8:float Mahony::getPitch()	1
+../Core/Inc/MahonyAHRS.hpp:43:8:float Mahony::getYaw()	1
+../Core/Src/main.cpp:84:5:int readRegisters(uint8_t, uint8_t, uint8_t*)	1
+../Core/Src/main.cpp:103:6:void writeRegister(uint8_t, uint8_t)	1
+../Core/Src/main.cpp:125:5:int setBank(uint8_t)	1
+../Core/Src/main.cpp:130:6:void setLowNoiseMode()	1
+../Core/Src/main.cpp:134:6:void reset()	1
+../Core/Src/main.cpp:142:9:uint8_t whoAmI()	1
+../Core/Src/main.cpp:148:6:void AGT(uint8_t*)	1
+../Core/Src/main.cpp:162:6:void setGyroFS(uint8_t)	1
+../Core/Src/main.cpp:173:6:void calibrateGyro()	4
+../Core/Src/main.cpp:209:6:void setAccelFS(uint8_t)	1
+../Core/Src/main.cpp:219:6:void configureNotchFilter()	4
+../Core/Src/main.cpp:298:26:const AAF_Config* getAAFConfig(uint16_t)	3
+../Core/Src/main.cpp:309:6:void setAntiAliasFilter(uint16_t, bool, bool)	3
+../Core/Src/main.cpp:361:5:int begin()	1
+../Core/Src/main.cpp:379:7:float lowPassFilter(float, int)	3
+../Core/Src/main.cpp:434:5:int main()	5
+../Core/Src/main.cpp:557:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:618:13:void MX_ADC1_Init()	4
+../Core/Src/main.cpp:685:13:void MX_ICACHE_Init()	3
+../Core/Src/main.cpp:717:13:void MX_RTC_Init()	3
+../Core/Src/main.cpp:764:13:void MX_SPI1_Init()	2
+../Core/Src/main.cpp:804:13:void MX_UCPD1_Init()	1
+../Core/Src/main.cpp:846:13:void MX_USART2_UART_Init()	5
+../Core/Src/main.cpp:894:13:void MX_USB_PCD_Init()	2
+../Core/Src/main.cpp:927:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:988:6:void Error_Handler()	1

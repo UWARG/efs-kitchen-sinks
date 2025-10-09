@@ -21,11 +21,39 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include <math.h>
+#include "MahonyAHRS.hpp"
+#include "IMU.hpp"
+
+
+#define CS_PIN GPIO_PIN_4
+#define CS_GPIO_PORT GPIOA
+#define UB0_REG_WHO_AM_I 0x75
+#define REG_BANK_SEL  0x76
+#define UB0_REG_DEVICE_CONFIG  0x11
+#define UB0_REG_PWR_MGMT0 0x4E
+#define UB0_REG_TEMP_DATA1 0x1D
+
+
+
+int begin();
+int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
+void writeRegister(uint8_t subAddress, uint8_t data);
+int setBank(uint8_t bank);
+void setLowNoiseMode();
+void reset();
+uint8_t whoAmI();
+void AGT(uint8_t *dataBuffer);
+void setAccelFS(uint8_t fssel);
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
 
 /* USER CODE END PTD */
 
@@ -53,6 +81,330 @@ UART_HandleTypeDef huart2;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
+int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest){
+
+	uint8_t tx = subAddress | 0x80; //
+	uint8_t dummy_tx[count]; //
+	memset(dummy_tx, 0, count*sizeof(dummy_tx[0]));
+	uint8_t dummy_rx;
+	HAL_StatusTypeDef ret;
+
+	HAL_GPIO_WritePin(CS_GPIO_PORT, CS_PIN, GPIO_PIN_RESET);
+
+	ret = HAL_SPI_TransmitReceive(&hspi1, &tx, &dummy_rx, 1, HAL_MAX_DELAY);
+
+	ret = HAL_SPI_TransmitReceive(&hspi1, dummy_tx, dest, count, HAL_MAX_DELAY);
+
+	HAL_GPIO_WritePin(CS_GPIO_PORT, CS_PIN, GPIO_PIN_SET);
+
+	return 1;
+}
+
+void writeRegister(uint8_t subAddress, uint8_t data){
+	uint8_t tx_buf[2] = {subAddress, data};
+	HAL_StatusTypeDef ret;
+
+	HAL_GPIO_WritePin(CS_GPIO_PORT, CS_PIN, GPIO_PIN_RESET);
+	ret = HAL_SPI_Transmit(&hspi1, tx_buf, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(CS_GPIO_PORT, CS_PIN, GPIO_PIN_SET);
+
+//	readRegisters(subAddress, 1, &dummy_rx);
+//
+//	if(dummy_rx == data) {
+//		return 1;
+//	  }
+//	  else{
+//		return -1;
+//	  }
+//
+//	return 1;
+}
+
+
+
+int setBank(uint8_t bank){
+	writeRegister(REG_BANK_SEL , bank);
+	return 1;
+}
+
+void setLowNoiseMode(){
+	writeRegister(UB0_REG_PWR_MGMT0, 0x0F);
+}
+
+void reset(){
+	setBank(0);
+
+	writeRegister(UB0_REG_DEVICE_CONFIG, 0x01);
+
+	HAL_Delay(1);
+}
+
+uint8_t whoAmI(){
+	uint8_t buffer;
+	readRegisters(UB0_REG_WHO_AM_I, 1, &buffer);
+	return buffer;
+}
+
+void AGT(uint8_t *dataBuffer){
+	readRegisters(UB0_REG_TEMP_DATA1, 14, dataBuffer);
+}
+
+
+float _gyroScale = 0;
+uint8_t current_fssel = 0;
+uint8_t _gyroFS = 0;
+float _gyroBD[3] = {0, 0, 0};
+float _gyrB[3] = {0, 0, 0};
+float _gyr[3] = {0, 0, 0};
+uint8_t gyroBuffer[14];
+int16_t rawMeasGyro[7];
+
+void setGyroFS(uint8_t fssel){
+
+	setBank(0);
+	uint8_t reg;
+	readRegisters(0x4F, 1, &reg);
+	reg = (fssel << 5) | (reg & 0x1F);
+	writeRegister(0x4F, reg);
+	_gyroScale = (2000.0f / (float)(1 << fssel)) / 32768.0f;
+	_gyroFS = fssel;
+}
+
+void calibrateGyro(){
+	const uint8_t current_fssel = _gyroFS;
+	setGyroFS(0x03);
+	_gyroBD[0] = 0;
+	_gyroBD[1] = 0;
+	_gyroBD[2] = 0;
+	for (size_t i=0; i < 1000; i++) {
+		AGT(gyroBuffer);
+		for (size_t i=0; i<7; i++) {
+			rawMeasGyro[i] = ((int16_t)gyroBuffer[i*2] << 8) | gyroBuffer[i*2+1];
+		}
+		for (size_t i=0; i<3; i++) {
+			_gyr[i] = (float)rawMeasGyro[i+4] / 16.4;
+		}
+		_gyroBD[0] += (_gyr[0] + _gyrB[0]) / 1000;
+		_gyroBD[1] += (_gyr[1] + _gyrB[1]) / 1000;
+		_gyroBD[2] += (_gyr[2] + _gyrB[2]) / 1000;
+		HAL_Delay(1);
+	}
+	_gyrB[0] = _gyroBD[0];
+	_gyrB[1] = _gyroBD[1];
+	_gyrB[2] = _gyroBD[2];
+	setGyroFS(current_fssel);
+}
+uint8_t _accelFS = 0;
+float _accelScale = 0.0;
+float _accBD[3] = {};
+uint8_t accelBuffer[14];
+float _acc[3] = {};
+float _accS[3] = {1.0f, 1.0f, 1.0f};
+float _accB[3] = {};
+int16_t rawMeasAccel[7];
+float _accMax[3] = {};
+float _accMin[3] = {};
+
+
+void setAccelFS(uint8_t fssel){
+	setBank(0);
+	uint8_t reg;
+	readRegisters(0x50, 1, &reg);
+	reg = (fssel << 5) | (reg & 0x1F);
+	writeRegister(0x50, reg);
+	_accelScale = (float)(1 << (4 - fssel)) / 32768.0f;
+	_accelFS = fssel;
+}
+
+void configureNotchFilter(){
+	uint8_t BW_SEL = 7;
+	uint32_t f_des = 1300;
+	double pi = 3.14159265;
+	double COSWZ = cos(2 * pi * f_des / 32);
+	int NF_COSWZ = 0;
+	bool NF_COSWZ_SEL = 0;
+	if(abs(COSWZ) <= 0.875){
+		NF_COSWZ_SEL = 0;
+		NF_COSWZ = round(COSWZ * 256);
+	}else{
+		NF_COSWZ_SEL = 1;
+		if(COSWZ > 0.875){
+			NF_COSWZ = round(8 * (1 - COSWZ) * 256);
+		}else{
+			NF_COSWZ = round(-8 * (1 + COSWZ) * 256);
+		}
+	}
+	setBank(1);
+	writeRegister(0x0F, (uint8_t)(NF_COSWZ & 0xFF));  // Lower byte for X-axis
+	writeRegister(0x10, (uint8_t)(NF_COSWZ & 0xFF));  // Lower byte for Y-axis
+	writeRegister(0x11, (uint8_t)(NF_COSWZ & 0xFF));  // Lower byte for Z-axis
+	writeRegister(0x12, (uint8_t)((NF_COSWZ >> 8) & 0x01));  // Upper bit for all axes
+
+	uint8_t reg_0x12;
+	readRegisters(0x12, 1, &reg_0x12);
+	// Modify only necessary bits (Bit 3 = X, Bit 4 = Y, Bit 5 = Z)
+	reg_0x12 &= ~(0b00111000);  // Clear bits 3, 4, 5
+	reg_0x12 |= (NF_COSWZ_SEL << 3) | (NF_COSWZ_SEL << 4) | (NF_COSWZ_SEL << 5);
+	writeRegister(0x12, reg_0x12);
+
+	// Set Notch Filter Bandwidth
+	writeRegister(0x13, BW_SEL << 4);
+//	writeRegister(0x0f, (uint8_t)(NF_COSWZ & 0xff));
+//	writeRegister(0x12, NF_COSWZ_SEL << 3);
+//
+//	writeRegister(0x10, (uint8_t)(NF_COSWZ & 0xff));
+//	writeRegister(0x12, NF_COSWZ_SEL << 4);
+//
+//	writeRegister(0x11, (uint8_t)(NF_COSWZ & 0xff));
+//	writeRegister(0x12, NF_COSWZ_SEL << 5);
+//
+//	writeRegister(0x13, BW_SEL << 4);
+//	writeRegister(0x0b, 0x00);
+
+	setBank(0);
+}
+
+typedef struct {
+    uint16_t bandwidth;   // 3dB Bandwidth (Hz)
+    uint8_t delt;         // ACCEL_AAF_DELT / GYRO_AAF_DELT
+    uint16_t deltsqr;     // ACCEL_AAF_DELTSQR / GYRO_AAF_DELTSQR
+    uint8_t bitshift;     // ACCEL_AAF_BITSHIFT / GYRO_AAF_BITSHIFT
+} AAF_Config;
+
+static const AAF_Config aaf_table[] = {
+    {42,   1,    1,   15}, {84,   2,    4,   13}, {126,  3,    9,   12},
+    {170,  4,   16,   11}, {213,  5,   25,   10}, {258,  6,   36,   10},
+    {303,  7,   49,    9}, {348,  8,   64,    9}, {394,  9,   81,    9},
+    {441, 10,  100,    8}, {488, 11,  122,    8}, {536, 12,  144,    8},
+    {585, 13,  170,    8}, {634, 14,  196,    7}, {684, 15,  224,    7},
+    {734, 16,  256,    7}, {785, 17,  288,    7}, {837, 18,  324,    7},
+    {890, 19,  360,    6}, {943, 20,  400,    6}, {997, 21,  440,    6},
+    {1051,22,  488,    6}, {1107,23,  528,    6}, {1163,24,  576,    6},
+    {1220,25,  624,    6}, {1277,26,  680,    6}, {1336,27,  736,    5},
+    {1395,28,  784,    5}, {1454,29,  848,    5}, {1515,30,  896,    5},
+    {1577,31,  960,    5}, {1639,32, 1024,    5}, {1702,33, 1088,    5},
+    {1766,34, 1152,    5}, {1830,35, 1232,    5}, {1896,36, 1296,    5},
+    {1962,37, 1376,    4}, {2029,38, 1440,    4}, {2097,39, 1536,    4},
+    {2166,40, 1600,    4}, {2235,41, 1696,    4}, {2306,42, 1760,    4},
+    {2377,43, 1856,    4}, {2449,44, 1952,    4}, {2522,45, 2016,    4},
+    {2596,46, 2112,    4}, {2671,47, 2208,    4}, {2746,48, 2304,    4},
+    {2823,49, 2400,    4}, {2900,50, 2496,    4}, {2978,51, 2592,    4},
+    {3057,52, 2720,    4}, {3137,53, 2816,    3}, {3217,54, 2944,    3},
+    {3299,55, 3008,    3}, {3381,56, 3136,    3}, {3464,57, 3264,    3},
+    {3548,58, 3392,    3}, {3633,59, 3456,    3}, {3718,60, 3584,    3},
+    {3805,61, 3712,    3}, {3892,62, 3840,    3}, {3979,63, 3968,    3}
+};
+
+static const AAF_Config *getAAFConfig(uint16_t bandwidth) {
+    const AAF_Config *best = &aaf_table[0];
+    for (size_t i = 0; i < sizeof(aaf_table)/sizeof(aaf_table[0]); i++) {
+        if (aaf_table[i].bandwidth >= bandwidth) {
+            best = &aaf_table[i];
+            break;
+        }
+    }
+    return best;
+}
+
+void setAntiAliasFilter(uint16_t bandwidth_hz, bool accel_enable, bool gyro_enable) {
+    const AAF_Config *cfg = getAAFConfig(bandwidth_hz);
+
+    // accel
+    setBank(2);
+
+    uint8_t reg03;
+    readRegisters(0x03, 1, &reg03);
+    reg03 &= ~0x7E;                         // Clear bits 6:1
+    reg03 |= (cfg->delt & 0x3F) << 1;       // ACCEL_AAF_DELT
+    if (!accel_enable)
+        reg03 |= 1 << 0;                    // ACCEL_AAF_DIS = 1
+    else
+        reg03 &= ~(1 << 0);                 // Enable AAF
+    writeRegister(0x03, reg03);
+
+    writeRegister(0x04, (uint8_t)(cfg->deltsqr & 0xFF));  // Lower 8 bits of DELTSQR
+    uint8_t reg05;
+    readRegisters(0x05, 1, &reg05);
+    reg05 &= 0x00;                          // Clear bits 7:0
+    reg05 |= ((cfg->deltsqr >> 8) & 0x0F);  // Upper 4 bits of DELTSQR
+    reg05 |= (cfg->bitshift << 4) & 0xF0;   // ACCEL_AAF_BITSHIFT
+    writeRegister(0x05, reg05);
+
+    // gyro
+    setBank(1);
+
+    uint8_t reg0C;
+    readRegisters(0x0C, 1, &reg0C);
+    reg0C &= ~0x3F;                        // Clear bits 5:0
+    reg0C |= (cfg->delt & 0x3F);           // GYRO_AAF_DELT
+    writeRegister(0x0C, reg0C);
+
+    writeRegister(0x0D, (uint8_t)(cfg->deltsqr & 0xFF));  // Lower 8 bits
+    uint8_t reg0E;
+    readRegisters(0x0E, 1, &reg0E);
+    reg0E &= 0x00;                         // Clear bits
+    reg0E |= ((cfg->deltsqr >> 8) & 0x0F); // Upper 4 bits
+    reg0E |= (cfg->bitshift << 4) & 0xF0;  // GYRO_AAF_BITSHIFT
+    writeRegister(0x0E, reg0E);
+
+    uint8_t reg0B;
+    readRegisters(0x0B, 1, &reg0B);
+    if (!gyro_enable)
+        reg0B |= (1 << 1);                 // Disable Gyro AAF
+    else
+        reg0B &= ~(1 << 1);                // Enable Gyro AAF
+    writeRegister(0x0B, reg0B);
+
+    setBank(0);
+}
+
+int begin(){
+	HAL_GPIO_WritePin(CS_GPIO_PORT, CS_PIN, GPIO_PIN_SET);
+	reset();
+	uint8_t address = whoAmI();
+	setLowNoiseMode();
+	setAccelFS(0b01101001);
+	configureNotchFilter();
+	setAntiAliasFilter(213, true, true);
+	calibrateGyro();
+	return address;
+}
+
+float alpha = 0.1;  // Adjust filtering strength
+float filtered_gyro_x = 0;  // Store previous value for X-axis
+float filtered_gyro_y = 0;  // Store previous value for Y-axis
+float filtered_gyro_z = 0;  // Store previous value for Z-axis
+
+// Low-pass filter function
+float lowPassFilter(float raw_value, int select) {
+	if(select == 0){
+		filtered_gyro_x = alpha * raw_value + (1 - alpha) * filtered_gyro_x;
+		    return filtered_gyro_x;
+	}
+	if(select == 1){
+		filtered_gyro_y = alpha * raw_value + (1 - alpha) * filtered_gyro_y;
+		return filtered_gyro_y;
+	}
+	filtered_gyro_z = alpha * raw_value + (1 - alpha) * filtered_gyro_z;
+	return filtered_gyro_z;
+}
+
+
+uint8_t myBuffer[14];
+int16_t rawMeas[7];
+double accel[4]; // x,y,z,magnitude
+double gyro[3];
+
+float test_roll = 0.0f;
+float test_pitch = 0.0f;
+float test_yaw = 0.0f;
+
+float ax = 0.0f;
+float ay = 0.0f;
+float az = 0.0f;
+float gx = 0.0f;
+float gy = 0.0f;
+float gz = 0.0f;
 
 /* USER CODE END PV */
 
@@ -112,6 +464,17 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
+//  uint8_t address = begin();
+////	printf("Gyro X: %.2f, Y: %.2f, Z: %.2f\r\n", gyro[0], gyro[1], gyro[2]);
+//
+//	uint8_t new_buffer[1];
+//	uint8_t new_buffer_accel[1];
+//
+//
+//	int sample = readRegisters(0x4F, 1, new_buffer);
+//	int sample_accel = readRegisters(0x50, 1, new_buffer_accel);
+
+	Mahony ahrs;
 
   /* USER CODE END 2 */
 
@@ -138,10 +501,51 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  AGT(myBuffer);
+	  	  for (size_t i=0; i<7; i++) {
+	  	      rawMeas[i] = ((int16_t)myBuffer[i*2] << 8) | myBuffer[i*2+1];
+	  	   }
+	  	  int16_t temperature = rawMeas[0] / 132.48f + 25;
+	  	  for (size_t i=0; i<3; i++) {
+	  		  accel[i] = (float)rawMeas[i+1] / 2048.0 * 9.81 / 2.0;
+	  	  }
 
+	  	  accel[3] = pow(((accel[0]*accel[0]) + (accel[1]*accel[1]) + (accel[2]*accel[2])), 0.5);
+
+	  	  for (size_t i=0; i<3; i++) {
+	  		  gyro[i] = lowPassFilter((float)rawMeas[i+4] / 16.4, i);
+	  	  }
+
+	  	      // Convert to physical units
+	  	  	  // ENU
+	  //	      ax = (float)accel[0];                    // g
+	  //	      ay = (float)accel[1];
+	  //	      az = (float)-accel[2];
+	  //	      gx = ((float)-gyro[0]);        // rad/s
+	  //	      gy = ((float)-gyro[1]);
+	  //	      gz = ((float)gyro[2]);
+
+	  	      // NED
+	  	      ax = (float)accel[1];                    // g
+	  		  ay = (float)accel[0];
+	  		  az = ((float)accel[2]);
+	  		  gx = ((float)-gyro[1]);        // rad/s
+	  		  gy = ((float)-gyro[0]);
+	  		  gz = ((float)-gyro[2]);
+
+	  		// Update Mahony filter
+	  		ahrs.updateIMU(gx, gy, gz, ax, ay, az);
+
+	  		// Get Euler angles
+	  		test_roll  = ahrs.getRoll();
+	  		test_pitch = ahrs.getPitch();
+	  		test_yaw   = ahrs.getYaw();
+	  	      HAL_Delay(50);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+//	  BSP_LED_Toggle(LED_GREEN);  // Toggle LED state
+//	  HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }

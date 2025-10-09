@@ -17,7 +17,6 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <mahony_ahrs.h>
 #include "main.h"
 #include "adc.h"
 #include "rtc.h"
