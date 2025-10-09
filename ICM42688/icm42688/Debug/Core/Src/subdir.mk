@@ -20,22 +20,6 @@ C_SRCS += \
 ../Core/Src/usart.c \
 ../Core/Src/usb.c 
 
-C_DEPS += \
-./Core/Src/adc.d \
-./Core/Src/gpio.d \
-./Core/Src/mahony_ahrs.d \
-./Core/Src/main.d \
-./Core/Src/rtc.d \
-./Core/Src/spi.d \
-./Core/Src/stm32l5xx_hal_msp.d \
-./Core/Src/stm32l5xx_it.d \
-./Core/Src/syscalls.d \
-./Core/Src/sysmem.d \
-./Core/Src/system_stm32l5xx.d \
-./Core/Src/ucpd.d \
-./Core/Src/usart.d \
-./Core/Src/usb.d 
-
 OBJS += \
 ./Core/Src/adc.o \
 ./Core/Src/gpio.o \
@@ -51,6 +35,22 @@ OBJS += \
 ./Core/Src/ucpd.o \
 ./Core/Src/usart.o \
 ./Core/Src/usb.o 
+
+C_DEPS += \
+./Core/Src/adc.d \
+./Core/Src/gpio.d \
+./Core/Src/mahony_ahrs.d \
+./Core/Src/main.d \
+./Core/Src/rtc.d \
+./Core/Src/spi.d \
+./Core/Src/stm32l5xx_hal_msp.d \
+./Core/Src/stm32l5xx_it.d \
+./Core/Src/syscalls.d \
+./Core/Src/sysmem.d \
+./Core/Src/system_stm32l5xx.d \
+./Core/Src/ucpd.d \
+./Core/Src/usart.d \
+./Core/Src/usb.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

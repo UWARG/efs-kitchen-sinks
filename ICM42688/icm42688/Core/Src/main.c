@@ -32,6 +32,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <math.h>
+#include <mahony_ahrs.h>
 
 
 #define CS_PIN GPIO_PIN_4

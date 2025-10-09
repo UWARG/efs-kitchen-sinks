@@ -38,40 +38,6 @@ C_SRCS += \
 ../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_usb.c \
 ../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_utils.c 
 
-C_DEPS += \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_adc.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_adc_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_cortex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_dma.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_dma_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_exti.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_flash.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_flash_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_flash_ramfunc.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_gpio.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_i2c.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_i2c_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_icache.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pcd.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pcd_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pwr.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pwr_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_rcc.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_rcc_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_rtc.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_rtc_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_spi.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_spi_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_uart.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_uart_ex.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_dma.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_exti.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_gpio.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_ucpd.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_usb.d \
-./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_utils.d 
-
 OBJS += \
 ./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal.o \
 ./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_adc.o \
@@ -105,6 +71,40 @@ OBJS += \
 ./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_ucpd.o \
 ./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_usb.o \
 ./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_utils.o 
+
+C_DEPS += \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_adc.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_adc_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_cortex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_dma.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_dma_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_exti.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_flash.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_flash_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_flash_ramfunc.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_gpio.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_i2c.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_i2c_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_icache.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pcd.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pcd_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pwr.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pwr_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_rcc.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_rcc_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_rtc.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_rtc_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_spi.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_spi_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_uart.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_uart_ex.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_dma.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_exti.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_gpio.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_ucpd.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_usb.d \
+./Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_ll_utils.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

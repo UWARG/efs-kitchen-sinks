@@ -9,15 +9,15 @@ C_SRCS += \
 ../Core/Fusion/FusionCompass.c \
 ../Core/Fusion/FusionOffset.c 
 
-C_DEPS += \
-./Core/Fusion/FusionAhrs.d \
-./Core/Fusion/FusionCompass.d \
-./Core/Fusion/FusionOffset.d 
-
 OBJS += \
 ./Core/Fusion/FusionAhrs.o \
 ./Core/Fusion/FusionCompass.o \
 ./Core/Fusion/FusionOffset.o 
+
+C_DEPS += \
+./Core/Fusion/FusionAhrs.d \
+./Core/Fusion/FusionCompass.d \
+./Core/Fusion/FusionOffset.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
