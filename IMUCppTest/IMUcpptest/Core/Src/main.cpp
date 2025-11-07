@@ -49,6 +49,8 @@ RTC_HandleTypeDef hrtc;
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
+DMA_HandleTypeDef hdma_spi2_rx;
+DMA_HandleTypeDef hdma_spi2_tx;
 
 UART_HandleTypeDef huart2;
 
@@ -65,26 +67,28 @@ float az = 0.0f;
 float gx = 0.0f;
 float gy = 0.0f;
 float gz = 0.0f;
+bool interrupt = true;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_DMA_Init(void);
 static void MX_GPIO_Init(void);
 static void MX_ICACHE_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_UCPD1_Init(void);
-static void MX_USART2_UART_Init(void);
 static void MX_USB_PCD_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+IMU imu(&hspi2, GPIOD, GPIO_PIN_0);
 /* USER CODE END 0 */
 
 /**
@@ -115,19 +119,20 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
+  MX_DMA_Init();
   MX_GPIO_Init();
   MX_ICACHE_Init();
   MX_ADC1_Init();
   MX_RTC_Init();
   MX_SPI1_Init();
   MX_UCPD1_Init();
-  MX_USART2_UART_Init();
   MX_USB_PCD_Init();
   MX_SPI2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  IMU imu(&hspi2, GPIOD, GPIO_PIN_0);
-    Mahony ahrs;
-    uint8_t addr = imu.begin();
+
+          Mahony ahrs;
+          uint8_t addr = imu.begin();
   /* USER CODE END 2 */
 
   /* Initialize leds */
@@ -154,11 +159,11 @@ int main(void)
   while (1)
   {
 	  imu.getAccelGyro(ax, ay, az, gx, gy, gz);
-	  	  	  ahrs.updateIMU(gx, gy, gz, ax, ay, az);
-	  	  	  test_roll = ahrs.getRoll();
-	  	  	  test_pitch = ahrs.getPitch();
-	  	  	  test_yaw = ahrs.getYaw();
-	  	  	  HAL_Delay(50);
+	  	  	  	  	  ahrs.updateIMU(gx, gy, gz, ax, ay, az);
+	  	  	  	  	  test_roll = ahrs.getRoll();
+	  	  	  	  	  test_pitch = ahrs.getPitch();
+	  	  	  	  	  test_yaw = ahrs.getYaw();
+	  	  	  	  	  HAL_Delay(50);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -576,6 +581,26 @@ static void MX_USB_PCD_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMAMUX1_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -635,7 +660,13 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+//void HAL_SPI_RxHalfCpltCallback (SPI_HandleTypeDef * hspi) {
+//    if (hspi == &hspi2) {
+//        interrupt = !interrupt;
+//        HAL_Delay(1000);
+//        // Avoid using HAL_Delay inside interrupt context!
+//    }
+//}
 /* USER CODE END 4 */
 
 /**

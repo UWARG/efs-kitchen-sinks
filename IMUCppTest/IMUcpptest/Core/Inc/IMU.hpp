@@ -50,6 +50,8 @@ private:
 	float _filteredGyro[3];
 	float _alpha;
 
+	uint8_t accel_gyro_buffer[14];
+
 
 public:
 	IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin);

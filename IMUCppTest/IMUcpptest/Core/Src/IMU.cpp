@@ -31,8 +31,8 @@ int IMU::readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest) {
     HAL_StatusTypeDef ret;
 
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
-    ret = HAL_SPI_TransmitReceive(_spi, &tx, &dummy_rx, 1, HAL_MAX_DELAY);
-    ret = HAL_SPI_TransmitReceive(_spi, dummy_tx, dest, count, HAL_MAX_DELAY);
+    ret = HAL_SPI_TransmitReceive_DMA(_spi, &tx, &dummy_rx, 1);
+    ret = HAL_SPI_TransmitReceive_DMA(_spi, dummy_tx, dest, count);
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
 
     return (ret == HAL_OK);
@@ -41,7 +41,7 @@ int IMU::readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest) {
 void IMU::writeRegister(uint8_t subAddress, uint8_t data) {
     uint8_t tx_buf[2] = {subAddress, data};
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+    HAL_SPI_Transmit_DMA(_spi, tx_buf, 2);
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
 }
 
@@ -309,14 +309,14 @@ int IMU::begin() {
 }
 
 void IMU::getAccelGyro(float& ax, float& ay, float& az, float& gx, float& gy, float& gz) {
-    uint8_t buffer[14];
+    // uint8_t buffer[14];
     int16_t raw[7];
     float acc_temp[3];
     float gyr_temp[3];
-    readAGT(buffer);
+    readAGT(accel_gyro_buffer);
 
     for (int i = 0; i < 7; i++)
-        raw[i] = ((int16_t)buffer[i*2] << 8) | buffer[i*2+1];
+        raw[i] = ((int16_t)accel_gyro_buffer[i*2] << 8) | accel_gyro_buffer[i*2+1];
 
     acc_temp[0] = (float)raw[1] / 2048.0f * 9.81f / 2.0f;
     acc_temp[1] = (float)raw[2] / 2048.0f * 9.81f / 2.0f;
