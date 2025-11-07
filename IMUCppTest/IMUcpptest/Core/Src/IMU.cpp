@@ -31,8 +31,8 @@ int IMU::readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest) {
     HAL_StatusTypeDef ret;
 
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
-    ret = HAL_SPI_TransmitReceive_DMA(_spi, &tx, &dummy_rx, 1);
-    ret = HAL_SPI_TransmitReceive_DMA(_spi, dummy_tx, dest, count);
+    ret = HAL_SPI_TransmitReceive(_spi, &tx, &dummy_rx, 1, HAL_MAX_DELAY);
+    ret = HAL_SPI_TransmitReceive(_spi, dummy_tx, dest, count, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
 
     return (ret == HAL_OK);
@@ -41,7 +41,7 @@ int IMU::readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest) {
 void IMU::writeRegister(uint8_t subAddress, uint8_t data) {
     uint8_t tx_buf[2] = {subAddress, data};
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit_DMA(_spi, tx_buf, 2);
+    HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
 }
 
