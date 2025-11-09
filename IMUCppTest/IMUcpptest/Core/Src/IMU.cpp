@@ -95,7 +95,6 @@ void IMU::readSensorRegisters(float& ax, float& ay, float& az, float& gx, float&
         case 0:
             csLow();
             HAL_SPI_TransmitReceive_IT(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
-            // txRxCallback();
             state = 1;
             break;
         case 1:
@@ -152,16 +151,6 @@ int IMU::init() {
     // calibrateGyro();
     return address;
 }
-
-// void IMU::txCallback() {
-//     csHigh();
-//     spi_tx_flag = 1;
-// }
-
-// void IMU::rxCallback() {
-//     csHigh();
-//     spi_rx_flag = 1;
-// }
 
 void IMU::txRxCallback() {
     csHigh();

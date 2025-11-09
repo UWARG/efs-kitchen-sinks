@@ -17,10 +17,7 @@ private:
 
 	uint8_t curr_register_bank = 0;
 	uint8_t state = 0;
-	// volatile uint8_t spi_tx_flag = 0;
-	// volatile uint8_t spi_rx_flag = 0;
 	volatile uint8_t spi_tx_rx_flag = 0;
-	// uint8_t curr_register = 0;
 
 	SPI_HandleTypeDef* _spi;
 	GPIO_TypeDef* _csPort;
@@ -84,9 +81,8 @@ public:
 
 	// Data reading
 	void readSensorRegisters(float& ax, float& ay, float& az, float& gx, float& gy, float& gz); // should be non-blocking
-	// void getData(float& ax, float& ay, float& az, float& gx, float& gy, float& gz);
-	// void txCallback();
-	// void rxCallback();
+
+	// put this in void HAL_SPI_TxRxCpltCallback (SPI_HandleTypeDef * hspi)
 	void txRxCallback();
 };
 
