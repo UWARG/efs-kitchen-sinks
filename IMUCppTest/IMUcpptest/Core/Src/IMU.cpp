@@ -94,10 +94,10 @@ void IMU::readSensorRegisters(float& ax, float& ay, float& az, float& gx, float&
     switch(state) {
         case 0:
             csLow();
-            HAL_SPI_TransmitReceive_IT(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
+            HAL_SPI_TransmitReceive_DMA(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
             state = 1;
             break;
-        case 1:
+        case 1: // busy waiting
             if (spi_tx_rx_flag) {
                 spi_tx_rx_flag = 0;
 
@@ -182,33 +182,6 @@ void IMU::processData(float& ax, float& ay, float& az, float& gx, float& gy, flo
     gz = ((float)-gyr_temp[2]);
 }
 
-
-// void IMU::getData(float& ax, float& ay, float& az, float& gx, float& gy, float& gz) {
-//     // uint8_t buffer[14];
-//     int16_t raw[7];
-//     float acc_temp[3];
-//     float gyr_temp[3];
-//     readSensorRegisters();
-
-//     for (int i = 0; i < 7; i++)
-//         raw[i] = ((int16_t)imu_rx_buffer[i*2] << 8) | imu_rx_buffer[i*2+1];
-
-//     acc_temp[0] = (float)raw[1] / 2048.0f * 9.81f / 2.0f;
-//     acc_temp[1] = (float)raw[2] / 2048.0f * 9.81f / 2.0f;
-//     acc_temp[2] = (float)raw[3] / 2048.0f * 9.81f / 2.0f;
-
-//     gyr_temp[0] = lowPassFilter((float)raw[4] / 16.4f, 0);
-//     gyr_temp[1] = lowPassFilter((float)raw[5] / 16.4f, 1);
-//     gyr_temp[2] = lowPassFilter((float)raw[6] / 16.4f, 2);
-
-//     // NED
-//     ax = (float)acc_temp[1];
-//     ay = (float)acc_temp[0];
-//     az = ((float)acc_temp[2]);
-//     gx = ((float)-gyr_temp[1]);
-//     gy = ((float)-gyr_temp[0]);
-//     gz = ((float)-gyr_temp[2]);
-// }
 
 // TODO: verify correctness of below functions
 /*

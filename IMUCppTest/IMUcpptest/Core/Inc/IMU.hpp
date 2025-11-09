@@ -13,19 +13,19 @@
 
 class IMU {
 private:
+	SPI_HandleTypeDef* _spi;
+	GPIO_TypeDef* _csPort;
+	uint16_t _csPin;
+
 	inline static constexpr int RX_BUFFER_SIZE = 15; // inline static constexpr so it doesn't polluate namespace
+	uint8_t imu_tx_buffer[RX_BUFFER_SIZE]; // only first bit register addr to read sensor data, rest 0
+	uint8_t imu_rx_buffer[RX_BUFFER_SIZE]; // first byte is dummy, next 14 bytes are data received
 
 	uint8_t curr_register_bank = 0;
 	uint8_t state = 0;
 	volatile uint8_t spi_tx_rx_flag = 0;
 
-	SPI_HandleTypeDef* _spi;
-	GPIO_TypeDef* _csPort;
-	uint16_t _csPin;
-
-	uint8_t imu_tx_buffer[RX_BUFFER_SIZE]; // only first bit register addr to read sensor data, rest 0
-	uint8_t imu_rx_buffer[RX_BUFFER_SIZE]; // first byte is dummy, next 14 bytes are data received
-
+	
 	// Utility functions
 	void writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data); // blocking
 	int readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data); // blocking
@@ -43,7 +43,6 @@ private:
 	// Filtering
 	float lowPassFilter(float raw_value, int select);
 	
-
 	// Internal variables
 	float _alpha;
 	float _filteredGyro[3];
