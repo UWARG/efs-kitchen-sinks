@@ -1,19 +1,14 @@
-C:\ST\STM32CubeIDE_1.17.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344\tools\bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/include/c++/13.3.1/bits/std_abs.h:71:3:constexpr double std::abs(double)	1
-../Core/Src/IMU.cpp:16:1:IMU::IMU(SPI_HandleTypeDef*, GPIO_TypeDef*, uint16_t)	1
-../Core/Src/IMU.cpp:26:5:int IMU::readRegisters(uint8_t, uint8_t, uint8_t*)	1
-../Core/Src/IMU.cpp:41:6:void IMU::writeRegister(uint8_t, uint8_t)	1
-../Core/Src/IMU.cpp:48:5:int IMU::setBank(uint8_t)	1
-../Core/Src/IMU.cpp:53:6:void IMU::setLowNoiseMode()	1
-../Core/Src/IMU.cpp:57:6:void IMU::reset()	1
-../Core/Src/IMU.cpp:63:9:uint8_t IMU::whoAmI()	1
-../Core/Src/IMU.cpp:69:6:void IMU::readAGT(uint8_t*)	1
-../Core/Src/IMU.cpp:73:7:float IMU::lowPassFilter(float, int)	1
-../Core/Src/IMU.cpp:78:6:void IMU::setGyroFS(uint8_t)	1
-../Core/Src/IMU.cpp:88:6:void IMU::setAccelFS(uint8_t)	1
-../Core/Src/IMU.cpp:98:6:void IMU::calibrateGyro()	5
-../Core/Src/IMU.cpp:120:6:void IMU::calibrateAccel()	2
-../Core/Src/IMU.cpp:165:6:void IMU::configureNotchFilter()	4
-../Core/Src/IMU.cpp:235:26:const AAF_Config* getAAFConfig(uint16_t)	3
-../Core/Src/IMU.cpp:246:6:void IMU::setAntiAliasFilter(uint16_t, bool, bool)	3
-../Core/Src/IMU.cpp:299:5:int IMU::begin()	1
-../Core/Src/IMU.cpp:311:6:void IMU::getAccelGyro(float&, float&, float&, float&, float&, float&)	2
+../Core/Src/IMU.cpp:25:1:IMU::IMU(SPI_HandleTypeDef*, GPIO_TypeDef*, uint16_t)	1
+../Core/Src/IMU.cpp:39:6:void IMU::csLow()	1
+../Core/Src/IMU.cpp:44:6:void IMU::csHigh()	1
+../Core/Src/IMU.cpp:49:5:int IMU::setBank(uint8_t)	1
+../Core/Src/IMU.cpp:60:5:int IMU::readRegister(uint8_t, uint8_t, uint8_t*)	2
+../Core/Src/IMU.cpp:77:6:void IMU::writeRegister(uint8_t, uint8_t, uint8_t)	2
+../Core/Src/IMU.cpp:88:6:void IMU::readSensorRegisters(float&, float&, float&, float&, float&, float&)	5
+../Core/Src/IMU.cpp:118:6:void IMU::setLowNoiseMode()	1
+../Core/Src/IMU.cpp:123:6:void IMU::reset()	1
+../Core/Src/IMU.cpp:130:9:uint8_t IMU::whoAmI()	1
+../Core/Src/IMU.cpp:137:7:float IMU::lowPassFilter(float, int)	1
+../Core/Src/IMU.cpp:143:5:int IMU::init()	1
+../Core/Src/IMU.cpp:166:6:void IMU::txRxCallback()	1
+../Core/Src/IMU.cpp:171:6:void IMU::processData(float&, float&, float&, float&, float&, float&)	2

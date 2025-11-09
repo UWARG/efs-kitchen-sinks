@@ -127,8 +127,8 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-          Mahony ahrs;
-          uint8_t addr = imu.begin();
+  Mahony ahrs;
+  uint8_t addr = imu.init();
   /* USER CODE END 2 */
 
   /* Initialize leds */
@@ -154,12 +154,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  imu.getAccelGyro(ax, ay, az, gx, gy, gz);
-	  	  	  	  	  ahrs.updateIMU(gx, gy, gz, ax, ay, az);
-	  	  	  	  	  test_roll = ahrs.getRoll();
-	  	  	  	  	  test_pitch = ahrs.getPitch();
-	  	  	  	  	  test_yaw = ahrs.getYaw();
-	  	  	  	  	  HAL_Delay(50);
+	  imu.readSensorRegisters(ax, ay, az, gx, gy, gz);
+    ahrs.updateIMU(gx, gy, gz, ax, ay, az);
+    test_roll = ahrs.getRoll();
+    test_pitch = ahrs.getPitch();
+    test_yaw = ahrs.getYaw();
+    HAL_Delay(50);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -636,30 +636,25 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-//void HAL_SPI_RxHalfCpltCallback (SPI_HandleTypeDef * hspi) {
-//    if (hspi == &hspi2) {
-//        interrupt = !interrupt;
-//        HAL_Delay(1000);
-//        // Avoid using HAL_Delay inside interrupt context!
-//    }
-//}
-//void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
-//{
-//  /* Check if the callback is for the correct SPI instance if you have multiple */
-//  if (hspi == &hspi2) // Replace SPI1 with your SPI instance
-//  {
-//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
-//  }
-//}
-//
-//void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
-//{
-//  /* Check if the callback is for the correct SPI instance if you have multiple */
-//  if (hspi == &hspi2) // Replace SPI1 with your SPI instance
-//  {
-//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
-//  }
-//}
+// void HAL_SPI_TxCpltCallback (SPI_HandleTypeDef * hspi)
+// {
+//   if (hspi->Instance == SPI2) {
+//       imu.txCallback();
+//   }
+// }
+
+// void HAL_SPI_RxCpltCallback (SPI_HandleTypeDef * hspi)
+// {
+//   if (hspi->Instance == SPI2) {
+//       imu.rxCallback();
+//   }
+// }
+void HAL_SPI_TxRxCpltCallback (SPI_HandleTypeDef * hspi)
+{
+  if (hspi->Instance == SPI2) {
+      imu.txRxCallback();
+  }
+}
 /* USER CODE END 4 */
 
 /**

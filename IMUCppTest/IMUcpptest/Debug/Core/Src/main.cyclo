@@ -14,6 +14,7 @@
 ../Core/Src/main.cpp:503:13:void MX_USART2_UART_Init()	5
 ../Core/Src/main.cpp:551:13:void MX_USB_PCD_Init()	2
 ../Core/Src/main.cpp:584:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:669:6:void Error_Handler()	1
-../Core/Src/main.cpp:678:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:678:1:cpp)	1
+../Core/Src/main.cpp:652:6:void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef*)	2
+../Core/Src/main.cpp:664:6:void Error_Handler()	1
+../Core/Src/main.cpp:673:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:673:1:cpp)	1

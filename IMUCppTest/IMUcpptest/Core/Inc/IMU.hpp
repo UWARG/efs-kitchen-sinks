@@ -9,21 +9,51 @@
 #include <string.h>
 #include <stdbool.h>
 #include <math.h>
+#include <cstdint>
 
 class IMU {
 private:
+	inline static constexpr int RX_BUFFER_SIZE = 15; // inline static constexpr so it doesn't polluate namespace
+
+	uint8_t curr_register_bank = 0;
+	uint8_t state = 0;
+	// volatile uint8_t spi_tx_flag = 0;
+	// volatile uint8_t spi_rx_flag = 0;
+	volatile uint8_t spi_tx_rx_flag = 0;
+	// uint8_t curr_register = 0;
+
 	SPI_HandleTypeDef* _spi;
 	GPIO_TypeDef* _csPort;
 	uint16_t _csPin;
 
-	// Internal helper functions
-	void writeRegister(uint8_t subAddress, uint8_t data);
-	int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
-	int setBank(uint8_t bank);
-	void setLowNoiseMode();
-	void reset();
-	void readAGT(uint8_t* dataBuffer);
+	uint8_t imu_tx_buffer[RX_BUFFER_SIZE]; // only first bit register addr to read sensor data, rest 0
+	uint8_t imu_rx_buffer[RX_BUFFER_SIZE]; // first byte is dummy, next 14 bytes are data received
 
+	// Utility functions
+	void writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data); // blocking
+	int readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data); // blocking
+	
+	void csLow();
+	void csHigh();
+	int setBank(uint8_t bank);
+	void reset();
+	uint8_t whoAmI();
+	void processData(float& ax, float& ay, float& az, float& gx, float& gy, float& gz);
+
+	// Configuration
+	void setLowNoiseMode();
+
+	// Filtering
+	float lowPassFilter(float raw_value, int select);
+	
+
+	// Internal variables
+	float _alpha;
+	float _filteredGyro[3];
+
+	// TODO: below code needs to be tested and verified
+
+	/*
 	// Calibration
 	void calibrateGyro();
 	void calibrateAccel();
@@ -31,12 +61,8 @@ private:
 	// Configuration
 	void setAccelFS(uint8_t fssel);
 	void setGyroFS(uint8_t fssel);
-	
-	// Utility
-	uint8_t whoAmI();
 
 	// Filtering
-	float lowPassFilter(float raw_value, int select);
 	void configureNotchFilter();
 	void setAntiAliasFilter(uint16_t bandwidth_hz, bool accel_enable, bool gyro_enable);
 
@@ -47,20 +73,21 @@ private:
 	uint8_t _accelFS;
 	float _gyrB[3]; // currently not used to correct readings
 	float _accB[3]; // currently not used to correct readings
-	float _filteredGyro[3];
-	float _alpha;
-
-	uint8_t accel_gyro_buffer[14];
+	*/
 
 
 public:
 	IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin);
 
 	// Initialization
-	int begin();
+	int init();
 
 	// Data reading
-	void getAccelGyro(float& ax, float& ay, float& az, float& gx, float& gy, float& gz);
+	void readSensorRegisters(float& ax, float& ay, float& az, float& gx, float& gy, float& gz); // should be non-blocking
+	// void getData(float& ax, float& ay, float& az, float& gx, float& gy, float& gz);
+	// void txCallback();
+	// void rxCallback();
+	void txRxCallback();
 };
 
 #endif
