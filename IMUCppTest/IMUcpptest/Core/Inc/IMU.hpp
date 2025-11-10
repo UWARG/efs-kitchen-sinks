@@ -23,7 +23,6 @@ private:
 	uint8_t imu_rx_buffer[RX_BUFFER_SIZE]; // first byte is dummy, next 14 bytes are data received
 
 	uint8_t curr_register_bank = 5; // invalid initial state
-	uint8_t state = 0;
 	volatile uint8_t spi_tx_rx_flag = 1; // set to 1 to initiate first read
 	IMUData_t imu_data = {}; // zero-initialize all floats
 
