@@ -47,6 +47,9 @@ void IMU::csHigh() {
 
 
 int IMU::setBank(uint8_t bank) {
+    if (curr_register_bank == bank) {
+        return 1;
+    }
     uint8_t tx_buf[2] = {REG_BANK_SEL, bank};
     csLow();
     HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
@@ -58,9 +61,9 @@ int IMU::setBank(uint8_t bank) {
 
 
 int IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
-    if (curr_register_bank != bank) {
-        setBank(bank);
-    }
+    
+    setBank(bank);
+    
     uint8_t tx[2] = {register_addr | 0b10000000, 0}; // set 8-th bit to 1 for read, page 53
     uint8_t rx[2] = {0, 0};
 
@@ -75,9 +78,8 @@ int IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
 
 
 void IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
-    if (curr_register_bank != bank) {
-        setBank(bank);
-    }
+    
+    setBank(bank);
     uint8_t tx_buf[2] = {register_addr, data};
     csLow();
     HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
@@ -86,28 +88,15 @@ void IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
 
 
 IMUData_t IMU::readSensorRegisters() {
+    setBank(0);
 
-    if (curr_register_bank != 0) {
-        setBank(0);
-    }
+    if (spi_tx_rx_flag) {
+        spi_tx_rx_flag = 0;
 
-    switch(state) {
-        case 0:
-            csLow();
-            HAL_SPI_TransmitReceive_DMA(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
-            state = 1;
-            break;
-        case 1: // busy waiting
-            if (spi_tx_rx_flag) {
-                spi_tx_rx_flag = 0;
+        processData();
 
-                processData();
-
-                state = 0;
-            }
-            break;
-        default:
-            break;
+        csLow();
+        HAL_SPI_TransmitReceive_DMA(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
     }
 
     return imu_data;

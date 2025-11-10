@@ -1,14 +1,14 @@
 ../Core/Src/IMU.cpp:25:1:IMU::IMU(SPI_HandleTypeDef*, GPIO_TypeDef*, uint16_t)	1
 ../Core/Src/IMU.cpp:39:6:void IMU::csLow()	1
 ../Core/Src/IMU.cpp:44:6:void IMU::csHigh()	1
-../Core/Src/IMU.cpp:49:5:int IMU::setBank(uint8_t)	1
-../Core/Src/IMU.cpp:60:5:int IMU::readRegister(uint8_t, uint8_t, uint8_t*)	2
-../Core/Src/IMU.cpp:77:6:void IMU::writeRegister(uint8_t, uint8_t, uint8_t)	2
-../Core/Src/IMU.cpp:88:11:IMUData_t IMU::readSensorRegisters()	5
-../Core/Src/IMU.cpp:117:6:void IMU::setLowNoiseMode()	1
-../Core/Src/IMU.cpp:122:6:void IMU::reset()	1
-../Core/Src/IMU.cpp:129:9:uint8_t IMU::whoAmI()	1
-../Core/Src/IMU.cpp:136:7:float IMU::lowPassFilter(float, int)	1
-../Core/Src/IMU.cpp:142:5:int IMU::init()	1
-../Core/Src/IMU.cpp:155:6:void IMU::txRxCallback()	1
-../Core/Src/IMU.cpp:160:6:void IMU::processData()	2
+../Core/Src/IMU.cpp:49:5:int IMU::setBank(uint8_t)	2
+../Core/Src/IMU.cpp:63:5:int IMU::readRegister(uint8_t, uint8_t, uint8_t*)	1
+../Core/Src/IMU.cpp:80:6:void IMU::writeRegister(uint8_t, uint8_t, uint8_t)	1
+../Core/Src/IMU.cpp:90:11:IMUData_t IMU::readSensorRegisters()	2
+../Core/Src/IMU.cpp:106:6:void IMU::setLowNoiseMode()	1
+../Core/Src/IMU.cpp:111:6:void IMU::reset()	1
+../Core/Src/IMU.cpp:118:9:uint8_t IMU::whoAmI()	1
+../Core/Src/IMU.cpp:125:7:float IMU::lowPassFilter(float, int)	1
+../Core/Src/IMU.cpp:131:5:int IMU::init()	1
+../Core/Src/IMU.cpp:144:6:void IMU::txRxCallback()	1
+../Core/Src/IMU.cpp:149:6:void IMU::processData()	2
