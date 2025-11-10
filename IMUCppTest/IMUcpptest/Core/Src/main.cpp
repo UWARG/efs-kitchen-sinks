@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "MahonyAHRS.hpp"
 #include "IMU.hpp"
+#include "imu_datatypes.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,13 +62,7 @@ float test_roll = 0.0f;
 float test_pitch = 0.0f;
 float test_yaw = 0.0f;
 
-float ax = 0.0f;
-float ay = 0.0f;
-float az = 0.0f;
-float gx = 0.0f;
-float gy = 0.0f;
-float gz = 0.0f;
-bool interrupt = true;
+IMUData_t imu_data = {};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -158,8 +153,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  imu.readSensorRegisters(ax, ay, az, gx, gy, gz);
-    ahrs.updateIMU(gx, gy, gz, ax, ay, az);
+	  imu_data = imu.readSensorRegisters();
+    ahrs.updateIMU(imu_data.xgyro, imu_data.ygyro, imu_data.zgyro, imu_data.xacc, imu_data.yacc, imu_data.zacc);
     test_roll = ahrs.getRoll();
     test_pitch = ahrs.getPitch();
     test_yaw = ahrs.getYaw();

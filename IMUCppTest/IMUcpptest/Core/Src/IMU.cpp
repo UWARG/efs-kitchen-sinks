@@ -85,7 +85,7 @@ void IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
 }
 
 
-void IMU::readSensorRegisters(float& ax, float& ay, float& az, float& gx, float& gy, float& gz) {
+IMUData_t IMU::readSensorRegisters() {
 
     if (curr_register_bank != 0) {
         setBank(0);
@@ -101,7 +101,7 @@ void IMU::readSensorRegisters(float& ax, float& ay, float& az, float& gx, float&
             if (spi_tx_rx_flag) {
                 spi_tx_rx_flag = 0;
 
-                processData(ax, ay, az, gx, gy, gz);
+                processData();
 
                 state = 0;
             }
@@ -110,7 +110,7 @@ void IMU::readSensorRegisters(float& ax, float& ay, float& az, float& gx, float&
             break;
     }
 
-    return;
+    return imu_data;
 }
 
 
@@ -157,7 +157,7 @@ void IMU::txRxCallback() {
     spi_tx_rx_flag = 1;
 }
 
-void IMU::processData(float& ax, float& ay, float& az, float& gx, float& gy, float& gz) {
+void IMU::processData() {
     int16_t raw[7];
     float acc_temp[3];
     float gyr_temp[3];
@@ -174,12 +174,12 @@ void IMU::processData(float& ax, float& ay, float& az, float& gx, float& gy, flo
     gyr_temp[2] = lowPassFilter((float)raw[6] / 16.4f, 2);
 
     // NED
-    ax = (float)acc_temp[1];
-    ay = (float)acc_temp[0];
-    az = ((float)acc_temp[2]);
-    gx = ((float)-gyr_temp[1]);
-    gy = ((float)-gyr_temp[0]);
-    gz = ((float)-gyr_temp[2]);
+    imu_data.xacc = (float)acc_temp[1];
+    imu_data.yacc = (float)acc_temp[0];
+    imu_data.zacc = ((float)acc_temp[2]);
+    imu_data.xgyro = ((float)-gyr_temp[1]);
+    imu_data.ygyro = ((float)-gyr_temp[0]);
+    imu_data.zgyro = ((float)-gyr_temp[2]);
 }
 
 

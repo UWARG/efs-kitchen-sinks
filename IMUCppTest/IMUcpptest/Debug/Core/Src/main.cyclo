@@ -3,19 +3,19 @@
 ../Core/Inc/MahonyAHRS.hpp:37:8:float Mahony::getRoll()	1
 ../Core/Inc/MahonyAHRS.hpp:40:8:float Mahony::getPitch()	1
 ../Core/Inc/MahonyAHRS.hpp:43:8:float Mahony::getYaw()	1
-../Core/Src/main.cpp:98:5:int main()	2
-../Core/Src/main.cpp:178:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:239:13:void MX_ADC1_Init()	4
-../Core/Src/main.cpp:306:13:void MX_ICACHE_Init()	3
-../Core/Src/main.cpp:338:13:void MX_RTC_Init()	3
-../Core/Src/main.cpp:385:13:void MX_SPI1_Init()	2
-../Core/Src/main.cpp:425:13:void MX_SPI2_Init()	2
-../Core/Src/main.cpp:465:13:void MX_UCPD1_Init()	1
-../Core/Src/main.cpp:507:13:void MX_USART2_UART_Init()	5
-../Core/Src/main.cpp:555:13:void MX_USB_PCD_Init()	2
-../Core/Src/main.cpp:586:13:void MX_DMA_Init()	1
-../Core/Src/main.cpp:608:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:663:6:void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef*)	2
-../Core/Src/main.cpp:675:6:void Error_Handler()	1
-../Core/Src/main.cpp:684:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:684:1:cpp)	1
+../Core/Src/main.cpp:93:5:int main()	2
+../Core/Src/main.cpp:173:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:234:13:void MX_ADC1_Init()	4
+../Core/Src/main.cpp:301:13:void MX_ICACHE_Init()	3
+../Core/Src/main.cpp:333:13:void MX_RTC_Init()	3
+../Core/Src/main.cpp:380:13:void MX_SPI1_Init()	2
+../Core/Src/main.cpp:420:13:void MX_SPI2_Init()	2
+../Core/Src/main.cpp:460:13:void MX_UCPD1_Init()	1
+../Core/Src/main.cpp:502:13:void MX_USART2_UART_Init()	5
+../Core/Src/main.cpp:550:13:void MX_USB_PCD_Init()	2
+../Core/Src/main.cpp:581:13:void MX_DMA_Init()	1
+../Core/Src/main.cpp:603:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:658:6:void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef*)	2
+../Core/Src/main.cpp:670:6:void Error_Handler()	1
+../Core/Src/main.cpp:679:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:679:1:cpp)	1
