@@ -158,9 +158,12 @@ void IMU::processData() {
     acc_temp[1] = (float)raw[2] / 2048.0f * 9.81f;
     acc_temp[2] = (float)raw[3] / 2048.0f * 9.81f;
 
-    gyr_temp[0] = lowPassFilter((float)raw[4] / 16.4f, 0);
-    gyr_temp[1] = lowPassFilter((float)raw[5] / 16.4f, 1);
-    gyr_temp[2] = lowPassFilter((float)raw[6] / 16.4f, 2);
+    // gyr_temp[0] = lowPassFilter((float)raw[4] / 16.4f, 0);
+    // gyr_temp[1] = lowPassFilter((float)raw[5] / 16.4f, 1);
+    // gyr_temp[2] = lowPassFilter((float)raw[6] / 16.4f, 2);
+    gyr_temp[0] = (float)raw[4] / 16.4f;
+    gyr_temp[1] = (float)raw[5] / 16.4f;
+    gyr_temp[2] = (float)raw[6] / 16.4f;
 
     // NED
     imu_data.xacc = (float)acc_temp[1];
