@@ -154,9 +154,9 @@ void IMU::processData() {
     for (int i = 0; i < 7; i++)
         raw[i] = ((int16_t)imu_rx_buffer[i*2+1] << 8) | imu_rx_buffer[i*2+2];
 
-    acc_temp[0] = (float)raw[1] / 2048.0f * 9.81f / 2.0f;
-    acc_temp[1] = (float)raw[2] / 2048.0f * 9.81f / 2.0f;
-    acc_temp[2] = (float)raw[3] / 2048.0f * 9.81f / 2.0f;
+    acc_temp[0] = (float)raw[1] / 2048.0f * 9.81f;
+    acc_temp[1] = (float)raw[2] / 2048.0f * 9.81f;
+    acc_temp[2] = (float)raw[3] / 2048.0f * 9.81f;
 
     gyr_temp[0] = lowPassFilter((float)raw[4] / 16.4f, 0);
     gyr_temp[1] = lowPassFilter((float)raw[5] / 16.4f, 1);
