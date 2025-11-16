@@ -1,0 +1,8 @@
+../Core/Src/ftl.c:41:24:ftl_unit_base_addr	1
+../Core/Src/ftl.c:63:5:ftl_format	3
+../Core/Src/ftl.c:120:5:ftl_mount	12
+../Core/Src/ftl.c:193:18:ftl_get_state	1
+../Core/Src/ftl.c:205:6:test_format	1
+../Core/Src/ftl.c:212:6:test_mount	1
+../Core/Src/ftl.c:229:6:test_format_and_mount	1
+../Core/Src/ftl.c:259:6:test_format_and_mount_two_records	1
