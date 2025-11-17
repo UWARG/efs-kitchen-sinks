@@ -1,3 +1,6 @@
 [submodule "MAVDisplay"]
 	path = MAVDisplay
 	url = https://github.com/Aidan-B/MAVDisplay
+[submodule "drone-can-gen/Core/Lib/efs-canard"]
+	path = drone-can-gen/Core/Lib/efs-canard
+	url = https://github.com/UWARG/efs-canard.git
