@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#define USER_VECT_TAB_ADDRESS
 #include "canard.h"
 #include "dronecan_msgs.h"
 #include "canard_stm32_driver.h"
@@ -175,6 +176,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   canardInit(&canard, canard_buffer, BUFFER_SIZE, onTransferReceived,
  	               shouldAcceptTransfer, NULL);
+  canardSetLocalNodeID(&canard, NODE_ID);
 
   /* USER CODE END 2 */
 
@@ -187,6 +189,7 @@ int main(void)
 
 	  processCanardTxQueue();
     /* USER CODE END WHILE */
+	  uint64_t curr_millis = HAL_GetTick();
 
     /* USER CODE BEGIN 3 */
 	  if (HAL_GetTick() - last_millis > 1000) {
@@ -194,7 +197,10 @@ int main(void)
 		  printf("broadcasting node status\n");
 		  broadcastNodeStatus();
 	  }
+	  HAL_Delay(20);
+
   }
+
   /* USER CODE END 3 */
 }
 
