@@ -61,7 +61,7 @@ static void MX_SPI4_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint8_t rx[2] = {0}, tx[2] = {0}, rx1[2] = {0};
 /* USER CODE END 0 */
 
 /**
@@ -111,25 +111,29 @@ int main(void)
   int throttle = 0;
 
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+
   HAL_GPIO_WritePin(GPIOF, GPIO_PIN_1, GPIO_PIN_SET);
-  HAL_Delay(10);  // Give L9733 time to power up
+  HAL_Delay(100);  // Give L9733 time to power up
 
-  uint8_t rx[2] = {0}, tx[2] = {0};
-  tx[0] = 0xAC;
-  tx[1] = 0xFF;
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
-  HAL_SPI_TransmitReceive(&hspi4, tx, rx, 2, HAL_MAX_DELAY);
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+  // 1111 1111 0011 0101
 
 
+	tx[0] = 0xFF;
+	tx[1] = 0xAC;
 
-
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
+		HAL_SPI_TransmitReceive(&hspi4, tx, rx1, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  tx[0] = 0xFF;
+	tx[1] = 0xAC;
+	HAL_SPI_TransmitReceive(&hspi4, tx, rx, 2, HAL_MAX_DELAY);
+
 	  int duty_cycle = period * 0.05 * (1.0 + (100 - abs((throttle % 200) - 100))/100.0);
 	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, duty_cycle);
 	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, duty_cycle);
@@ -224,7 +228,7 @@ static void MX_SPI4_Init(void)
   hspi4.Instance = SPI4;
   hspi4.Init.Mode = SPI_MODE_MASTER;
   hspi4.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi4.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi4.Init.DataSize = SPI_DATASIZE_16BIT;
   hspi4.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi4.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi4.Init.NSS = SPI_NSS_SOFT;
