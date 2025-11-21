@@ -33,7 +33,7 @@ static uint32_t g_next_idx  = 0u;
 static uint32_t g_next_id   = 0u;
 static bool     g_mounted   = false;
 
-
+static uint32_t map[FTL_NUM_UNITS] = {FTL_INVALID_PAGE};
 
 
 
@@ -186,6 +186,20 @@ int ftl_mount(void)
 
     g_mounted = true;
     return 0;
+}
+
+int ftl_read(uint32_t block_id, uint8_t* out) {
+	if (map[block_id] == FTL_INVALID_PAGE) return -1; // No corresponding block to id
+
+	ftl_record_header_t header;
+	read_data(map[block_id], header, sizeof(header));
+
+	if (header.status == FTL_STATUS_BAD) return -2; // Corrupted data
+	if (header.status == FTL_STATUS_STALE) return -3; // Mapping table not updated
+
+	read_data(map[block_id] + 1u, out, header.length);
+
+	return 0;
 }
 
 

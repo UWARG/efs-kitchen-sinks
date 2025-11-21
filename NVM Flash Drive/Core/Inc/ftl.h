@@ -51,6 +51,7 @@
 #define FTL_MAX_PAYLOAD             (FTL_UNIT_SIZE - FTL_HEADER_PAGE_SIZE)	// Max payload per unit: everything after the first 256 B page
 #define FTL_NUM_UNITS               (FLASH_TOTAL_SIZE_BYTES / FTL_UNIT_SIZE)	 // Number of usable 4 KB units in the flash
 
+#define FTL_INVALID_PAGE 0xFFFFFFFFu
 
 /*
  * ============================
@@ -103,6 +104,8 @@ int ftl_format(void);
 
 // Scan all units, find oldest/newest VALID records, init internal FTL state.
 int ftl_mount(void);
+
+int ftl_read(uint32_t block_id, uint8_t* out);
 
 void test_format(void);
 void test_mount(void);
