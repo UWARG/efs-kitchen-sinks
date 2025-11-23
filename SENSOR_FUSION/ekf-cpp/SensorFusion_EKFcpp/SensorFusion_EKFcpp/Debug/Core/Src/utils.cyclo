@@ -1,0 +1,5 @@
+C:\ST\STM32CubeIDE_1.19.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344\tools\bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/include/c++/13.3.1/cmath:438:3:constexpr float std::sqrt(float)	1
+../Core/Src/utils.cpp:21:6:void normalizeQuaternion(const float32_t*, float32_t*, uint32_t)	1
+../Core/Src/utils.cpp:36:6:void normalizeVector(const float32_t*, float32_t*, uint32_t)	2
+../Core/Src/utils.cpp:56:6:void skew_symmetric(const float32_t*, float32_t*)	1
+../Core/Src/utils.cpp:71:6:void b_to_i_frame_rot_matrix(const float32_t*, float32_t*)	1
