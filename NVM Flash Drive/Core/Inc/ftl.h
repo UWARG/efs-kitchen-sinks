@@ -104,6 +104,10 @@ int ftl_format(void);
 // Scan all units, find oldest/newest VALID records, init internal FTL state.
 int ftl_mount(void);
 
+uint8_t crc8(uint8_t data, uint8_t poly);
+uint16_t crc16(uint8_t data, uint16_t poly);
+
+
 void test_format(void);
 void test_mount(void);
 void test_format_and_mount(void);
