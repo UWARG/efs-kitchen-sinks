@@ -188,6 +188,39 @@ int ftl_mount(void)
     return 0;
 }
 
+//returns the remainder of 8-bit polynomial division
+uint8_t crc8(uint8_t data, uint8_t poly) {
+	uint8_t crc = data;
+
+	for (int i = 0; i < 8; i++) {
+		//check MSB:
+		if (crc & 0x80) {
+			//if MSB is 1, shift 1 bit left and XOR with the polynomial
+			crc = (crc << 1) ^ poly;
+		} else {
+			//if MSB is 0, just shift 1 bit left
+			crc <<= 1;
+		}
+	}
+
+	return crc;
+}
+
+//returns the remainder of 16-bit polynomial division
+uint16_t crc16(uint8_t data, uint16_t poly) {
+	uint16_t crc = data << 8; //append 8 zero bits by shifting left
+
+	for (int i = 0; i < 8; i++) {
+		if (crc & 0x8000) {
+			crc = (crc << 1) ^ poly;
+		} else {
+			crc <<= 1;
+		}
+	}
+
+	return crc & 0xFFFF;
+}
+
 
 // helper function for debugging
 ftl_state_view_t ftl_get_state(void)
@@ -223,7 +256,6 @@ void test_mount(void){
 	       (unsigned long)st.next_idx,
 	       (unsigned long)st.next_id,
 	       (int)st.mounted);
-
 }
 
 void test_format_and_mount(void){
