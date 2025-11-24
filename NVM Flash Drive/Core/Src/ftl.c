@@ -62,14 +62,10 @@ static inline uint32_t ftl_unit_base_addr(uint32_t unit_index)
  */
 int ftl_format(void)
 {
-    for (uint32_t i = 0; i < FTL_NUM_UNITS; i++) {
-        uint32_t addr = ftl_unit_base_addr(i);
-        HAL_StatusTypeDef st = erase_4k(addr);
-        if (st != HAL_OK) {
-            // Simple error convention for now: negative = error.
-            return -1;
-        }
-    }
+	HAL_StatusTypeDef st = erase_full();
+	if (st != HAL_OK) {
+		return -1;
+	}
 
     // Reset in-RAM state
     g_head_idx = 0xFFFFFFFFu;
@@ -191,8 +187,19 @@ int ftl_mount(void)
 int ftl_read(uint32_t block_id, uint8_t* out) {
 	if (map[block_id] == FTL_INVALID_PAGE) return -1; // No corresponding block to id
 
+	uint8_t* header_data = (void*) 0;
+	read_data(map[block_id], header_data, FTL_HEADER_PAGE_SIZE);
+
 	ftl_record_header_t header;
-	read_data(map[block_id], header, sizeof(header));
+	header.id = 0;
+	for (int i = 0; i < 4; i++) header.id += *(header_data + i) << (i * 8);
+	header.status = 0;
+	for (int i = 0; i < 2; i++) header.status += *(header_data + 4 + i) << (i * 8);
+	header.length = 0;
+	for (int i = 0; i < 2; i++) header.status += *(header_data + 6 + i) << (i * 8);
+	header.crc = 0;
+	for (int i = 0; i < 4; i++) header.crc += *(header_data + 8 + i) << (i * 8);
+
 
 	if (header.status == FTL_STATUS_BAD) return -2; // Corrupted data
 	if (header.status == FTL_STATUS_STALE) return -3; // Mapping table not updated
