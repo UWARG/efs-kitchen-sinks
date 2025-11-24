@@ -33,7 +33,7 @@ static uint32_t g_next_idx  = 0u;
 static uint32_t g_next_id   = 0u;
 static bool     g_mounted   = false;
 
-
+static uint32_t map[FTL_NUM_UNITS] = {FTL_INVALID_PAGE};
 
 
 
@@ -62,14 +62,10 @@ static inline uint32_t ftl_unit_base_addr(uint32_t unit_index)
  */
 int ftl_format(void)
 {
-    for (uint32_t i = 0; i < FTL_NUM_UNITS; i++) {
-        uint32_t addr = ftl_unit_base_addr(i);
-        HAL_StatusTypeDef st = erase_4k(addr);
-        if (st != HAL_OK) {
-            // Simple error convention for now: negative = error.
-            return -1;
-        }
-    }
+	HAL_StatusTypeDef st = erase_full();
+	if (st != HAL_OK) {
+		return -1;
+	}
 
     // Reset in-RAM state
     g_head_idx = 0xFFFFFFFFu;
@@ -152,6 +148,8 @@ int ftl_mount(void)
         // (Optional future step: CRC check of payload bytes.
         //  We'll add that once append/write is in place.)
 
+        crc8(hdr.data, 0xD5);
+
         // Track oldest (min_id) and newest (max_id) record
         if (hdr.id < min_id) {
             min_id  = hdr.id;
@@ -188,33 +186,38 @@ int ftl_mount(void)
     return 0;
 }
 
+int ftl_read(uint32_t block_id, uint8_t* out) {
+	if (map[block_id] == FTL_INVALID_PAGE) return -1; // No corresponding block to id
 
-//returns the remainder of 8-bit polynomial division
-uint8_t crc8(uint8_t data, uint8_t poly) {
-	uint8_t crc = data;
+	uint8_t* header_data = (void*) 0;
+	read_data(map[block_id], header_data, FTL_HEADER_PAGE_SIZE);
 
-	for (int i = 0; i < 8; i++) {
-		//check MSB:
-		if (crc & 0x80) {
-			//if MSB is 1, shift 1 bit left and XOR with the polynomial
-			crc = (crc << 1) ^ poly;
-		} else {
-			//if MSB is 0, just shift 1 bit left
-			crc <<= 1;
-		}
-	}
+	ftl_record_header_t header;
+	header.id = 0;
+	header.status = 0;
+	header.length = 0;
+	header.crc = 0;
+	for (int i = 0; i < 4; i++) header.id += *(header_data + i) << (i * 8);
+	for (int i = 0; i < 2; i++) header.status += *(header_data + 4 + i) << (i * 8);
+	for (int i = 0; i < 2; i++) header.status += *(header_data + 6 + i) << (i * 8);
+	for (int i = 0; i < 4; i++) header.crc += *(header_data + 8 + i) << (i * 8);
 
-	return crc;
+	if (header.status == FTL_STATUS_BAD) return -2; // Corrupted data
+	if (header.status == FTL_STATUS_STALE) return -3; // Mapping table not updated
+
+	read_data(map[block_id] + 1u, out, header.length);
+
+	return 0;
 }
 
 //returns the remainder of 16-bit polynomial division
-uint16_t crc16(uint8_t data, uint16_t poly) {
+uint32_t crc32(uint8_t data) {
 	//append 8 zero bits by shifting to the left
-	uint16_t crc = data << 8;
+	uint32_t crc = data << 16;
 
 	for (int i = 0; i < 8; i++) {
-		if (crc & 0x8000) {
-			crc = (crc << 1) ^ poly;
+		if (crc & 0x80000000) {
+			crc = (crc << 1) ^ FTL_CRC_POLY;
 		} else {
 			crc <<= 1;
 		}
@@ -222,7 +225,6 @@ uint16_t crc16(uint8_t data, uint16_t poly) {
 
 	return crc & 0xFFFF;
 }
-
 
 // helper function for debugging
 ftl_state_view_t ftl_get_state(void)

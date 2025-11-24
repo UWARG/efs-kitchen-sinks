@@ -110,6 +110,15 @@ HAL_StatusTypeDef erase_4k(uint32_t addr24) {
     return wait_ready(400); // should be plenty for 4KB erase
 }
 
+HAL_StatusTypeDef erase_full() {
+	if (!write_enable()) return HAL_ERROR;
+
+	uint8_t cmd[1] = { 0xC7 };
+
+	CS_LOW(); spi_tx(cmd, sizeof(cmd)); CS_HIGH();
+	return wait_ready(231000); // Maximum 256 Mb bulk erase time
+}
+
 /*
  * function to program data into an array
  * the 24 bit address can be anywhere in the range, but there are page alignment rules

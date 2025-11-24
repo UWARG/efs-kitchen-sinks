@@ -61,8 +61,13 @@ all: main-build
 main-build: NVM\ Flash\ Drive.elf secondary-outputs
 
 # Tool invocations
+<<<<<<< HEAD
 NVM\ Flash\ Drive.elf NVM\ Flash\ Drive.map: $(OBJS) $(USER_OBJS) C:\Users\PC\Downloads\efs-kitchen-sinks\NVM\ Flash\ Drive\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	arm-none-eabi-gcc -o "NVM Flash Drive.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\PC\Downloads\efs-kitchen-sinks\NVM Flash Drive\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="NVM Flash Drive.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+=======
+NVM\ Flash\ Drive.elf NVM\ Flash\ Drive.map: $(OBJS) $(USER_OBJS) C:\Users\Lenovo\Documents\GitHub\efs-kitchen-sinks\NVM\ Flash\ Drive\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "NVM Flash Drive.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\Lenovo\Documents\GitHub\efs-kitchen-sinks\NVM Flash Drive\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="NVM Flash Drive.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+>>>>>>> origin/nvm-read
 	@echo 'Finished building target: $@'
 	@echo ' '
 

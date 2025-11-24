@@ -27,18 +27,19 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000036  00000000  00000000  00007090  2**0
                   CONTENTS, READONLY
- 12 .debug_info   00010390  00000000  00000000  000070c6  2**0
+ 12 .debug_info   000103c9  00000000  00000000  000070c6  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 000025ac  00000000  00000000  00017456  2**0
+ 13 .debug_abbrev 000025c7  00000000  00000000  0001748f  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00000de0  00000000  00000000  00019a08  2**3
+ 14 .debug_aranges 00000de8  00000000  00000000  00019a58  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_rnglists 00000a99  00000000  00000000  0001a7e8  2**0
+ 15 .debug_rnglists 00000a9f  00000000  00000000  0001a840  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  000034e8  00000000  00000000  0001b281  2**0
+ 16 .debug_macro  000034e8  00000000  00000000  0001b2df  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00010891  00000000  00000000  0001e769  2**0
+ 17 .debug_line   0001091c  00000000  00000000  0001e7c7  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
+<<<<<<< HEAD
  18 .debug_str    00102ad4  00000000  00000000  0002effa  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  19 .comment      00000043  00000000  00000000  00131ace  2**0
@@ -46,6 +47,15 @@ Idx Name          Size      VMA       LMA       File off  Algn
  20 .debug_frame  000040b0  00000000  00000000  00131b14  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  21 .debug_line_str 00000067  00000000  00000000  00135bc4  2**0
+=======
+ 18 .debug_str    00102b07  00000000  00000000  0002f0e3  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 19 .comment      00000086  00000000  00000000  00131bea  2**0
+                  CONTENTS, READONLY
+ 20 .debug_frame  000040d4  00000000  00000000  00131c70  2**2
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 21 .debug_line_str 00000072  00000000  00000000  00135d44  2**0
+>>>>>>> origin/nvm-read
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
