@@ -192,14 +192,13 @@ int ftl_read(uint32_t block_id, uint8_t* out) {
 
 	ftl_record_header_t header;
 	header.id = 0;
-	for (int i = 0; i < 4; i++) header.id += *(header_data + i) << (i * 8);
 	header.status = 0;
-	for (int i = 0; i < 2; i++) header.status += *(header_data + 4 + i) << (i * 8);
 	header.length = 0;
-	for (int i = 0; i < 2; i++) header.status += *(header_data + 6 + i) << (i * 8);
 	header.crc = 0;
+	for (int i = 0; i < 4; i++) header.id += *(header_data + i) << (i * 8);
+	for (int i = 0; i < 2; i++) header.status += *(header_data + 4 + i) << (i * 8);
+	for (int i = 0; i < 2; i++) header.status += *(header_data + 6 + i) << (i * 8);
 	for (int i = 0; i < 4; i++) header.crc += *(header_data + 8 + i) << (i * 8);
-
 
 	if (header.status == FTL_STATUS_BAD) return -2; // Corrupted data
 	if (header.status == FTL_STATUS_STALE) return -3; // Mapping table not updated
