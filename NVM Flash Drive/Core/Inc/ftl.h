@@ -104,10 +104,16 @@ int ftl_format(void);
 // Scan all units, find oldest/newest VALID records, init internal FTL state.
 int ftl_mount(void);
 
+// write one record (1 record per 4KB unit). Returns 0 on success.
+int ftl_write(const void *data, uint16_t len, uint32_t *out_id);
+
+
+// testing funcctions
 void test_format(void);
 void test_mount(void);
 void test_format_and_mount(void);
 void test_format_and_mount_two_records(void);
+void test_write_and_read_latest(void);
 
 extern SPI_HandleTypeDef hspi1;
 
