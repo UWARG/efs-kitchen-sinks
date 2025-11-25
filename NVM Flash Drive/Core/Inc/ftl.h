@@ -105,12 +105,14 @@ int ftl_format(void);
 // Scan all units, find oldest/newest VALID records, init internal FTL state.
 int ftl_mount(void);
 
-int ftl_read(uint32_t block_id, uint8_t* out);
+int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len);
 
 void test_format(void);
 void test_mount(void);
 void test_format_and_mount(void);
 void test_format_and_mount_two_records(void);
+
+void test_read(void);
 
 extern SPI_HandleTypeDef hspi1;
 

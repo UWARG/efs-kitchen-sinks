@@ -33,8 +33,6 @@ static uint32_t g_next_idx  = 0u;
 static uint32_t g_next_id   = 0u;
 static bool     g_mounted   = false;
 
-static uint32_t map[FTL_NUM_UNITS] = {FTL_INVALID_PAGE};
-
 
 
 // Helper function to compute the base address in flash for a given unit index
@@ -184,26 +182,31 @@ int ftl_mount(void)
     return 0;
 }
 
-int ftl_read(uint32_t block_id, uint8_t* out) {
-	if (map[block_id] == FTL_INVALID_PAGE) return -1; // No corresponding block to id
+int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
+	if (!g_mounted) return -1;
 
-	uint8_t* header_data = (void*) 0;
-	read_data(map[block_id], header_data, FTL_HEADER_PAGE_SIZE);
-
+	printf("Searching for block between %lu and %lu\r\n", g_tail_idx, g_head_idx);
+	uint32_t idx = g_tail_idx;
 	ftl_record_header_t header;
-	header.id = 0;
-	header.status = 0;
-	header.length = 0;
-	header.crc = 0;
-	for (int i = 0; i < 4; i++) header.id += *(header_data + i) << (i * 8);
-	for (int i = 0; i < 2; i++) header.status += *(header_data + 4 + i) << (i * 8);
-	for (int i = 0; i < 2; i++) header.status += *(header_data + 6 + i) << (i * 8);
-	for (int i = 0; i < 4; i++) header.crc += *(header_data + 8 + i) << (i * 8);
+	bool id_found = false;
+//	for (idx = g_tail_idx; idx <= g_head_idx; idx++) {
+		memset(&header, 0xFF, sizeof(header));
+		printf("Searched index %lu with address %lu\r\n", idx, ftl_unit_base_addr(idx));
+		read_data(ftl_unit_base_addr(idx), (uint8_t*) &header, FTL_HEADER_PAGE_SIZE);
+		printf("Searched index %lu with address %lu - Found ID %lu\r\n", idx, ftl_unit_base_addr(idx), header.id);
+//		if (header.status != FTL_STATUS_VALID) continue;
+//		if (header.id == block_id) {
+//			id_found = true;
+//			break;
+//		}
+//	}
 
-	if (header.status == FTL_STATUS_BAD) return -2; // Corrupted data
-	if (header.status == FTL_STATUS_STALE) return -3; // Mapping table not updated
+	if (!id_found) return -2;
 
-	read_data(map[block_id] + 1u, out, header.length);
+	printf("Block found\r\n");
+
+	read_data(ftl_unit_base_addr(idx), out, header.length);
+	*len = header.length;
 
 	return 0;
 }
@@ -347,4 +350,18 @@ void test_format_and_mount_two_records(void)
      */
 }
 
+void test_read(void) {
+	printf("Begin Testing\r\n");
+
+	uint32_t id = 0;
+
+	const char* data = (void*) 0;
+	uint16_t len;
+	int st = ftl_read(id, (uint8_t*) data, &len);
+	if (st != 0) {
+		printf("Read Error: %d\r\n", st);
+		return;
+	}
+	printf("Msg: %s (Length: %d)\r\n", data, len);
+}
 
