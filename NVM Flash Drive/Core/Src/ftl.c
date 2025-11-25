@@ -148,7 +148,6 @@ int ftl_mount(void)
         // (Optional future step: CRC check of payload bytes.
         //  We'll add that once append/write is in place.)
 
-        crc8(hdr.data, 0xD5);
 
         // Track oldest (min_id) and newest (max_id) record
         if (hdr.id < min_id) {
@@ -210,20 +209,27 @@ int ftl_read(uint32_t block_id, uint8_t* out) {
 	return 0;
 }
 
-//returns the remainder of 16-bit polynomial division
-uint32_t crc32(uint8_t data) {
+/*
+ * - uint8_t *data: data array
+ * - int len: the length of input data array
+ * returns LSB-first (reflected) CRC result.
+ */
+uint32_t crc32(uint8_t *data, int len) {
 	//append 8 zero bits by shifting to the left
-	uint32_t crc = data << 16;
+	uint32_t crc = 0xFFFFFFFF;
 
-	for (int i = 0; i < 8; i++) {
-		if (crc & 0x80000000) {
-			crc = (crc << 1) ^ FTL_CRC_POLY;
-		} else {
-			crc <<= 1;
-		}
-	}
+    for (int i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++) {
+            if (crc & 1)
+                crc = (crc >> 1) ^ FTL_CRC_POLY;
+            else
+                crc >>= 1;
+        }
+    }
 
-	return crc & 0xFFFF;
+
+    return crc ^ 0xFFFFFFFF;
 }
 
 // helper function for debugging
@@ -363,4 +369,20 @@ void test_format_and_mount_two_records(void)
      */
 }
 
+void test_crc(void) {
+	uint8_t data[9] = {0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39};
+	uint32_t crc_out = crc32(data, 9);
+	printf("crc test:\n");
+	/*
+	for (int i = 0; i < 4; i ++) {
+		printf("%2X ", (crc_out >> (32 - 8 * (i + 1))) & 0xFF);
+	}
+	*/
+	printf("%02X %02X %02X %02X\n",
+		(unsigned int)((crc_out >> 24) & 0xFF),
+		(unsigned int)((crc_out >> 16) & 0xFF),
+		(unsigned int)((crc_out >> 8) & 0xFF),
+		(unsigned int)(crc_out & 0xFF)
+    );
+}
 

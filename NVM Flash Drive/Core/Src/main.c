@@ -149,10 +149,12 @@ int main(void)
   }
   ReceiveTransmitTest();
 */
+
   //WriteTest();
 
-  ReadTest();
+  //ReadTest();
 
+  //test_crc();
 
   if (0){
 	  ftl_format();
@@ -163,6 +165,7 @@ int main(void)
 	  }
 	  else printf("=================== successfully mounted! ================= \r\n");
   }
+
 
 
   while (1)

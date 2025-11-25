@@ -53,7 +53,7 @@
 
 #define FTL_INVALID_PAGE 0xFFFFFFFFu
 
-#define FTL_CRC_POLY 0x04C11DB7
+#define FTL_CRC_POLY 0xEDB88320
 
 /*
  * ============================
@@ -107,7 +107,7 @@ int ftl_format(void);
 // Scan all units, find oldest/newest VALID records, init internal FTL state.
 int ftl_mount(void);
 
-uint32_t crc32(uint8_t data);
+uint32_t crc32(uint8_t *data, int len);
 
 int ftl_read(uint32_t block_id, uint8_t* out);
 
@@ -115,6 +115,7 @@ void test_format(void);
 void test_mount(void);
 void test_format_and_mount(void);
 void test_format_and_mount_two_records(void);
+void test_crc(void);
 
 extern SPI_HandleTypeDef hspi1;
 
