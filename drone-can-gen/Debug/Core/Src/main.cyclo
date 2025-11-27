@@ -1,10 +1,11 @@
-../Core/Src/main.cpp:74:6:void onTransferReceived(CanardInstance*, CanardRxTransfer*)	5
-../Core/Src/main.cpp:88:6:bool shouldAcceptTransfer(const CanardInstance*, uint64_t*, uint16_t, CanardTransferType, uint8_t)	3
-../Core/Src/main.cpp:105:6:void processCanardTxQueue()	4
-../Core/Src/main.cpp:122:6:void broadcastNodeStatus()	1
-../Core/Src/main.cpp:149:5:int main()	2
-../Core/Src/main.cpp:211:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:261:13:void MX_CAN1_Init()	2
-../Core/Src/main.cpp:298:13:void MX_USART2_UART_Init()	2
-../Core/Src/main.cpp:333:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:391:6:void Error_Handler()	1
+../Core/Src/main.cpp:77:6:void onTransferReceived(CanardInstance*, CanardRxTransfer*)	5
+../Core/Src/main.cpp:91:6:bool shouldAcceptTransfer(const CanardInstance*, uint64_t*, uint16_t, CanardTransferType, uint8_t)	3
+../Core/Src/main.cpp:108:6:void processCanardTxQueue()	4
+../Core/Src/main.cpp:125:6:void broadcastNodeStatus()	1
+../Core/Src/main.cpp:152:5:int main()	3
+../Core/Src/main.cpp:217:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:267:13:void MX_CAN1_Init()	2
+../Core/Src/main.cpp:304:13:void MX_TIM1_Init()	4
+../Core/Src/main.cpp:352:13:void MX_USART2_UART_Init()	2
+../Core/Src/main.cpp:387:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:445:6:void Error_Handler()	1
