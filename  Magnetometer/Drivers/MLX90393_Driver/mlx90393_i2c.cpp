@@ -6,8 +6,8 @@
  */
 #include "mlx90393_i2c.hpp"
 
-#include "stm32l4xx_hal.h"
-#include "stm32l4xx_hal_i2c.h"
+#include "stm32l5xx_hal.h"
+#include "stm32l5xx_hal_i2c.h"
 
 MLX90393::MLX90393(I2C_HandleTypeDef *hi2c){
 	this->hi2c = hi2c;

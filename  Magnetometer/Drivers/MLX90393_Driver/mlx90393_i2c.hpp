@@ -8,8 +8,8 @@
 #ifndef INC_MLX90393_I2C_HPP_
 #define INC_MLX90393_I2C_HPP_
 
-#include "stm32l4xx_hal.h"
-#include "stm32l4xx_hal_i2c.h"
+#include "stm32l5xx_hal.h"
+#include "stm32l5xx_hal_i2c.h"
 #include <cstdint>
 
 #define DEFAULT_I2C_ADDRESS 0x18 << 1 //Set I2C address

@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "mlx90393_i2c.hpp"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -56,6 +57,56 @@ static void MX_I2C3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+MLX90393 mlx90393(&hi2c3);
+
+float mag_x;
+float mag_y;
+float mag_z;
+
+
+
+//Magnetometer sender
+//void send_MLX90393(void) {
+//    uint8_t buffer[UAVCAN_EQUIPMENT_AHRS_MAGNETICFIELDSTRENGTH2_MAX_SIZE];
+//
+//    // put whatever you like in here for display in GUI
+//    mlx90393_node.sensor_id = 1;
+//    //1 uT = 0.01 Gauss, transfer in Gauss
+//    mlx90393_node.magnetic_field_ga[0] = (float)mlx90393.get_x_data() / 100.0;
+//    mlx90393_node.magnetic_field_ga[1] = (float)mlx90393.get_y_data() / 100.0;
+//    mlx90393_node.magnetic_field_ga[2] = (float)mlx90393.get_z_data() / 100.0;
+//    mlx90393_node.magnetic_field_covariance.len = 9;
+//    //Covariance matrix with variance terms only, refer to 13.1 for noise standard deviation
+//    //Settings: OSR = 3, digital filter = 5, conversion time = 52.92ms
+//    //Standard deviation for XY-axis error = 5 mGauss, Z-axis = 7 mGauss
+//    //Covariance is 0?
+//    mlx90393_node.magnetic_field_covariance.data[0] = 2.5E-5;
+//    mlx90393_node.magnetic_field_covariance.data[1] = 0.0;
+//    mlx90393_node.magnetic_field_covariance.data[2] = 0.0;
+//    mlx90393_node.magnetic_field_covariance.data[3] = 0.0;
+//    mlx90393_node.magnetic_field_covariance.data[4] = 2.5E-5;
+//    mlx90393_node.magnetic_field_covariance.data[5] = 0.0;
+//    mlx90393_node.magnetic_field_covariance.data[6] = 0.0;
+//    mlx90393_node.magnetic_field_covariance.data[7] = 0.0;
+//    mlx90393_node.magnetic_field_covariance.data[8] = 4.9E-5;
+//    uint32_t len = uavcan_equipment_ahrs_MagneticFieldStrength2_encode(&mlx90393_node, buffer);
+//
+//    // we need a static variable for the transfer ID. This is
+//    // incremeneted on each transfer, allowing for detection of packet
+//    // loss
+//    static uint8_t transfer_id;
+//
+//    canardBroadcast(&canard,
+//    				UAVCAN_EQUIPMENT_AHRS_MAGNETICFIELDSTRENGTH2_SIGNATURE,
+//					UAVCAN_EQUIPMENT_AHRS_MAGNETICFIELDSTRENGTH2_ID,
+//                    &transfer_id,
+//                    CANARD_TRANSFER_PRIORITY_LOW,
+//                    buffer,
+//                    len);
+//}
+
+
+
 
 /* USER CODE END 0 */
 
@@ -97,6 +148,28 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	      // 1. Trigger measurement
+	      mlx90393.i2c_SM();
+
+	      // 2. Wait for conversion (2–3 ms is enough for your settings)
+	      HAL_Delay(3);
+
+	      // 3. Read the measurement from the sensor
+	      mlx90393.i2c_RM();
+
+	      // 4. Convert raw data → real magnetic field values
+	      mlx90393.decode();
+	      mlx90393.convert();
+
+	      // 5. Store in globals for Live Expressions
+	      mag_x = mlx90393.get_x_data();
+	      mag_y = mlx90393.get_y_data();
+	      mag_z = mlx90393.get_z_data();
+
+	      // Small delay to avoid overloading debugger
+	      HAL_Delay(10);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
