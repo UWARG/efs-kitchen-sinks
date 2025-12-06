@@ -189,23 +189,35 @@ int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
 	uint32_t idx = g_tail_idx;
 	ftl_record_header_t header;
 	bool id_found = false;
-//	for (idx = g_tail_idx; idx <= g_head_idx; idx++) {
+	for (idx = g_tail_idx; idx <= g_head_idx; idx++) {
 		memset(&header, 0xFF, sizeof(header));
-		printf("Searched index %lu with address %lu\r\n", idx, ftl_unit_base_addr(idx));
-		read_data(ftl_unit_base_addr(idx), (uint8_t*) &header, FTL_HEADER_PAGE_SIZE);
-		printf("Searched index %lu with address %lu - Found ID %lu\r\n", idx, ftl_unit_base_addr(idx), header.id);
-//		if (header.status != FTL_STATUS_VALID) continue;
-//		if (header.id == block_id) {
-//			id_found = true;
-//			break;
-//		}
-//	}
+//		printf("Searched index %lu with address %lu\r\n", idx, ftl_unit_base_addr(idx));
+		read_data(ftl_unit_base_addr(idx), (uint8_t*) &header, sizeof(header));
+//		printf("%d\r\n", sizeof(header));
+//		printf("Searched index %lu with address %lu - Found ID %lu\r\n", idx, ftl_unit_base_addr(idx), header.id);
+		if (header.status != FTL_STATUS_VALID) continue;
+		if (header.id == block_id) {
+			id_found = true;
+			break;
+		}
+	}
 
 	if (!id_found) return -2;
 
 	printf("Block found\r\n");
 
-	read_data(ftl_unit_base_addr(idx), out, header.length);
+	printf("Header:\r\n");
+	printf("  ID:        %lu\r\n", (unsigned long)header.id);
+	printf("  Status:    0x%04X\r\n", header.status);
+	printf("  Length:    %u\r\n", header.length);
+	printf("  CRC32:     0x%08lX\r\n", (unsigned long)header.crc);
+	printf("  Reserved:  ");
+	for (int i = 0; i < 8; i++) {
+		printf("%02X ", header.reserved[i]);
+	}
+	printf("\r\n");
+
+	read_data(ftl_unit_base_addr(idx) + FTL_HEADER_PAGE_SIZE, out, header.length);
 	*len = header.length;
 
 	return 0;
@@ -353,15 +365,15 @@ void test_format_and_mount_two_records(void)
 void test_read(void) {
 	printf("Begin Testing\r\n");
 
-	uint32_t id = 0;
+	uint32_t id = 1;
 
-	const char* data = (void*) 0;
+	uint8_t data[45];
 	uint16_t len;
-	int st = ftl_read(id, (uint8_t*) data, &len);
+	int st = ftl_read(id, data, &len);
 	if (st != 0) {
 		printf("Read Error: %d\r\n", st);
 		return;
 	}
-	printf("Msg: %s (Length: %d)\r\n", data, len);
+	printf("Msg: %s (Length: %d)\r\n", (char*) data, len);
 }
 
