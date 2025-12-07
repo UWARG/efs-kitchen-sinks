@@ -190,25 +190,55 @@ int ftl_mount(void)
     return 0;
 }
 
+/**
+ * ftl_read
+ *
+ * Reads a block of data according to its ID
+ *
+ * Steps:
+ * 	- Scanning for the block ID in each block's header
+ * 	- Starts from g_tail_idx
+ * 	- Ends at g_head_idx, if this is reached, no valid block was found
+ * 	- Once a valid block with the correct block ID is found, stop searching
+ * 	- With the correct block, read the payload using header.length
+ * 	- Copy the payload to user-provided output buffer
+ * 	- Return the payload length
+ *
+ * Each block's CRC is not checked
+ *
+ * @return
+ *   0		on success
+ *   -1		if FTL is not mounted
+ *   -2		if no valid record for the specified block ID could be found
+ */
 int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
-	if (!g_mounted) return -1;
+	if (!g_mounted) {
+		// Ensures the chip is mounted
+		return -1;
+	}
 
 	uint32_t idx = g_tail_idx;
 	ftl_record_header_t header;
-	bool id_found = false;
-	for (idx = g_tail_idx; idx <= g_head_idx; idx++) {
+
+	// Search the chip for the matching ID block using the circular buffer
+	while (true) {
 		memset(&header, 0xFF, sizeof(header));
 		read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
 
-		if (header.status != FTL_STATUS_VALID) continue;
-		if (header.id == block_id) {
-			id_found = true;
+		if (header.status == FTL_STATUS_VALID && header.id == block.id) {
+			// Matching ID block found
 			break;
 		}
+
+		if (idx == g_head_idx) {
+			// Looped through all indices, did not find the matching ID block
+			return -2;
+		}
+
+		idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
 	}
 
-	if (!id_found) return -2;
-
+	// Debug print
 	printf("Header:\r\n");
 	printf("  ID:        %lu\r\n", (unsigned long) header.id);
 	printf("  Status:    0x%04X\r\n", header.status);
@@ -219,8 +249,11 @@ int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
 	printf("\r\n");
 
 	uint32_t addr_base = ftl_unit_base_addr(idx);
-	read_data(FTL_PAYLOAD_OFFSET, out, header.length);
-	*len = header.length;
+	// TODO: Add success/error check to read_data
+	read_data(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
+
+	// Returns the length of the data read
+	if (len) *len = header.length;
 
 	return 0;
 }
@@ -477,23 +510,6 @@ void test_format_and_mount_two_records(void)
      *   next_id  = 8
      *   mounted  = 1
      */
-}
-
-void test_read(void) {
-	printf("Begin Testing\r\n");
-
-	uint32_t id = 1;
-
-	uint8_t buf[FTL_MAX_PAYLOAD + 1];
-	uint16_t len;
-	int st = ftl_read(id, buf, &len);
-	if (st != 0) {
-		printf("Read Error: %d\r\n", st);
-		return;
-	}
-
-	buf[len] = '\0';
-	printf("Msg: %s (Length: %d)\r\n", (char*) buf, len);
 }
 
 void test_write_and_read_latest(void)
