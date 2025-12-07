@@ -170,11 +170,12 @@ int main(void)
 	  	       (unsigned long)st.next_id,
 	  	       (int)st.mounted);
 
-	  test_read();
+//	  test_read();
+	  test_write_and_read_latest();
   }
 
 
-  printf("Test Complete");
+  printf("Test Complete\r\n");
 
   while (1)
   {

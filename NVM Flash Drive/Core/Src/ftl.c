@@ -198,7 +198,7 @@ int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
 	bool id_found = false;
 	for (idx = g_tail_idx; idx <= g_head_idx; idx++) {
 		memset(&header, 0xFF, sizeof(header));
-		read_data(ftl_unit_base_addr(idx), (uint8_t*) &header, sizeof(header));
+		read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
 
 		if (header.status != FTL_STATUS_VALID) continue;
 		if (header.id == block_id) {
@@ -218,7 +218,8 @@ int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
 	for (int i = 0; i < 8; i++) printf("%02X ", header.reserved[i]);
 	printf("\r\n");
 
-	read_data(ftl_unit_base_addr(idx) + FTL_HEADER_PAGE_SIZE, out, header.length);
+	uint32_t addr_base = ftl_unit_base_addr(idx);
+	read_data(FTL_PAYLOAD_OFFSET, out, header.length);
 	*len = header.length;
 
 	return 0;
@@ -498,12 +499,12 @@ void test_read(void) {
 void test_write_and_read_latest(void)
 {
 	printf("starting test_write_and_read_latest function...\r\n");
-    ftl_format();
+//    ftl_format();
     ftl_mount();   // sets next_idx=0, next_id=0
     printf("finished formatting and mounting\r\n");
 
-    const char msg1[] = "hello";
-    const char msg2[] = "world!";
+    const char msg1[] = "hello world!";
+    const char msg2[] = "write and read works!";
 
     uint32_t id1, id2;
 
@@ -520,52 +521,29 @@ void test_write_and_read_latest(void)
            (unsigned long)st.next_id);
 
 
-    // ================ read raw data, easy to do because we know where it is
-    // TODO: add the read function in here (pass in id  not idx)
+    // ================
 
-    uint8_t buf[12];
+    uint8_t buf[FTL_MAX_PAYLOAD + 1];
+	uint16_t len;
 
-	uint32_t base0 = 0 * FTL_UNIT_SIZE;  // block 0 base address
-	uint32_t base1 = 1 * FTL_UNIT_SIZE;  // block 1 base address
-
-	// ---- Block 0 ----
-
-	// First 12 bytes of first page (header page) of block 0
 	memset(buf, 0, sizeof(buf));
-	read_data(base0 + 0, buf, sizeof(buf));
-	printf("Block 0, page 0, first 12 bytes:\r\n");
-	for (int i = 0; i < 12; i++) {
-		printf("%02X ", buf[i]);
+	int readSt0 = ftl_read(id1, buf, &len);
+	if (readSt0) {
+		printf("Read Error: %d", readSt0);
 	}
+	buf[len] = '\0';
+	printf("%s", (char*) buf);
+
 	printf("\r\n");
 
-	// First 12 bytes of second page (payload start) of block 0
 	memset(buf, 0, sizeof(buf));
-	read_data(base0 + FTL_HEADER_PAGE_SIZE, buf, sizeof(buf));
-	printf("Block 0, page 1, first 12 bytes:\r\n");
-	for (int i = 0; i < 12; i++) {
-		printf("%c ", buf[i]);
+	int readSt1 = ftl_read(id2, buf, &len);
+	if (readSt1) {
+		printf("Read Error: %d", readSt1);
 	}
-	printf("\r\n");
+	buf[len] = '\0';
+	printf("%s", (char*) buf);
 
-	// ---- Block 1 ----
-
-	// First 12 bytes of first page (header page) of block 1
-	memset(buf, 0, sizeof(buf));
-	read_data(base1 + 0, buf, sizeof(buf));
-	printf("Block 1, page 0, first 12 bytes:\r\n");
-	for (int i = 0; i < 12; i++) {
-		printf("%02X ", buf[i]);
-	}
-	printf("\r\n");
-
-	// First 12 bytes of second page (payload start) of block 1
-	memset(buf, 0, sizeof(buf));
-	read_data(base1 + FTL_HEADER_PAGE_SIZE, buf, sizeof(buf));
-	printf("Block 1, page 1, first 12 bytes:\r\n");
-	for (int i = 0; i < 12; i++) {
-		printf("%c ", buf[i]);
-	}
-	printf("\r\n\n\n done reading data \r\n");
+	printf("\r\n\n\nDone reading data \r\n");
 }
 
