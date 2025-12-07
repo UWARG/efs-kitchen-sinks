@@ -7,9 +7,7 @@ static inline void CS_HIGH(void) { HAL_GPIO_WritePin(FLASH_CS_PORT, FLASH_CS_PIN
 // low-level helper functions
 static inline void spi_tx1(uint8_t v) { HAL_SPI_Transmit(&hspi1, &v, 1, 1000);}
 static inline void spi_tx(const uint8_t *buf, uint16_t n) { HAL_SPI_Transmit(&hspi1, (uint8_t*)buf, n, 1000);}
-static void spi_rx(uint8_t *buf, uint16_t n) {
-	HAL_StatusTypeDef success = HAL_SPI_Receive(&hspi1, buf, n, 1000);
-}
+static void spi_rx(uint8_t *buf, uint16_t n) { HAL_SPI_Receive(&hspi1, buf, n, 1000);}
 
 // function to read the ID of the NVM chip with command 9f
 HAL_StatusTypeDef readID(uint8_t id[20]){

@@ -2,9 +2,9 @@
 ../Core/Src/ftl.c:61:5:ftl_format	2
 ../Core/Src/ftl.c:114:5:ftl_mount	12
 ../Core/Src/ftl.c:185:5:ftl_read	7
-../Core/Src/ftl.c:228:18:ftl_get_state	1
-../Core/Src/ftl.c:240:6:test_format	1
-../Core/Src/ftl.c:247:6:test_mount	1
-../Core/Src/ftl.c:264:6:test_format_and_mount	1
-../Core/Src/ftl.c:294:6:test_format_and_mount_two_records	1
-../Core/Src/ftl.c:365:6:test_read	2
+../Core/Src/ftl.c:220:18:ftl_get_state	1
+../Core/Src/ftl.c:232:6:test_format	1
+../Core/Src/ftl.c:239:6:test_mount	1
+../Core/Src/ftl.c:256:6:test_format_and_mount	1
+../Core/Src/ftl.c:286:6:test_format_and_mount_two_records	1
+../Core/Src/ftl.c:357:6:test_read	2
