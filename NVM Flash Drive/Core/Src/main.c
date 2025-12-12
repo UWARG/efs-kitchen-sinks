@@ -149,10 +149,10 @@ int main(void)
   }
   ReceiveTransmitTest();
 */
+
   //WriteTest();
-
-//  ReadTest();
-
+  //ReadTest();
+  //test_crc();
 
   if (1){
 //	  ftl_format();
@@ -176,6 +176,7 @@ int main(void)
 
 
   printf("Test Complete\r\n");
+
 
   while (1)
   {

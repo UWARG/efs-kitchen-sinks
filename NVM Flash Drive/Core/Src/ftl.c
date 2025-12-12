@@ -42,14 +42,27 @@ static inline uint32_t ftl_unit_base_addr(uint32_t unit_index)
 }
 
 
-// Simple CRC placeholder for now, replace with real CRC later
-static uint32_t ftl_crc32(const uint8_t *data, uint32_t len)
-{
-    // TODO: implement real CRC; for now just return a dummy
-    return 0x12341234;
+/*
+ * - uint8_t *data: data array
+ * - int len: the length of input data array
+ * returns LSB-first (reflected) CRC result.
+ */
+static uint32_t ftl_crc32(const uint8_t *data, uint32_t len) {
+	//append 8 zero bits by shifting to the left
+	uint32_t crc = 0xFFFFFFFF;
+
+    for (int i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++) {
+            if (crc & 1)
+                crc = (crc >> 1) ^ FTL_CRC_POLY;
+            else
+                crc >>= 1;
+        }
+    }
+
+    return crc ^ 0xFFFFFFFF;
 }
-
-
 
 /*
  * ftl_format
@@ -154,6 +167,7 @@ int ftl_mount(void)
         // (Optional future step: CRC check of payload bytes.
         //  We'll add that once append/write is in place.)
 
+
         // Track oldest (min_id) and newest (max_id) record
         if (hdr.id < min_id) {
             min_id  = hdr.id;
@@ -190,39 +204,8 @@ int ftl_mount(void)
     return 0;
 }
 
-<<<<<<< HEAD
-//returns the remainder of 8-bit polynomial division
-uint8_t crc8(uint8_t data, uint8_t poly) {
-	uint8_t crc = data;
 
-	for (int i = 0; i < 8; i++) {
-		//check MSB:
-		if (crc & 0x80) {
-			//if MSB is 1, shift 1 bit left and XOR with the polynomial
-			crc = (crc << 1) ^ poly;
-		} else {
-			//if MSB is 0, just shift 1 bit left
-			crc <<= 1;
-		}
-	}
 
-	return crc;
-}
-
-//returns the remainder of 16-bit polynomial division
-uint16_t crc16(uint8_t data, uint16_t poly) {
-	uint16_t crc = data << 8; //append 8 zero bits by shifting left
-
-	for (int i = 0; i < 8; i++) {
-		if (crc & 0x8000) {
-			crc = (crc << 1) ^ poly;
-		} else {
-			crc <<= 1;
-		}
-	}
-
-	return crc & 0xFFFF;
-=======
 /**
  * ftl_read
  *
@@ -258,7 +241,7 @@ int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
 		memset(&header, 0xFF, sizeof(header));
 		read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
 
-		if (header.status == FTL_STATUS_VALID && header.id == block.id) {
+		if (header.status == FTL_STATUS_VALID && header.id == block_id) {
 			// Matching ID block found
 			break;
 		}
@@ -404,7 +387,6 @@ int ftl_write(const void *data, uint16_t len, uint32_t *out_id)
     if (out_id) *out_id = id;	// return the out id so user can access data later
 
     return 0;
->>>>>>> nvm-read
 }
 
 
@@ -594,5 +576,22 @@ void test_write_and_read_latest(void)
 	printf("%s", (char*) buf);
 
 	printf("\r\n\n\nDone reading data \r\n");
+}
+
+void test_crc(void) {
+	uint8_t data[9] = {0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39};
+	uint32_t crc_out = ftl_crc32(data, 9);
+	printf("crc test:\n");
+	/*
+	for (int i = 0; i < 4; i ++) {
+		printf("%2X ", (crc_out >> (32 - 8 * (i + 1))) & 0xFF);
+	}
+	*/
+	printf("%02X %02X %02X %02X\n",
+		(unsigned int)((crc_out >> 24) & 0xFF),
+		(unsigned int)((crc_out >> 16) & 0xFF),
+		(unsigned int)((crc_out >> 8) & 0xFF),
+		(unsigned int)(crc_out & 0xFF)
+    );
 }
 

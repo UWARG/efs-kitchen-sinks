@@ -53,6 +53,8 @@
 
 #define FTL_INVALID_PAGE 0xFFFFFFFFu
 
+#define FTL_CRC_POLY 0xEDB88320
+
 /*
  * ============================
  *  RECORD HEADER FORMAT
@@ -105,21 +107,13 @@ int ftl_format(void);
 // Scan all units, find oldest/newest VALID records, init internal FTL state.
 int ftl_mount(void);
 
-<<<<<<< HEAD
-
-uint8_t crc8(uint8_t data, uint8_t poly);
-uint16_t crc16(uint8_t data, uint16_t poly);
-
-
-=======
 int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len);
 
 // write one record (1 record per 4KB unit). Returns 0 on success.
 int ftl_write(const void *data, uint16_t len, uint32_t *out_id);
 
 
-// testing funcctions
->>>>>>> nvm-read
+// testing functions
 void test_format(void);
 void test_mount(void);
 void test_format_and_mount(void);
@@ -127,6 +121,9 @@ void test_format_and_mount_two_records(void);
 void test_write_and_read_latest(void);
 
 void test_read(void);
+
+void test_crc(void);
+
 
 extern SPI_HandleTypeDef hspi1;
 
