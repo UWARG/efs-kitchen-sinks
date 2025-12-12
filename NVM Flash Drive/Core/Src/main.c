@@ -126,65 +126,28 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  HAL_Delay(5000);
+  HAL_Delay(1000);
 
-  /*
-  for (int i = 0; i < 5; i++){
-	  BSP_LED_Toggle(LED_RED);
-	  BSP_LED_Toggle(LED_BLUE);
-	  HAL_Delay(500);
+  //ftl_format();
+
+  // do this on every power cycle
+  if (ftl_mount() != 0){
+	  printf("there was an error in the mounting! \r\n");
   }
-  printf("starting...");
-  uint8_t id[3];
-  HAL_StatusTypeDef st = readID(id);
-
-  if (st == HAL_OK) {
-	  if (id[0] == 0x20 && id[1] == 0xBA && id[2] == 0x19) {
-		  printf("Flash OK (Micron N25Q256A)\r\n");
-	  } else {
-		  printf("Unexpected JEDEC: %02X %02X %02X\r\n", id[0], id[1], id[2]);
-	  }
-  } else {
-	  printf("readID failed: %d\r\n", (int)st);
-  }
-  ReceiveTransmitTest();
-*/
-
-  //WriteTest();
-  //ReadTest();
-
-  if (1){
-//	  ftl_format();
-
-	  // do this on every power cycle
-	  if (ftl_mount() != 0){
-		  printf("there was an error in the mounting! \r\n");
-	  }
-	  else printf("=================== successfully mounted! ================= \r\n");
-	  ftl_state_view_t st = ftl_get_state();
-	  	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
-	  	       (unsigned long)st.head_idx,
-	  	       (unsigned long)st.tail_idx,
-	  	       (unsigned long)st.next_idx,
-	  	       (unsigned long)st.next_id,
-	  	       (int)st.mounted);
-	  test_write_and_read_latest();
-  }
-
+  else printf("=================== successfully mounted! ================= \r\n");
+  ftl_state_view_t st = ftl_get_state();
+	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
+		   (unsigned long)st.head_idx,
+		   (unsigned long)st.tail_idx,
+		   (unsigned long)st.next_idx,
+		   (unsigned long)st.next_id,
+		   (int)st.mounted);
+  test_write_and_read_latest();
 
   printf("Test Complete\r\n");
 
-
   while (1)
   {
-	  //printf("hello world\r\n");
-	  HAL_Delay(1000);
-	  // currently any rx is failing
-	  // make sure to wait 1 ms for power up time befoe using the chip
-//	  printf("in while loop, done test \r\n");
-	  BSP_LED_Toggle(LED_GREEN);
-	  HAL_Delay(300);
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

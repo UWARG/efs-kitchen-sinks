@@ -122,7 +122,6 @@ void test_write_and_read_latest(void);
 
 void test_read(void);
 
-void test_crc(void);
 
 
 extern SPI_HandleTypeDef hspi1;

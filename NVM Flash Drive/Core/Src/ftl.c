@@ -589,21 +589,3 @@ void test_write_and_read_latest(void)
 
 	printf("\r\n\n\nDone reading data \r\n");
 }
-
-void test_crc(void) {
-	uint8_t data[9] = {0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39};
-	uint32_t crc_out = ftl_crc32(data, 9);
-	printf("crc test:\n");
-	/*
-	for (int i = 0; i < 4; i ++) {
-		printf("%2X ", (crc_out >> (32 - 8 * (i + 1))) & 0xFF);
-	}
-	*/
-	printf("%02X %02X %02X %02X\n",
-		(unsigned int)((crc_out >> 24) & 0xFF),
-		(unsigned int)((crc_out >> 16) & 0xFF),
-		(unsigned int)((crc_out >> 8) & 0xFF),
-		(unsigned int)(crc_out & 0xFF)
-    );
-}
-
