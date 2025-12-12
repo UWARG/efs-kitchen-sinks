@@ -16,5 +16,3 @@
 ../Core/Src/nvm_driver.c:160:6:ReadTest	3
 ../Core/Src/nvm_driver.c:188:6:WriteTest	7
 ../Core/Src/nvm_driver.c:233:6:ReceiveTransmitTest	8
-../Core/Src/nvm_driver.c:289:6:txTest	2
-../Core/Src/nvm_driver.c:336:6:rxTest	2

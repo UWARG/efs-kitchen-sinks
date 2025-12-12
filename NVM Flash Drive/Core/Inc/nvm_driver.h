@@ -22,16 +22,12 @@
 #define FLASH_CS_PORT GPIOA
 #define FLASH_CS_PIN  GPIO_PIN_4
 
-#define RX_TX
-#define RX_RX
-
 
 // testing functions, use these in main
 HAL_StatusTypeDef readID(uint8_t id[20]);
 void ReadTest(void);
 void WriteTest(void);
 void ReceiveTransmitTest(void);
-void txTest();
 
 // static functions for reading and writing
 uint8_t read_sr(void);

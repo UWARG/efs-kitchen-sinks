@@ -10,4 +10,3 @@
 ../Core/Src/ftl.c:436:6:test_format_and_mount	1
 ../Core/Src/ftl.c:466:6:test_format_and_mount_two_records	1
 ../Core/Src/ftl.c:537:6:test_write_and_read_latest	3
-../Core/Src/ftl.c:593:6:test_crc	1
