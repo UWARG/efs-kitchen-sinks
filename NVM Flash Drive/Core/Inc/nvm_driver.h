@@ -40,6 +40,7 @@ void clear_fsr(void);
 bool write_enable(void);
 HAL_StatusTypeDef wait_ready(uint32_t timeout_ms);
 HAL_StatusTypeDef erase_4k(uint32_t addr24);
+HAL_StatusTypeDef erase_full();
 HAL_StatusTypeDef page_program(uint32_t addr24, const uint8_t *data, uint16_t len);
 void read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 

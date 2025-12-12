@@ -151,19 +151,31 @@ int main(void)
 */
   //WriteTest();
 
-  ReadTest();
+//  ReadTest();
 
 
-  if (0){
-	  ftl_format();
+  if (1){
+//	  ftl_format();
 
 	  // do this on every power cycle
 	  if (ftl_mount() != 0){
 		  printf("there was an error in the mounting! \r\n");
 	  }
 	  else printf("=================== successfully mounted! ================= \r\n");
+	  ftl_state_view_t st = ftl_get_state();
+	  	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
+	  	       (unsigned long)st.head_idx,
+	  	       (unsigned long)st.tail_idx,
+	  	       (unsigned long)st.next_idx,
+	  	       (unsigned long)st.next_id,
+	  	       (int)st.mounted);
+
+//	  test_read();
+	  test_write_and_read_latest();
   }
 
+
+  printf("Test Complete\r\n");
 
   while (1)
   {
@@ -171,7 +183,7 @@ int main(void)
 	  HAL_Delay(1000);
 	  // currently any rx is failing
 	  // make sure to wait 1 ms for power up time befoe using the chip
-	  printf("in while loop, done test \r\n");
+//	  printf("in while loop, done test \r\n");
 	  BSP_LED_Toggle(LED_GREEN);
 	  HAL_Delay(300);
 
