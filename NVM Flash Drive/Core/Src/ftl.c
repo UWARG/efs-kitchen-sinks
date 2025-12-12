@@ -143,6 +143,7 @@ int ftl_mount(void)
     for (uint32_t i = 0; i < FTL_NUM_UNITS; i++) {
         uint32_t base_addr = ftl_unit_base_addr(i);
         uint32_t hdr_addr  = base_addr + FTL_HEADER_OFFSET;
+        uint32_t payload_addr = base_addr + FTL_PAYLOAD_OFFSET;
 
         ftl_record_header_t hdr;
         memset(&hdr, 0xFF, sizeof(hdr));  // just defensive
@@ -166,6 +167,14 @@ int ftl_mount(void)
 
         // (Optional future step: CRC check of payload bytes.
         //  We'll add that once append/write is in place.)
+        uint8_t buffer[hdr.length];
+        read_data(payload_addr, buffer, hdr.length);
+
+        if (hdr.crc != ftl_crc32(buffer, hdr.length)) {
+        	hdr.status = FTL_STATUS_BAD;
+        	//TODO: handle corrupted block
+        	continue;
+        }
 
 
         // Track oldest (min_id) and newest (max_id) record
@@ -327,8 +336,6 @@ int ftl_write(const void *data, uint16_t len, uint32_t *out_id)
     hdr.status = FTL_STATUS_VALID;     // TODO: set this as valid but add crc
     hdr.length = len;
     hdr.crc = ftl_crc32((const uint8_t *)data, len);
-
-
 
     // ============================  actually write to the chip
 
@@ -562,8 +569,11 @@ void test_write_and_read_latest(void)
 	if (readSt0) {
 		printf("Read Error: %d", readSt0);
 	}
+
+	uint32_t crc0 = ftl_crc32(buf, len);
 	buf[len] = '\0';
-	printf("%s", (char*) buf);
+	printf("%s\r\n", (char*) buf);
+	printf("0x%08lX\r\n", crc0);
 
 	printf("\r\n");
 
@@ -572,8 +582,10 @@ void test_write_and_read_latest(void)
 	if (readSt1) {
 		printf("Read Error: %d", readSt1);
 	}
+	uint32_t crc1 = ftl_crc32(buf, len);
 	buf[len] = '\0';
-	printf("%s", (char*) buf);
+	printf("%s\r\n", (char*) buf);
+	printf("0x%08lX\r\n", crc1);
 
 	printf("\r\n\n\nDone reading data \r\n");
 }

@@ -152,7 +152,6 @@ int main(void)
 
   //WriteTest();
   //ReadTest();
-  //test_crc();
 
   if (1){
 //	  ftl_format();
@@ -169,8 +168,6 @@ int main(void)
 	  	       (unsigned long)st.next_idx,
 	  	       (unsigned long)st.next_id,
 	  	       (int)st.mounted);
-
-//	  test_read();
 	  test_write_and_read_latest();
   }
 
