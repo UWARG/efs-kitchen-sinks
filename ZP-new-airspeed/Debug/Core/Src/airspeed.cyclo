@@ -1,0 +1,4 @@
+../Core/Src/airspeed.cpp:9:6:bool airspeed::airspeedInit()	1
+../Core/Src/airspeed.cpp:15:6:bool airspeed::getAirspeedData(double*)	2
+../Core/Src/airspeed.cpp:20:6:bool airspeed::calculateAirspeed(double*)	2
+../Core/Src/airspeed.cpp:54:6:bool airspeed::getOffset(bool)	5
