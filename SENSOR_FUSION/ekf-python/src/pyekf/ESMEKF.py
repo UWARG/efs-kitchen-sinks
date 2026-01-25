@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
-from app.utils import (
+from pyekf.utils import (
     skew_symmetric,
     normalize_quaternion,
     IDENTITY_QUATERNION,
@@ -9,7 +9,7 @@ from app.utils import (
     MAGNETOMETER_INERTIAL,
     normalize_vector
 )
-from app.NominalState import NominalState
+from pyekf.NominalState import NominalState
 
 class ESMEKF:
     def __init__(

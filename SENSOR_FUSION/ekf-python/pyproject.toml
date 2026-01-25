@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "A Multiplicative Quaternion Extended Kalman Filter for sensor fusion."
 readme = "README.md"
 requires-python = ">=3.12"
+authors = [{ name = "Aditya Bang" }]
+
 dependencies = [
     "numpy>=2.3.1",
     "pyquaternion>=0.9.9",
