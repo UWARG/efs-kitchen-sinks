@@ -1,7 +1,7 @@
 [project]
-name = "ekf-python"
+name = "pyekf"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Multiplicative Quaternion Extended Kalman Filter for sensor fusion."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
