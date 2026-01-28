@@ -21,6 +21,12 @@ def test_nominal_state_constant_rotation_and_acceleration():
     example_omega_body = np.array([0.0, 0.0, 1.0])      # rad/s
     example_accel_body = np.array([0.0, 0.0, -10.0])   # m/s^2
 
+    print("\n--- Nominal State Propagation Test ---")
+    print(f"dt = {dt}, steps = {num_simulation_steps}, total_time = {total_time}")
+    print(f"Gyro (body): {example_omega_body}")
+    print(f"Accel (body): {example_accel_body}")
+    print("-" * 50)
+
     # Create nominal state
     nominal_state = NominalState(
         displacement=initial_position,
@@ -30,13 +36,20 @@ def test_nominal_state_constant_rotation_and_acceleration():
         prev_accel_measurement=example_accel_body,
     )
 
+    print("Initial state:")
+    print(nominal_state)
+    print("-" * 50)
+
     # Propagate state
-    for _ in range(num_simulation_steps):
+    for i in range(num_simulation_steps):
         nominal_state.update(
             example_omega_body,
             example_accel_body,
             dt
         )
+        print(f"After step {i + 1}:")
+        print(nominal_state)
+        print("-" * 30)
 
     # ---- Expected analytical results ----
 
@@ -58,6 +71,18 @@ def test_nominal_state_constant_rotation_and_acceleration():
         0.0,
         np.sin(0.5 * total_time),
     ])
+
+    print("\nExpected results:")
+    print(f"Expected displacement: {expected_p}")
+    print(f"Expected velocity:     {expected_v}")
+    print(f"Expected quaternion:   {expected_q}")
+    print("-" * 50)
+
+    print("Final estimated state:")
+    print(f"Displacement: {nominal_state.prev_displacement.flatten()}")
+    print(f"Velocity:     {nominal_state.prev_velocity.flatten()}")
+    print(f"Quaternion:   {nominal_state.prev_quaternion.flatten()}")
+    print("-" * 50)
 
     # ---- Assertions ----
 
@@ -86,3 +111,5 @@ def test_nominal_state_constant_rotation_and_acceleration():
         rtol=1e-6,
         atol=1e-8,
     )
+
+    print("Test passed: Nominal state matches analytical solution.")
