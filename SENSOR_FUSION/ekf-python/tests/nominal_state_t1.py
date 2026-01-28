@@ -1,6 +1,6 @@
 import numpy as np
-from app.NominalState import NominalState
-from app.utils import GRAVITY_INERTIAL
+from pyekf.NominalState import NominalState
+from pyekf.utils import GRAVITY_INERTIAL
 
 def test1():
     # Initial State

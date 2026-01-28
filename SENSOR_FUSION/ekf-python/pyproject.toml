@@ -12,3 +12,18 @@ dependencies = [
     "scipy>=1.16.0",
     "sympy>=1.14.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest"
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
