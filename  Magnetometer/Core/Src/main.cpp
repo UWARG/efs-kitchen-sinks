@@ -18,11 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "mlx90393_i2c.hpp"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "mlx90393_i2c.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
