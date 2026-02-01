@@ -57,7 +57,7 @@ HAL_StatusTypeDef MLX90393::i2c_transceive_IT(uint8_t *tx_data, uint8_t *rx_data
 	if(status != HAL_OK){
 		return status;
 	}
-	status = HAL_I2C_Master_Receive_IT(hi2c, DEFAULT_I2C_ADDRESS, rx_data, rx_size);
+	status = HAL_I2C_Master_Receive_DMA(hi2c, DEFAULT_I2C_ADDRESS, rx_data, rx_size);
 	return status;
 }
 

@@ -1,7 +1,9 @@
-../Core/Src/main.cpp:116:5:int main()	1
-../Core/Src/main.cpp:183:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:228:13:void MX_I2C3_Init()	4
-../Core/Src/main.cpp:276:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:299:6:void Error_Handler()	1
-../Core/Src/main.cpp:308:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:308:1:cpp)	1
+../Core/Src/main.cpp:118:5:int main()	1
+../Core/Src/main.cpp:186:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:231:13:void MX_I2C3_Init()	4
+../Core/Src/main.cpp:277:13:void MX_DMA_Init()	1
+../Core/Src/main.cpp:296:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:324:6:void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef*)	1
+../Core/Src/main.cpp:334:6:void Error_Handler()	1
+../Core/Src/main.cpp:343:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:343:1:cpp)	1
