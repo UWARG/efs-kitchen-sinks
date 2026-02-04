@@ -4,7 +4,6 @@ from numpy.typing import NDArray
 from pyekf.utils import (
     skew_symmetric,
     GRAVITY_INERTIAL,
-    b_to_i_frame_rot_matrix,
     MAGNETOMETER_INERTIAL,
     normalize_vector,
 )
@@ -12,6 +11,7 @@ from pyekf.quaternions import (
     IDENTITY_QUATERNION,
     normalize_quaternion,
     average_quaternions,
+    b_to_i_frame_rot_matrix,
 )
 from pyekf.NominalState import NominalState
 from pyekf.RawMeasurements import RawMeasurements

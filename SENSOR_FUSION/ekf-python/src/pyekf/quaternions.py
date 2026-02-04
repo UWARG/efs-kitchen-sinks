@@ -61,3 +61,15 @@ def average_quaternions(q1: NDArray[np.float64], q2: NDArray[np.float64]) -> NDA
     # Average quaternion = q1 x r_n
     q_avg = multiply_quaternions(q1, r_n)
     return q_avg / np.linalg.norm(q_avg)
+
+def b_to_i_frame_rot_matrix(q: NDArray[np.float64]):
+    q = normalize_quaternion(q) # Ensure it's normalized
+    w, x, y, z = q[0, 0], q[1, 0], q[2, 0], q[3, 0]
+
+    # Rotation matrix from body frame to inertial frame (C_b^i)
+    C = np.array([
+        [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w,     2*x*z + 2*y*w],
+        [2*x*y + 2*z*w,     1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w],
+        [2*x*z - 2*y*w,     2*y*z + 2*x*w,     1 - 2*x**2 - 2*y**2]
+    ])
+    return C
