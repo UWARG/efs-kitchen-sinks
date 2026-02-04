@@ -1,7 +1,15 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from pyekf.utils import skew_symmetric, normalize_quaternion, IDENTITY_QUATERNION, GRAVITY_INERTIAL, b_to_i_frame_rot_matrix
+from pyekf.utils import (
+    skew_symmetric,
+    GRAVITY_INERTIAL,
+    b_to_i_frame_rot_matrix,
+)
+from pyekf.quaternions import (
+    IDENTITY_QUATERNION,
+    normalize_quaternion,
+)
 
 class NominalState:
     def __init__(

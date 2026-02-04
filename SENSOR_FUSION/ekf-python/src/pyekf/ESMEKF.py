@@ -3,12 +3,14 @@ from numpy.typing import NDArray
 
 from pyekf.utils import (
     skew_symmetric,
-    normalize_quaternion,
-    IDENTITY_QUATERNION,
     GRAVITY_INERTIAL,
     b_to_i_frame_rot_matrix,
     MAGNETOMETER_INERTIAL,
     normalize_vector,
+)
+from pyekf.quaternions import (
+    IDENTITY_QUATERNION,
+    normalize_quaternion,
     average_quaternions,
 )
 from pyekf.NominalState import NominalState
@@ -85,6 +87,7 @@ class ESMEKF:
             f"{self.nominal_state}"
         )
     
+    # TODO: change method name to state_extrapolation maybe
     def predict(
             self,
             gyro_new: NDArray[np.float64],
@@ -109,20 +112,25 @@ class ESMEKF:
         # non-zero submatrices of F
         omega_matrix = -skew_symmetric(self.raw_measurements.gyro_bar)
         accel_matrix = -0.5 * (
-            np.dot(b_to_i_frame_rot_matrix(self.nominal_state.quaternion_new), self.raw_measurements.accel_new)
+            np.dot(b_to_i_frame_rot_matrix(self.nominal_state.quaternion_new), skew_symmetric(self.raw_measurements.accel_new))
             +
-            np.dot(b_to_i_frame_rot_matrix(self.nominal_state.quaternion_prev), self.raw_measurements.accel_prev)
+            np.dot(b_to_i_frame_rot_matrix(self.nominal_state.quaternion_prev), skew_symmetric(self.raw_measurements.accel_prev))
         )
         change_of_basis_matrix = -b_to_i_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev))
 
 
         F = np.zeros(shape=(18, 18), dtype=float)
-        # TODO: fill in F with the correct submatrices
+        F[0:3, 0:3] = omega_matrix
+        F[0:3, 9:12] = -np.eye(3, dtype=float)
+        F[3:6, 0:3] = accel_matrix
+        F[3:6, 12:15] = change_of_basis_matrix
+        F[6:9, 3:6] = np.eye(3, dtype=float)
 
         return F
 
 
-    # can make this I + F*dt + 1/2 F^2*dt^2 for better accuracy
+    # state transition matrix approximated by discritization of F
+    # can make this I + F*dt + 1/2 F^2*dt^2 for better approximation of matrix exponential
     def _state_transition_matrix(self, dt: np.float64):
         return np.eye(18, dtype=float) + dt * self._error_state_gradient_matrix_F()
 

@@ -1,20 +1,10 @@
 import numpy as np
 from numpy.typing import NDArray
 
-IDENTITY_QUATERNION = np.array([[1.0], [0.0], [0.0], [0.0]], dtype=np.float64)
+from pyekf.quaternions import normalize_quaternion
+
 GRAVITY_INERTIAL = np.array([[0.0], [0.0], [9.81]], dtype=np.float64)
 MAGNETOMETER_INERTIAL = np.array([[1.0], [0.0], [0.0]], dtype=np.float64)
-
-def normalize_quaternion(q: NDArray[np.float64]) -> NDArray[np.float64]:
-    norm = np.linalg.norm(q)
-    if norm < 1e-9:
-        # Handle very small quaternions (e.g., zero vector)
-        return IDENTITY_QUATERNION
-    return q / norm
-
-def average_quaternions(q1: NDArray[np.float64], q2: NDArray[np.float64]) -> NDArray[np.float64]:
-    # TODO: Implement quaternion averaging
-    pass
 
 def normalize_vector(v: NDArray[np.float64]) -> NDArray[np.float64]:
     norm = np.linalg.norm(v)
