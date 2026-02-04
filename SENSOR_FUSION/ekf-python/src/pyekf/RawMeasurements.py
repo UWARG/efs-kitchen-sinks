@@ -1,6 +1,8 @@
 import numpy as np
 from numpy.typing import NDArray
 
+from pyekf.utils import to_col_vector
+
 class RawMeasurements:
     """
     Class needed to store current and previous timestep measurements.
@@ -12,31 +14,24 @@ class RawMeasurements:
         accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
         mag_initial: NDArray[np.float64] = np.zeros((3, 1)),
     ):
-        self.gyro_prev: NDArray[np.float64] = self._to_col_vector(gyro_initial)
-        self.gyro_new: NDArray[np.float64] = self._to_col_vector(gyro_initial)
-        self.accel_prev: NDArray[np.float64] = self._to_col_vector(accel_initial)
-        self.accel_new: NDArray[np.float64] = self._to_col_vector(accel_initial)
-        self.mag_prev: NDArray[np.float64] = self._to_col_vector(mag_initial)
-        self.mag_new: NDArray[np.float64] = self._to_col_vector(mag_initial)
-
-    def _to_col_vector(self, v: NDArray[np.float64]) -> NDArray[np.float64]:
-        v = np.asarray(v, dtype=float)
-        v_flat = v.flatten()
-        if v_flat.size != 3:
-            raise ValueError(f"Expected vector with 3 elements, got shape {v.shape}")
-        return v_flat.reshape(3, 1)
+        self.gyro_prev: NDArray[np.float64] = to_col_vector(gyro_initial)
+        self.gyro_new: NDArray[np.float64] = to_col_vector(gyro_initial)
+        self.accel_prev: NDArray[np.float64] = to_col_vector(accel_initial)
+        self.accel_new: NDArray[np.float64] = to_col_vector(accel_initial)
+        self.mag_prev: NDArray[np.float64] = to_col_vector(mag_initial)
+        self.mag_new: NDArray[np.float64] = to_col_vector(mag_initial)
 
     def update_gyro(self, gyro_new: NDArray[np.float64]):
         self.gyro_prev = self.gyro_new
-        self.gyro_new = self._to_col_vector(gyro_new)
+        self.gyro_new = to_col_vector(gyro_new)
     
     def update_accel(self, accel_new: NDArray[np.float64]):
         self.accel_prev = self.accel_new
-        self.accel_new = self._to_col_vector(accel_new)
+        self.accel_new = to_col_vector(accel_new)
     
     def update_mag(self, mag_new: NDArray[np.float64]):
         self.mag_prev = self.mag_new
-        self.mag_new = self._to_col_vector(mag_new)
+        self.mag_new = to_col_vector(mag_new)
 
     @property
     def gyro_bar(self) -> NDArray[np.float64]:
