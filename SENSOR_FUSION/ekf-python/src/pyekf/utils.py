@@ -12,6 +12,10 @@ def normalize_quaternion(q: NDArray[np.float64]) -> NDArray[np.float64]:
         return IDENTITY_QUATERNION
     return q / norm
 
+def average_quaternions(q1: NDArray[np.float64], q2: NDArray[np.float64]) -> NDArray[np.float64]:
+    # TODO: Implement quaternion averaging
+    pass
+
 def normalize_vector(v: NDArray[np.float64]) -> NDArray[np.float64]:
     norm = np.linalg.norm(v)
     if norm == 0:
