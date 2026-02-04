@@ -87,29 +87,29 @@ def test_nominal_state_constant_rotation_and_acceleration():
     print("-" * 50)
 
     print("Final estimated state:")
-    print(f"Displacement: {nominal_state.prev_displacement.flatten()}")
-    print(f"Velocity:     {nominal_state.prev_velocity.flatten()}")
-    print(f"Quaternion:   {nominal_state.prev_quaternion.flatten()}")
+    print(f"Displacement: {nominal_state.displacement_new.flatten()}")
+    print(f"Velocity:     {nominal_state.velocity_new.flatten()}")
+    print(f"Quaternion:   {nominal_state.quaternion_new.flatten()}")
     print("-" * 50)
 
     # ---- Assertions ----
 
     assert_allclose(
-        nominal_state.prev_displacement.flatten(),
+        nominal_state.displacement_new.flatten(),
         expected_p,
         rtol=1e-6,
         atol=1e-8,
     )
 
     assert_allclose(
-        nominal_state.prev_velocity.flatten(),
+        nominal_state.velocity_new.flatten(),
         expected_v,
         rtol=1e-6,
         atol=1e-8,
     )
 
     # Quaternion sign ambiguity: q and -q represent same rotation
-    q_est = nominal_state.prev_quaternion.flatten()
+    q_est = nominal_state.quaternion_new.flatten()
     if np.dot(q_est, expected_q) < 0:
         q_est = -q_est
 

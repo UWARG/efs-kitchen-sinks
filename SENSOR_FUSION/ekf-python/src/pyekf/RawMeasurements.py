@@ -14,6 +14,7 @@ class RawMeasurements:
         accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
         mag_initial: NDArray[np.float64] = np.zeros((3, 1)),
     ):
+        # convention: on initialization, both prev and new are the same
         self.gyro_prev: NDArray[np.float64] = to_col_vector(gyro_initial, 3)
         self.gyro_new: NDArray[np.float64] = to_col_vector(gyro_initial, 3)
         self.accel_prev: NDArray[np.float64] = to_col_vector(accel_initial, 3)
