@@ -14,11 +14,11 @@ from pyekf.NominalState import NominalState
 class ESMEKF:
     def __init__(
             self,
-            displacement: NDArray[np.float64] = np.zeros((3, 1)),
-            velocity: NDArray[np.float64] = np.zeros((3, 1)),
-            quaternion: NDArray[np.float64] = IDENTITY_QUATERNION,
-            initial_gyro_measurement: NDArray[np.float64] = np.zeros((3, 1)),
-            initial_accel_measurement: NDArray[np.float64] = np.zeros((3, 1)),
+            displacement_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            velocity_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            quaternion_initial: NDArray[np.float64] = IDENTITY_QUATERNION,
+            gyro_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
             gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
             magnetometer_inertial: NDArray[np.float64] = MAGNETOMETER_INERTIAL,
             gyro_cov: np.float64 = np.float64(0.0),
@@ -30,11 +30,11 @@ class ESMEKF:
 
         # Nominal State
         self.nominal_state = NominalState(
-            displacement=displacement,
-            velocity=velocity,
-            quaternion=quaternion,
-            prev_gyro_measurement=initial_gyro_measurement,
-            prev_accel_measurement=initial_accel_measurement,
+            displacement_initial=displacement_initial,
+            velocity_initial=velocity_initial,
+            quaternion_initial=quaternion_initial,
+            gyro_initial=gyro_initial,
+            accel_initial=accel_initial,
             gravity_inertial=gravity_inertial
         )
 
