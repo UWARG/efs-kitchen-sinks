@@ -9,15 +9,11 @@ class NominalState:
             velocity_initial: NDArray[np.float64] = np.zeros((3, 1)),
             quaternion_initial: NDArray[np.float64] = IDENTITY_QUATERNION,
             gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
-            gyro_initial: NDArray[np.float64] = np.zeros((3, 1)),
-            accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
         ):
 
         self.prev_displacement = np.asarray(displacement_initial, dtype=float).reshape(3, 1)
         self.prev_velocity = np.asarray(velocity_initial, dtype=float).reshape(3, 1)
         self.prev_quaternion = normalize_quaternion(np.asarray(quaternion_initial, dtype=float)).reshape(4, 1)
-        self.prev_gyro_measurement = np.asarray(gyro_initial, dtype=float).reshape(3, 1)
-        self.prev_accel_measurement = np.asarray(accel_initial, dtype=float).reshape(3, 1)
         self.gravity_inertial = np.asarray(gravity_inertial, dtype=float).reshape(3, 1)
 
     def __str__(self):
@@ -25,35 +21,32 @@ class NominalState:
                 f"  Displacement (p):   {self.prev_displacement.flatten()} m\n"
                 f"  Velocity (v):   {self.prev_velocity.flatten()} m/s\n"
                 f"  Quaternion (q): {self.prev_quaternion.flatten()} (w,x,y,z)\n"
-                f"  Prev Gyro (w_prev): {self.prev_gyro_measurement.flatten()} rad/s\n"
-                f"  Prev Accel (a_prev): {self.prev_accel_measurement.flatten()} m/s^2")
+)
 
     def update(
             self,
-            gyro_measurement: NDArray[np.float64],
-            accel_measurement: NDArray[np.float64],
+            gyro_new: NDArray[np.float64],
+            gyro_prev: NDArray[np.float64],
+            accel_new: NDArray[np.float64],
+            accel_prev: NDArray[np.float64],
             dt: np.float64
         ):
 
-        gyro_measurement = np.asarray(gyro_measurement, dtype=float).reshape(3, 1)
-        accel_measurement = np.asarray(accel_measurement, dtype=float).reshape(3, 1)
-
-        quaternion_new = self._update_quaternion(gyro_measurement, dt)
-        velocity_new = self._update_velocity(quaternion_new, accel_measurement, dt)
+        quaternion_new = self._update_quaternion(gyro_new, gyro_prev, dt)
+        velocity_new = self._update_velocity(quaternion_new, accel_new, accel_prev, dt)
         displacement_new = self._update_displacement(velocity_new, dt)
 
-        self.prev_gyro_measurement = gyro_measurement
-        self.prev_accel_measurement = accel_measurement
         self.prev_quaternion = quaternion_new
         self.prev_velocity = velocity_new
         self.prev_displacement = displacement_new
     
     def _update_quaternion(
             self,
-            gyro_measurement: NDArray[np.float64],
+            gyro_new: NDArray[np.float64],
+            gyro_prev: NDArray[np.float64],
             dt: np.float64        
         ):
-        gyro_bar = (gyro_measurement + self.prev_gyro_measurement) / 2
+        gyro_bar = (gyro_new + gyro_prev) / 2
         omega_matrix = self._exp_omega_matrix(gyro_bar, dt)
 
         quaternion_new = np.dot(omega_matrix, self.prev_quaternion)
@@ -89,11 +82,12 @@ class NominalState:
             self,
             quaternion_new: NDArray[np.float64],
             accel_body_new: NDArray[np.float64],
+            accel_body_prev: NDArray[np.float64],
             dt: np.float64
         ):
 
         accel_inertial_new = np.dot(b_to_i_frame_rot_matrix(quaternion_new), accel_body_new)
-        accel_inertial_old = np.dot(b_to_i_frame_rot_matrix(self.prev_quaternion), self.prev_accel_measurement)
+        accel_inertial_old = np.dot(b_to_i_frame_rot_matrix(self.prev_quaternion), accel_body_prev)
         accel_bar = (accel_inertial_new + accel_inertial_old) / 2
         return (accel_bar + self.gravity_inertial) * dt + self.prev_velocity
 

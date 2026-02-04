@@ -17,8 +17,6 @@ class ESMEKF:
             displacement_initial: NDArray[np.float64] = np.zeros((3, 1)),
             velocity_initial: NDArray[np.float64] = np.zeros((3, 1)),
             quaternion_initial: NDArray[np.float64] = IDENTITY_QUATERNION,
-            gyro_initial: NDArray[np.float64] = np.zeros((3, 1)),
-            accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
             gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
             magnetometer_inertial: NDArray[np.float64] = MAGNETOMETER_INERTIAL,
             gyro_cov: np.float64 = np.float64(0.0),
@@ -33,8 +31,6 @@ class ESMEKF:
             displacement_initial=displacement_initial,
             velocity_initial=velocity_initial,
             quaternion_initial=quaternion_initial,
-            gyro_initial=gyro_initial,
-            accel_initial=accel_initial,
             gravity_inertial=gravity_inertial
         )
 

@@ -3,6 +3,7 @@ import pytest
 from numpy.testing import assert_allclose
 
 from pyekf.NominalState import NominalState
+from pyekf.RawMeasurements import RawMeasurements
 from pyekf.utils import GRAVITY_INERTIAL
 
 
@@ -27,13 +28,16 @@ def test_nominal_state_constant_rotation_and_acceleration():
     print(f"Accel (body): {example_accel_body}")
     print("-" * 50)
 
-    # Create nominal state
+    # Create state
+    raw_measurements = RawMeasurements(
+        gyro_initial=example_omega_body,
+        accel_initial=example_accel_body,
+    )
+
     nominal_state = NominalState(
         displacement_initial=initial_position,
         velocity_initial=initial_velocity,
         quaternion_initial=initial_quaternion,
-        gyro_initial=example_omega_body,
-        accel_initial=example_accel_body,
     )
 
     print("Initial state:")
@@ -42,10 +46,14 @@ def test_nominal_state_constant_rotation_and_acceleration():
 
     # Propagate state
     for i in range(num_simulation_steps):
+        raw_measurements.update_gyro(example_omega_body)
+        raw_measurements.update_accel(example_accel_body)
         nominal_state.update(
-            example_omega_body,
-            example_accel_body,
-            dt
+            gyro_new=raw_measurements.gyro_new,
+            gyro_prev=raw_measurements.gyro_prev,
+            accel_new=raw_measurements.accel_new,
+            accel_prev=raw_measurements.accel_prev,
+            dt=dt
         )
         print(f"After step {i + 1}:")
         print(nominal_state)
