@@ -17,7 +17,7 @@ def test_nominal_state_constant_rotation_and_acceleration():
     num_simulation_steps = 10
     total_time = num_simulation_steps * dt
 
-    # IMU measurements
+    # IMU measurements are constant
     example_omega_body = np.array([0.0, 0.0, 1.0])      # rad/s
     example_accel_body = np.array([0.0, 0.0, -10.0])   # m/s^2
 
@@ -29,11 +29,11 @@ def test_nominal_state_constant_rotation_and_acceleration():
 
     # Create nominal state
     nominal_state = NominalState(
-        displacement=initial_position,
-        velocity=initial_velocity,
-        quaternion=initial_quaternion,
-        prev_gyro_measurement=example_omega_body,
-        prev_accel_measurement=example_accel_body,
+        displacement_initial=initial_position,
+        velocity_initial=initial_velocity,
+        quaternion_initial=initial_quaternion,
+        gyro_initial=example_omega_body,
+        accel_initial=example_accel_body,
     )
 
     print("Initial state:")

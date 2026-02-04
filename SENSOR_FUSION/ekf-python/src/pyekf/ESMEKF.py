@@ -90,8 +90,15 @@ class ESMEKF:
             dt=dt
         )
 
-        # only computing non-zero terms
-        gyro_bar: NDArray[np.float64] = (gyro_measurement_new + gyro_measurement_prev) / 2
+    def _error_state_gradient_matrix_F(
+            self,
+            gyro_measurement_new: NDArray[np.float64],
+            accel_measurement_new: NDArray[np.float64],
+        ):
+        gyro_bar: NDArray[np.float64] = (gyro_measurement_new + self.nominal_state.prev_gyro_measurement) / 2
+
+        F = np.zeros(shape=(18, 18), dtype=float)
+
 
     # make I + dt * F
     def _state_transition_matrix(self):

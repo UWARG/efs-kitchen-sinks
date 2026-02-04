@@ -5,19 +5,19 @@ from pyekf.utils import skew_symmetric, normalize_quaternion, IDENTITY_QUATERNIO
 class NominalState:
     def __init__(
             self,
-            displacement: NDArray[np.float64] = np.zeros((3, 1)),
-            velocity: NDArray[np.float64] = np.zeros((3, 1)),
-            quaternion: NDArray[np.float64] = IDENTITY_QUATERNION,
-            prev_gyro_measurement: NDArray[np.float64] = np.zeros((3, 1)),
-            prev_accel_measurement: NDArray[np.float64] = np.zeros((3, 1)),
-            gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL
+            displacement_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            velocity_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            quaternion_initial: NDArray[np.float64] = IDENTITY_QUATERNION,
+            gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
+            gyro_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
         ):
 
-        self.prev_displacement = np.asarray(displacement, dtype=float).reshape(3, 1)
-        self.prev_velocity = np.asarray(velocity, dtype=float).reshape(3, 1)
-        self.prev_quaternion = normalize_quaternion(np.asarray(quaternion, dtype=float)).reshape(4, 1)
-        self.prev_gyro_measurement = np.asarray(prev_gyro_measurement, dtype=float).reshape(3, 1)
-        self.prev_accel_measurement = np.asarray(prev_accel_measurement, dtype=float).reshape(3, 1)
+        self.prev_displacement = np.asarray(displacement_initial, dtype=float).reshape(3, 1)
+        self.prev_velocity = np.asarray(velocity_initial, dtype=float).reshape(3, 1)
+        self.prev_quaternion = normalize_quaternion(np.asarray(quaternion_initial, dtype=float)).reshape(4, 1)
+        self.prev_gyro_measurement = np.asarray(gyro_initial, dtype=float).reshape(3, 1)
+        self.prev_accel_measurement = np.asarray(accel_initial, dtype=float).reshape(3, 1)
         self.gravity_inertial = np.asarray(gravity_inertial, dtype=float).reshape(3, 1)
 
     def __str__(self):
@@ -94,7 +94,8 @@ class NominalState:
 
         accel_inertial_new = np.dot(b_to_i_frame_rot_matrix(quaternion_new), accel_body_new)
         accel_inertial_old = np.dot(b_to_i_frame_rot_matrix(self.prev_quaternion), self.prev_accel_measurement)
-        return (((accel_inertial_new + accel_inertial_old) / 2) + self.gravity_inertial) * dt + self.prev_velocity
+        accel_bar = (accel_inertial_new + accel_inertial_old) / 2
+        return (accel_bar + self.gravity_inertial) * dt + self.prev_velocity
 
     def _update_displacement(
             self,
@@ -102,4 +103,5 @@ class NominalState:
             dt: np.float64    
         ):
 
-        return ((velocity_new + self.prev_velocity) / 2) * dt + self.prev_displacement
+        velocity_bar = (velocity_new + self.prev_velocity) / 2
+        return velocity_bar * dt + self.prev_displacement
