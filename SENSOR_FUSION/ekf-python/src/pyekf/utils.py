@@ -41,9 +41,9 @@ def b_to_i_frame_rot_matrix(q: NDArray[np.float64]):
     ])
     return C
 
-def to_col_vector(v: NDArray[np.float64]) -> NDArray[np.float64]:
+def to_col_vector(v: NDArray[np.float64], cols: int) -> NDArray[np.float64]:
     v = np.asarray(v, dtype=float)
     v_flat = v.flatten()
-    if v_flat.size != 3:
-        raise ValueError(f"Expected vector with 3 elements, got shape {v.shape}")
-    return v_flat.reshape(3, 1)
+    if v_flat.size != cols:
+        raise ValueError(f"Expected vector with {cols} elements, got shape {v.shape}")
+    return v_flat.reshape(cols, 1)

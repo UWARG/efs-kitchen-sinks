@@ -14,24 +14,24 @@ class RawMeasurements:
         accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
         mag_initial: NDArray[np.float64] = np.zeros((3, 1)),
     ):
-        self.gyro_prev: NDArray[np.float64] = to_col_vector(gyro_initial)
-        self.gyro_new: NDArray[np.float64] = to_col_vector(gyro_initial)
-        self.accel_prev: NDArray[np.float64] = to_col_vector(accel_initial)
-        self.accel_new: NDArray[np.float64] = to_col_vector(accel_initial)
-        self.mag_prev: NDArray[np.float64] = to_col_vector(mag_initial)
-        self.mag_new: NDArray[np.float64] = to_col_vector(mag_initial)
+        self.gyro_prev: NDArray[np.float64] = to_col_vector(gyro_initial, 3)
+        self.gyro_new: NDArray[np.float64] = to_col_vector(gyro_initial, 3)
+        self.accel_prev: NDArray[np.float64] = to_col_vector(accel_initial, 3)
+        self.accel_new: NDArray[np.float64] = to_col_vector(accel_initial, 3)
+        self.mag_prev: NDArray[np.float64] = to_col_vector(mag_initial, 3)
+        self.mag_new: NDArray[np.float64] = to_col_vector(mag_initial, 3)
 
     def update_gyro(self, gyro_new: NDArray[np.float64]):
         self.gyro_prev = self.gyro_new
-        self.gyro_new = to_col_vector(gyro_new)
+        self.gyro_new = to_col_vector(gyro_new, 3)
     
     def update_accel(self, accel_new: NDArray[np.float64]):
         self.accel_prev = self.accel_new
-        self.accel_new = to_col_vector(accel_new)
+        self.accel_new = to_col_vector(accel_new, 3)
     
     def update_mag(self, mag_new: NDArray[np.float64]):
         self.mag_prev = self.mag_new
-        self.mag_new = to_col_vector(mag_new)
+        self.mag_new = to_col_vector(mag_new, 3)
 
     @property
     def gyro_bar(self) -> NDArray[np.float64]:
