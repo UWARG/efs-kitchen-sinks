@@ -37,7 +37,7 @@ class NominalState:
                 f"  Quaternion (q): {self.quaternion_new.flatten()} (w,x,y,z)\n"
 )
 
-    def update(
+    def state_extrapolation(
             self,
             gyro_new: NDArray[np.float64],
             gyro_prev: NDArray[np.float64],
@@ -50,11 +50,11 @@ class NominalState:
         self.velocity_prev = self.velocity_new
         self.displacement_prev = self.displacement_new
 
-        self.quaternion_new = self._update_quaternion(gyro_new, gyro_prev, dt)
-        self.velocity_new = self._update_velocity(accel_new, accel_prev, dt)
-        self.displacement_new = self._update_displacement(dt)
+        self.quaternion_new = self._extrapolate_quaternion(gyro_new, gyro_prev, dt)
+        self.velocity_new = self._extrapolate_velocity(accel_new, accel_prev, dt)
+        self.displacement_new = self._extrapolate_displacement(dt)
     
-    def _update_quaternion(
+    def _extrapolate_quaternion(
             self,
             gyro_new: NDArray[np.float64],
             gyro_prev: NDArray[np.float64],
@@ -92,7 +92,7 @@ class NominalState:
 
         return (np.cos(norm_sigma) * np.eye(4) + np.sin(norm_sigma)/norm_gyro*gyro_mult_matrix)
     
-    def _update_velocity(
+    def _extrapolate_velocity(
             self,
             accel_body_new: NDArray[np.float64],
             accel_body_prev: NDArray[np.float64],
@@ -104,7 +104,7 @@ class NominalState:
         accel_bar = (accel_inertial_new + accel_inertial_old) / 2
         return (accel_bar + self.gravity_inertial) * dt + self.velocity_prev
 
-    def _update_displacement(
+    def _extrapolate_displacement(
             self,
             dt: np.float64
         ):

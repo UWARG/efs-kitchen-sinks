@@ -57,14 +57,6 @@ class ESMEKF:
         # magnetometer WMM inertial vector
         self.magnetometer_inertial = np.asarray(normalize_vector(magnetometer_inertial), dtype=float).reshape(3, 1)
 
-        # 18 error states
-        self.small_angle_error: NDArray[np.float64] = np.zeros((3, 1))
-        self.velocity_error: NDArray[np.float64] = np.zeros((3, 1))
-        self.displacement_error: NDArray[np.float64] = np.zeros((3, 1))
-        self.gyro_bias: NDArray[np.float64] = np.zeros((3, 1))
-        self.accelerometer_bias: NDArray[np.float64] = np.zeros((3, 1))
-        self.magnetometer_bias: NDArray[np.float64] = np.zeros((3, 1))
-
         # Sensor covariance tuning params
         # Assuming assuming identical independent covariance across x,y,z axises
         self.gyro_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(gyro_cov)
@@ -73,22 +65,32 @@ class ESMEKF:
         self.accel_bias_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(accel_bias_cov)
         self.magnetometer_bias_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(magnetometer_bias_cov)
 
+        # EKF
+        # small_angle_error = self.error_state[0:3]
+        # velocity_error = self.error_state[3:6]
+        # displacement_error = self.error_state[6:9]
+        # gyro_bias = self.error_state[9:12]
+        # accelerometer_bias = self.error_state[12:15]
+        # magnetometer_bias = self.error_state[15:18]
+        self.error_state: NDArray[np.float64] = np.zeros((18, 1), dtype=float)
+        self.error_state_cov_mat: NDArray[np.float64] = np.zeros((18, 18), dtype=float)
+        self.kalman_gain: NDArray[np.float64] = np.zeros((18, 3), dtype=float)
+
 
     def __str__(self):
         return (
             "ESMEKF Internal State:\n"
-            f"  Small Angle Error:  {self.small_angle_error.flatten()}\n"
-            f"  Velocity Error: {self.velocity_error.flatten()}\n"
-            f"  Displacement Error: {self.displacement_error.flatten()}\n"
-            f"  Gyro Bias:  {self.gyro_bias.flatten()}\n"
-            f"  Accelerometer Bias: {self.accelerometer_bias.flatten()}\n"
-            f"  Magnetometer Bias:  {self.magnetometer_bias.flatten()}\n\n"
+            f"  Small Angle Error:  {self.error_state[0:3].flatten()}\n"
+            f"  Velocity Error: {self.error_state[3:6].flatten()}\n"
+            f"  Displacement Error: {self.error_state[6:9].flatten()}\n"
+            f"  Gyro Bias:  {self.error_state[9:12].flatten()}\n"
+            f"  Accelerometer Bias: {self.error_state[12:15].flatten()}\n"
+            f"  Magnetometer Bias:  {self.error_state[15:18].flatten()}\n\n"
             f"  WMM Inertial Magnetometer Vec:  {self.magnetometer_inertial.flatten()}\n\n"
             f"{self.nominal_state}"
         )
     
-    # TODO: change method name to state_extrapolation maybe
-    def predict(
+    def state_extrapolation(
             self,
             gyro_new: NDArray[np.float64],
             accel_new: NDArray[np.float64],
@@ -98,7 +100,7 @@ class ESMEKF:
         self.raw_measurements.update_gyro(gyro_new)
         self.raw_measurements.update_accel(accel_new)
 
-        self.nominal_state.update(
+        self.nominal_state.state_extrapolation(
             gyro_new=self.raw_measurements.gyro_new,
             gyro_prev=self.raw_measurements.gyro_prev,
             accel_new=self.raw_measurements.accel_new,
@@ -107,6 +109,8 @@ class ESMEKF:
         )
 
         state_transition_matrix = self._state_transition_matrix(dt)
+        self.error_state = state_transition_matrix @ self.error_state
+        self.error_state_cov_mat = state_transition_matrix @ self.error_state_cov_mat @ state_transition_matrix.T + self._process_noise_cov_matrix(dt)
 
     def _error_state_gradient_matrix_F(self):
         # non-zero submatrices of F
@@ -153,5 +157,5 @@ class ESMEKF:
 
         return Q
 
-    def correct(self):
+    def innovation(self):
         pass

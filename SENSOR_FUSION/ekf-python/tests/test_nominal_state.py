@@ -48,7 +48,7 @@ def test_nominal_state_constant_rotation_and_acceleration():
     for i in range(num_simulation_steps):
         raw_measurements.update_gyro(example_omega_body)
         raw_measurements.update_accel(example_accel_body)
-        nominal_state.update(
+        nominal_state.state_extrapolation(
             gyro_new=raw_measurements.gyro_new,
             gyro_prev=raw_measurements.gyro_prev,
             accel_new=raw_measurements.accel_new,
