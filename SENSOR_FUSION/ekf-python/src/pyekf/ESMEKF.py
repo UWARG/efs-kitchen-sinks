@@ -12,6 +12,7 @@ from pyekf.quaternions import (
     normalize_quaternion,
     average_quaternions,
     b_to_i_frame_rot_matrix,
+    i_to_b_frame_rot_matrix,
 )
 from pyekf.NominalState import NominalState
 from pyekf.RawMeasurements import RawMeasurements
@@ -69,7 +70,7 @@ class ESMEKF:
         # gyro_bias = self.error_state[9:12]
         # accelerometer_bias = self.error_state[12:15]
         # magnetometer_bias = self.error_state[15:18]
-        self.error_state: NDArray[np.float64] = np.zeros((18, 1), dtype=float)
+        self.error_state: NDArray[np.float64] = np.zeros((18, 1), dtype=float) # reset after each measurement, zero during state extrapolation
         self.error_state_cov_mat: NDArray[np.float64] = np.zeros((18, 18), dtype=float)
         self.kalman_gain: NDArray[np.float64] = np.zeros((18, 3), dtype=float)
 
@@ -109,7 +110,7 @@ class ESMEKF:
         )
 
         state_transition_matrix = self._state_transition_matrix(dt)
-        self.error_state = state_transition_matrix @ self.error_state
+        self.error_state = state_transition_matrix @ self.error_state # zero during extrapolation
         self.error_state_cov_mat = state_transition_matrix @ self.error_state_cov_mat @ state_transition_matrix.T + self._process_noise_cov_matrix(dt)
 
     def _error_state_gradient_matrix_F(self):
@@ -164,7 +165,8 @@ class ESMEKF:
         self.raw_measurements.update_mag(magnetometer_new)
 
         observation_matrix_H = self._observation_matrix_H_magnetometer()
-        error_innovation = np.dot(observation_matrix_H, self.error_state)
+
+        mag_innovation = self._mag_innovation()
         self.kalman_gain = np.dot(
             np.dot(self.error_state_cov_mat, observation_matrix_H.T),
             np.linalg.inv(
@@ -172,7 +174,7 @@ class ESMEKF:
             )
         )
 
-        self.error_state = self.error_state + np.dot(self.kalman_gain, error_innovation)
+        self.error_state = self.error_state + np.dot(self.kalman_gain, mag_innovation) # technically error state is 0 here, so could just set it, but need to check how to have different correction steps for multiple sensors
         self.error_state_cov_mat = np.dot(
             (np.eye(18, dtype=float) - np.dot(self.kalman_gain, observation_matrix_H)),
             self.error_state_cov_mat
@@ -185,7 +187,7 @@ class ESMEKF:
         # non-zero submatrices of H
         small_angle_update_matrix = skew_symmetric(
             np.dot(
-                b_to_i_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
+                i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
                 self.magnetometer_inertial
             )
         )
@@ -195,3 +197,17 @@ class ESMEKF:
         H[0:3, 15:18] = np.eye(3, dtype=float)
 
         return H
+
+    # since we can't measure error, our innovation isn't measured_mag_error - predicted_mag_error
+    # instead, we use the measured mag - predicted mag
+    def _mag_innovation(self):
+        mag_predicted = np.dot(
+            i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
+            self.magnetometer_inertial
+        )
+        return self.raw_measurements.mag_bar - mag_predicted.flatten()
+
+    # close to I so could be dropped
+    # TODO: test with and without
+    def _reset_op_jacobian(self):
+        pass

@@ -73,3 +73,7 @@ def b_to_i_frame_rot_matrix(q: NDArray[np.float64]):
         [2*x*z - 2*y*w,     2*y*z + 2*x*w,     1 - 2*x**2 - 2*y**2]
     ])
     return C
+
+def i_to_b_frame_rot_matrix(q: NDArray[np.float64]):
+    q_inv = inverse_quaternion(q)
+    return b_to_i_frame_rot_matrix(q_inv)
