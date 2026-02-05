@@ -54,9 +54,6 @@ class ESMEKF:
             gravity_inertial=gravity_inertial
         )
 
-        # magnetometer WMM inertial vector
-        self.magnetometer_inertial = np.asarray(normalize_vector(magnetometer_inertial), dtype=float).reshape(3, 1)
-
         # Sensor covariance tuning params
         # Assuming assuming identical independent covariance across x,y,z axises
         self.gyro_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(gyro_cov)
@@ -75,6 +72,9 @@ class ESMEKF:
         self.error_state: NDArray[np.float64] = np.zeros((18, 1), dtype=float)
         self.error_state_cov_mat: NDArray[np.float64] = np.zeros((18, 18), dtype=float)
         self.kalman_gain: NDArray[np.float64] = np.zeros((18, 3), dtype=float)
+
+        # magnetometer WMM inertial vector
+        self.magnetometer_inertial = np.asarray(normalize_vector(magnetometer_inertial), dtype=float).reshape(3, 1)
 
 
     def __str__(self):
@@ -157,5 +157,41 @@ class ESMEKF:
 
         return Q
 
-    def innovation(self):
-        pass
+    def correction_magnetometer(
+            self,
+            magnetometer_new: NDArray[np.float64],
+        ):
+        self.raw_measurements.update_mag(magnetometer_new)
+
+        observation_matrix_H = self._observation_matrix_H_magnetometer()
+        error_innovation = np.dot(observation_matrix_H, self.error_state)
+        self.kalman_gain = np.dot(
+            np.dot(self.error_state_cov_mat, observation_matrix_H.T),
+            np.linalg.inv(
+                np.dot(np.dot(observation_matrix_H, self.error_state_cov_mat), observation_matrix_H.T) + self.magnetometer_cov_mat
+            )
+        )
+
+        self.error_state = self.error_state + np.dot(self.kalman_gain, error_innovation)
+        self.error_state_cov_mat = np.dot(
+            (np.eye(18, dtype=float) - np.dot(self.kalman_gain, observation_matrix_H)),
+            self.error_state_cov_mat
+        )
+
+        # TODO: update nominal state with corrected error state
+
+
+    def _observation_matrix_H_magnetometer(self):
+        # non-zero submatrices of H
+        small_angle_update_matrix = skew_symmetric(
+            np.dot(
+                b_to_i_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
+                self.magnetometer_inertial
+            )
+        )
+
+        H = np.zeros(shape=(3, 18), dtype=float)
+        H[0:3, 0:3] = small_angle_update_matrix
+        H[0:3, 15:18] = np.eye(3, dtype=float)
+
+        return H

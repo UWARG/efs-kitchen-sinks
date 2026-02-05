@@ -111,3 +111,9 @@ class NominalState:
 
         velocity_bar = (self.velocity_new + self.velocity_prev) / 2
         return velocity_bar * dt + self.displacement_prev
+
+    def correct_state(
+            self,
+            corrected_error_state: NDArray[np.float64],
+        ):
+        pass
