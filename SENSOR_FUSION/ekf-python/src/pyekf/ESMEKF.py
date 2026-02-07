@@ -15,7 +15,7 @@ from pyekf.quaternions import (
     i_to_b_frame_rot_matrix,
 )
 from pyekf.NominalState import NominalState
-from pyekf.RawMeasurements import RawMeasurements
+from pyekf.Measurements import Measurements
 
 class ESMEKF:
     def __init__(
@@ -41,7 +41,7 @@ class ESMEKF:
         ):
 
         # Raw Measurements
-        self.raw_measurements = RawMeasurements(
+        self.measurements = Measurements(
             gyro_initial=gyro_initial,
             accel_initial=accel_initial,
             mag_initial=mag_initial,
@@ -98,14 +98,14 @@ class ESMEKF:
             dt: np.float64
         ):
 
-        self.raw_measurements.update_gyro(gyro_new)
-        self.raw_measurements.update_accel(accel_new)
+        self.measurements.update_gyro(gyro_new)
+        self.measurements.update_accel(accel_new)
 
         self.nominal_state.state_extrapolation(
-            gyro_new=self.raw_measurements.gyro_new,
-            gyro_prev=self.raw_measurements.gyro_prev,
-            accel_new=self.raw_measurements.accel_new,
-            accel_prev=self.raw_measurements.accel_prev,
+            gyro_new=self.measurements.gyro_new,
+            gyro_prev=self.measurements.gyro_prev,
+            accel_new=self.measurements.accel_new,
+            accel_prev=self.measurements.accel_prev,
             dt=dt
         )
 
@@ -115,11 +115,11 @@ class ESMEKF:
 
     def _error_state_gradient_matrix_F(self):
         # non-zero submatrices of F
-        omega_matrix = -skew_symmetric(self.raw_measurements.gyro_bar)
+        omega_matrix = -skew_symmetric(self.measurements.gyro_bar)
         accel_matrix = -0.5 * (
-            np.dot(b_to_i_frame_rot_matrix(self.nominal_state.quaternion_new), skew_symmetric(self.raw_measurements.accel_new))
+            np.dot(b_to_i_frame_rot_matrix(self.nominal_state.quaternion_new), skew_symmetric(self.measurements.accel_new))
             +
-            np.dot(b_to_i_frame_rot_matrix(self.nominal_state.quaternion_prev), skew_symmetric(self.raw_measurements.accel_prev))
+            np.dot(b_to_i_frame_rot_matrix(self.nominal_state.quaternion_prev), skew_symmetric(self.measurements.accel_prev))
         )
         change_of_basis_matrix = -b_to_i_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev))
 
@@ -162,7 +162,7 @@ class ESMEKF:
             self,
             magnetometer_new: NDArray[np.float64],
         ):
-        self.raw_measurements.update_mag(magnetometer_new)
+        self.measurements.update_mag(magnetometer_new)
 
         observation_matrix_H = self._observation_matrix_H_magnetometer()
 
@@ -205,7 +205,7 @@ class ESMEKF:
             i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
             self.magnetometer_inertial
         )
-        return self.raw_measurements.mag_bar - mag_predicted.flatten()
+        return self.measurements.mag_bar - mag_predicted.flatten()
 
     # close to I so could be dropped
     # TODO: test with and without

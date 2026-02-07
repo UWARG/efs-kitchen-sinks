@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 
 from pyekf.utils import to_col_vector
 
-class RawMeasurements:
+class Measurements:
     """
     Class needed to store current and previous timestep measurements.
     """
@@ -48,7 +48,7 @@ class RawMeasurements:
 
     def __str__(self):
         return (
-            f"RawMeasurements()\n"
+            f"Measurements()\n"
             f"  Gyro prev: {self.gyro_prev.flatten()}\n"
             f"  Gyro new: {self.gyro_new.flatten()}\n"
             f"  Gyro bar:  {self.gyro_bar.flatten()}\n"
