@@ -4,6 +4,7 @@ from numpy.typing import NDArray
 from pyekf.utils import (
     skew_symmetric,
     GRAVITY_INERTIAL,
+    to_col_vector,
 )
 from pyekf.quaternions import (
     IDENTITY_QUATERNION,
@@ -22,14 +23,14 @@ class NominalState:
         ):
 
         # convention: on initialization, both prev and new are the same
-        self.displacement_prev = np.asarray(displacement_initial, dtype=float).reshape(3, 1)
-        self.velocity_prev = np.asarray(velocity_initial, dtype=float).reshape(3, 1)
-        self.quaternion_prev = normalize_quaternion(np.asarray(quaternion_initial, dtype=float)).reshape(4, 1)
+        self.displacement_prev = to_col_vector(displacement_initial, 3)
+        self.velocity_prev = to_col_vector(velocity_initial, 3)
+        self.quaternion_prev = normalize_quaternion(to_col_vector(quaternion_initial, 4))
         self.displacement_new = self.displacement_prev.copy()
         self.velocity_new = self.velocity_prev.copy()
         self.quaternion_new = self.quaternion_prev.copy()
 
-        self.gravity_inertial = np.asarray(gravity_inertial, dtype=float).reshape(3, 1)
+        self.gravity_inertial = to_col_vector(gravity_inertial, 3)
 
     def __str__(self):
         return (f"Nominal State:\n"
