@@ -14,7 +14,7 @@ pyekf/
 │   ├── quaternions.py                  # Quaternion operations and utilities
 │   └── utils.py                        # Utility functions (vectors, matrices, constants)
 │
-├── tests/                              # Unit tests
+├── tests/
 │   ├── test_es_mekf.py                 # ESMEKF filter tests
 │   ├── test_nominal_state.py           # Nominal state propagation tests
 │   └── test_quaternions.py             # Quaternion operation tests
