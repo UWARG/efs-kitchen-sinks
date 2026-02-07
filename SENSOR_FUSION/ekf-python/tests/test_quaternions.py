@@ -22,60 +22,60 @@ def quat_close(q1, q2, atol=ATOL):
 
 
 def test_identity_quaternion():
-    q = IDENTITY_QUATERNION.flatten()
+    q = IDENTITY_QUATERNION
     qn = normalize_quaternion(q)
     assert np.allclose(qn, q)
 
 
 def test_quaternion_multiply_identity():
-    q = np.array([0.9238795, 0.3826834, 0.0, 0.0])
-    result = multiply_quaternions(q, IDENTITY_QUATERNION.flatten())
+    q = np.array([[0.9238795], [0.3826834], [0.0], [0.0]])
+    result = multiply_quaternions(q, IDENTITY_QUATERNION)
     assert np.allclose(result, q, atol=ATOL)
 
 
 def test_quaternion_inverse():
-    q = np.array([0.9238795, 0.3826834, 0.0, 0.0])
+    q = np.array([[0.9238795], [0.3826834], [0.0], [0.0]])
     q_inv = inverse_quaternion(q)
     prod = multiply_quaternions(q, q_inv)
-    assert quat_close(prod, IDENTITY_QUATERNION.flatten())
+    assert quat_close(prod, IDENTITY_QUATERNION)
 
 
 def test_normalize_quaternion_unit_norm():
-    q = np.array([2.0, 0.0, 0.0, 0.0])
+    q = np.array([[2.0], [0.0], [0.0], [0.0]])
     qn = normalize_quaternion(q)
     assert np.isclose(np.linalg.norm(qn), 1.0)
 
 
 def test_normalize_zero_quaternion():
-    q = np.zeros(4)
+    q = np.zeros((4, 1))
     qn = normalize_quaternion(q)
     assert np.allclose(qn, IDENTITY_QUATERNION)
 
 
 def test_average_identical_quaternions():
-    q = np.array([0.7071068, 0.7071068, 0.0, 0.0])
+    q = np.array([[0.7071068], [0.7071068], [0.0], [0.0]])
     q_avg = average_quaternions(q, q)
     assert quat_close(q_avg, normalize_quaternion(q))
 
 
 def test_average_with_identity():
-    q = np.array([0.7071068, 0.7071068, 0.0, 0.0])
-    q_avg = average_quaternions(IDENTITY_QUATERNION.flatten(), q)
+    q = np.array([[0.7071068], [0.7071068], [0.0], [0.0]])
+    q_avg = average_quaternions(IDENTITY_QUATERNION, q)
 
     # Result should be halfway rotation
     expected_angle = np.pi / 4
     expected = np.array([
-        np.cos(expected_angle / 2),
-        np.sin(expected_angle / 2),
-        0.0,
-        0.0,
+        [np.cos(expected_angle / 2)],
+        [np.sin(expected_angle / 2)],
+        [0.0],
+        [0.0],
     ])
 
     assert quat_close(q_avg, expected)
 
 
 def test_average_shortest_path():
-    q1 = np.array([1.0, 0.0, 0.0, 0.0])
+    q1 = np.array([[1.0], [0.0], [0.0], [0.0]])
     q2 = -q1  # same rotation, opposite sign
     q_avg = average_quaternions(q1, q2)
     assert quat_close(q_avg, q1)

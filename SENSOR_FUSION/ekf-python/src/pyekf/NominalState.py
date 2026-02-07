@@ -8,6 +8,7 @@ from pyekf.utils import (
 from pyekf.quaternions import (
     IDENTITY_QUATERNION,
     normalize_quaternion,
+    multiply_quaternions,
     b_to_i_frame_rot_matrix,
 )
 
@@ -112,9 +113,19 @@ class NominalState:
         velocity_bar = (self.velocity_new + self.velocity_prev) / 2
         return velocity_bar * dt + self.displacement_prev
 
-    # TODO: implement
     def correct_state(
             self,
-            corrected_error_state: NDArray[np.float64],
+            error_state: NDArray[np.float64],
         ):
-        pass
+        error_quaternion = np.vstack([
+            [1.0],
+            0.5 * error_state[0:3, 0:1]
+        ])
+         # TODO: test experimentally if normalize is needed
+        quaternion_corrected: NDArray[np.float64] = normalize_quaternion(multiply_quaternions(self.quaternion_new, error_quaternion))
+        velocity_corrected: NDArray[np.float64] = self.velocity_new + error_state[3:6, 0:1]
+        displacement_corrected: NDArray[np.float64] = self.displacement_new + error_state[6:9, 0:1]
+
+        self.quaternion_new = self.quaternion_prev = quaternion_corrected
+        self.velocity_new = self.velocity_prev = velocity_corrected
+        self.displacement_new = self.displacement_prev = displacement_corrected
