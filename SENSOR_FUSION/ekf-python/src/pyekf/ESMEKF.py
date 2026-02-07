@@ -35,6 +35,7 @@ class ESMEKF:
             magnetometer_inertial: NDArray[np.float64] = MAGNETOMETER_INERTIAL,
             gyro_cov: np.float64 = np.float64(0.0),
             accel_cov: np.float64 = np.float64(0.0),
+            magnetometer_cov: np.float64 = np.float64(0.0),
             gyro_bias_cov: np.float64 = np.float64(0.0),
             accel_bias_cov: np.float64 = np.float64(0.0),
             magnetometer_bias_cov: np.float64 = np.float64(0.0),
@@ -59,6 +60,7 @@ class ESMEKF:
         # Assuming assuming identical independent covariance across x,y,z axises
         self.gyro_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(gyro_cov)
         self.accel_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(accel_cov)
+        self.magnetometer_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(magnetometer_cov)
         self.gyro_bias_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(gyro_bias_cov)
         self.accel_bias_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(accel_bias_cov)
         self.magnetometer_bias_cov_mat: NDArray[np.float64] = np.eye(3, dtype=np.float64) * np.float64(magnetometer_bias_cov)
@@ -81,14 +83,20 @@ class ESMEKF:
     def __str__(self):
         return (
             "ESMEKF Internal State:\n"
-            f"  Small Angle Error:  {self.error_state[0:3].flatten()}\n"
-            f"  Velocity Error: {self.error_state[3:6].flatten()}\n"
-            f"  Displacement Error: {self.error_state[6:9].flatten()}\n"
-            f"  Gyro Bias:  {self.error_state[9:12].flatten()}\n"
-            f"  Accelerometer Bias: {self.error_state[12:15].flatten()}\n"
-            f"  Magnetometer Bias:  {self.error_state[15:18].flatten()}\n\n"
-            f"  WMM Inertial Magnetometer Vec:  {self.magnetometer_inertial.flatten()}\n\n"
+            f"  Error State:\n"
+            f"    Small Angle Error:  {self.error_state[0:3].flatten()}\n"
+            f"    Velocity Error: {self.error_state[3:6].flatten()}\n"
+            f"    Displacement Error: {self.error_state[6:9].flatten()}\n"
+            f"    Gyro Bias:  {self.error_state[9:12].flatten()}\n"
+            f"    Accelerometer Bias: {self.error_state[12:15].flatten()}\n"
+            f"    Magnetometer Bias:  {self.error_state[15:18].flatten()}\n\n"
+            f"    WMM Inertial Magnetometer Vec:  {self.magnetometer_inertial.flatten()}\n\n"
+            f"  Error State Covariance Matrix:\n"
+            f"{self.error_state_cov_mat}\n\n"
+            f"  Kalman Gain:\n"
+            f"{self.kalman_gain}\n\n"
             f"{self.nominal_state}"
+            f"{self.measurements}"
         )
     
     def state_extrapolation(
@@ -167,14 +175,13 @@ class ESMEKF:
         observation_matrix_H = self._observation_matrix_H_magnetometer()
 
         mag_innovation = self._mag_innovation()
-        self.kalman_gain = np.dot(
-            np.dot(self.error_state_cov_mat, observation_matrix_H.T),
-            np.linalg.inv(
-                np.dot(np.dot(observation_matrix_H, self.error_state_cov_mat), observation_matrix_H.T) + self.magnetometer_cov_mat
-            )
+        self.kalman_gain = self.error_state_cov_mat @ observation_matrix_H.T @ np.linalg.inv(
+            observation_matrix_H @ self.error_state_cov_mat @ observation_matrix_H.T + self.magnetometer_cov_mat
         )
 
-        self.error_state = self.error_state + np.dot(self.kalman_gain, mag_innovation) # technically error state is 0 here, so could just set it, but need to check how to have different correction steps for multiple sensors
+        # technically error state is 0 here, so could just set it, but need to check how to have different correction steps for multiple sensors
+        self.error_state = self.error_state + np.dot(self.kalman_gain, mag_innovation)
+
         self.error_state_cov_mat = np.dot(
             (np.eye(18, dtype=float) - np.dot(self.kalman_gain, observation_matrix_H)),
             self.error_state_cov_mat
@@ -217,10 +224,10 @@ class ESMEKF:
             i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
             self.magnetometer_inertial
         )
-        return self.measurements.mag_bar - mag_predicted.flatten()
+        return self.measurements.mag_bar - mag_predicted
 
-    # close to I so could be dropped
-    # TODO: test with and without
+    # TODO: test with and without, close to I so could be dropped
     def _reset_op_jacobian(self):
         J: NDArray[np.float64] = np.eye(18, dtype=float)
-        J[0:3, 0:3] = np.eye(3, dtype=float) - 0.5 * skew_symmetric(self.error_state[0:3])
+        J[0:3, 0:3] = np.eye(3, dtype=float) - 0.5 * skew_symmetric(self.error_state[0:3, 0:1])
+        return J
