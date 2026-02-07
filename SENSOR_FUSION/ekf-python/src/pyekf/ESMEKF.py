@@ -191,7 +191,8 @@ class ESMEKF:
             mag_bias_new=self.error_state[15:18, 0:1]
         )
 
-        # TODO: reset op jacobian
+        J = self._reset_op_jacobian()
+        self.error_state_cov_mat = J @ self.error_state_cov_mat @ J.T
 
 
     def _observation_matrix_H_magnetometer(self):

@@ -5,7 +5,7 @@ from pyekf.utils import to_col_vector
 
 class Measurements:
     """
-    Class needed to store current and previous timestep measurements, alongside their acumlated biases if sensor not directly corrected.
+    Class needed to store current and previous timestep measurements, alongside their acumlated biases if sensor calibrations not directly corrected.
     """
 
     def __init__(
@@ -22,7 +22,7 @@ class Measurements:
         self.mag_prev: NDArray[np.float64] = to_col_vector(mag_initial, 3)
         self.mag_new: NDArray[np.float64] = to_col_vector(mag_initial, 3)
 
-        # storing bias here if not correcting sensors directly
+        # storing bias here if not correcting sensor calibrations directly
         self.gyro_bias_accumulated: NDArray[np.float64] = np.zeros((3, 1))
         self.accel_bias_accumulated: NDArray[np.float64] = np.zeros((3, 1))
         self.mag_bias_accumulated: NDArray[np.float64] = np.zeros((3, 1))
