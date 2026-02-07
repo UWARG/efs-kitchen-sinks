@@ -210,4 +210,5 @@ class ESMEKF:
     # close to I so could be dropped
     # TODO: test with and without
     def _reset_op_jacobian(self):
-        pass
+        J: NDArray[np.float64] = np.eye(18, dtype=float)
+        J[0:3, 0:3] = np.eye(3, dtype=float) - 0.5 * skew_symmetric(self.error_state[0:3])
