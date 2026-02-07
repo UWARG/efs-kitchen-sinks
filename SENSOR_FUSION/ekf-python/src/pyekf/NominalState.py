@@ -115,16 +115,18 @@ class NominalState:
 
     def correct_state(
             self,
-            error_state: NDArray[np.float64],
+            small_angle_error: NDArray[np.float64],
+            velocity_error: NDArray[np.float64],
+            displacement_error: NDArray[np.float64],
         ):
-        error_quaternion = np.vstack([
+        quaternion_error = np.vstack([
             [1.0],
-            0.5 * error_state[0:3, 0:1]
+            0.5 * small_angle_error
         ])
          # TODO: test experimentally if normalize is needed
-        quaternion_corrected: NDArray[np.float64] = normalize_quaternion(multiply_quaternions(self.quaternion_new, error_quaternion))
-        velocity_corrected: NDArray[np.float64] = self.velocity_new + error_state[3:6, 0:1]
-        displacement_corrected: NDArray[np.float64] = self.displacement_new + error_state[6:9, 0:1]
+        quaternion_corrected: NDArray[np.float64] = normalize_quaternion(multiply_quaternions(self.quaternion_new, quaternion_error))
+        velocity_corrected: NDArray[np.float64] = self.velocity_new + velocity_error
+        displacement_corrected: NDArray[np.float64] = self.displacement_new + displacement_error
 
         self.quaternion_new = self.quaternion_prev = quaternion_corrected
         self.velocity_new = self.velocity_prev = velocity_corrected

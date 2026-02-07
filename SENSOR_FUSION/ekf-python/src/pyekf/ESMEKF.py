@@ -180,7 +180,18 @@ class ESMEKF:
             self.error_state_cov_mat
         )
 
-        # TODO: update nominal state with corrected error state
+        self.nominal_state.correct_state(
+            small_angle_error=self.error_state[0:3, 0:1],
+            velocity_error=self.error_state[3:6, 0:1],
+            displacement_error=self.error_state[6:9, 0:1],
+        )
+        self.measurements.update_biases(
+            gyro_bias_new=self.error_state[9:12, 0:1],
+            accel_bias_new=self.error_state[12:15, 0:1],
+            mag_bias_new=self.error_state[15:18, 0:1]
+        )
+
+        # TODO: reset op jacobian
 
 
     def _observation_matrix_H_magnetometer(self):
