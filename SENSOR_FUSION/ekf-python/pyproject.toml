@@ -12,7 +12,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest"
+    "pytest",
+    "pymavlink>=2.4.47",
+    "python-dotenv>=1.1.1",
 ]
 
 [build-system]
@@ -24,3 +26,7 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
