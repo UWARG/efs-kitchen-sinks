@@ -1,5 +1,5 @@
 import pymavlink
-from pymavlink import mavutil   
+from pymavlink import mavutil
 
 class Drone:
     def __init__(self, connection_string):
