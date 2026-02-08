@@ -175,17 +175,15 @@ class ESMEKF:
         observation_matrix_H = self._observation_matrix_H_magnetometer()
 
         mag_innovation = self._mag_innovation()
+        # TODO: check if + self.magnetometer_cov_mat is correct, or if need to compute H_v, jacobian of observation matrix w.r.t. noise
         self.kalman_gain = self.error_state_cov_mat @ observation_matrix_H.T @ np.linalg.inv(
             observation_matrix_H @ self.error_state_cov_mat @ observation_matrix_H.T + self.magnetometer_cov_mat
         )
 
-        # technically error state is 0 here, so could just set it, but need to check how to have different correction steps for multiple sensors
-        self.error_state = self.error_state + np.dot(self.kalman_gain, mag_innovation)
+        # TODO: technically error state is 0 here, so could just set it, but need to check how to have different correction steps for multiple sensors
+        self.error_state = self.error_state + self.kalman_gain @ mag_innovation
 
-        self.error_state_cov_mat = np.dot(
-            (np.eye(18, dtype=float) - np.dot(self.kalman_gain, observation_matrix_H)),
-            self.error_state_cov_mat
-        )
+        self.error_state_cov_mat = (np.eye(18, dtype=float) - self.kalman_gain @ observation_matrix_H) @ self.error_state_cov_mat
 
         self.nominal_state.correct_state(
             small_angle_error=self.error_state[0:3, 0:1],
@@ -224,7 +222,7 @@ class ESMEKF:
             i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
             self.magnetometer_inertial
         )
-        return self.measurements.mag_bar - mag_predicted
+        return self.measurements.mag_bar - mag_predicted # TODO: maybe don't use mag bar here, since longer time period and not integrating it?
 
     # TODO: test with and without, close to I so could be dropped
     def _reset_op_jacobian(self):
