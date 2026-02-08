@@ -23,11 +23,12 @@ class ConstantMotionTrajectory:
         self.accel_constant_iframe: NDArray[np.float64] = to_col_vector(accel_constant_iframe, 3)
         self.angular_vel_constant_iframe: NDArray[np.float64] = to_col_vector(angular_vel_constant_iframe, 3)
 
-    def get_state(self, t: float) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    def get_state(self, t: float) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
         """
         Returns the state of the trajectory at time t in the inertial frame.
         - Displacement (m)
         - Velocity (m/s)
+        - Acceleration (m/s^2)
         - Quaternion (unitless)
         - Angular velocity (rad/s)
         """
@@ -40,4 +41,4 @@ class ConstantMotionTrajectory:
         velocity_iframe = self.velocity_initial_iframe + self.accel_constant_iframe * t
         displacement_iframe = self.displacement_initial_iframe + self.velocity_initial_iframe * t + 0.5 * self.accel_constant_iframe * (t**2)
 
-        return displacement_iframe, velocity_iframe, quaternion_iframe, self.angular_vel_constant_iframe
+        return displacement_iframe, velocity_iframe, self.accel_constant_iframe, quaternion_iframe, self.angular_vel_constant_iframe

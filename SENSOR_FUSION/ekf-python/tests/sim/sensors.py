@@ -5,24 +5,41 @@ from pyekf.utils import GRAVITY_INERTIAL, MAGNETOMETER_INERTIAL, to_col_vector
 from pyekf.quaternions import rotate_vector, inverse_quaternion
 
 class SensorSimulator:
+    """
+    Simulates IMU and Magnetometer readings by transforming inertial trajectory states 
+    into the body frame and applying biases and additive Gaussian noise.
+    """
+
     def __init__(
         self, 
         trajectory: object,
-        gyro_cov: float = 0,
-        accel_cov: float = 0,
-        magnetometer_cov: float = 0,
+
+        # Sensor random noise variances (diagonal covariance matrices)
+        gyro_cov: float = 0,               # (rad/s)^2
+        accel_cov: float = 0,              # (m/s^2)^2
+        magnetometer_cov: float = 0,       # unitless (normalized field)
+
+        # Sensor biases (constant offsets)
         gyro_bias: NDArray[np.float64] = np.zeros((3, 1), dtype=np.float64),
         accel_bias: NDArray[np.float64] = np.zeros((3, 1), dtype=np.float64),
         magnetometer_bias: NDArray[np.float64] = np.zeros((3, 1), dtype=np.float64),
+
+        # Inertial reference values
         gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
         magnetometer_inertial: NDArray[np.float64] = MAGNETOMETER_INERTIAL,
+
+        # Random seed for reproducibility of noise
         seed: int = None
     ):
         self.traj = trajectory
+        
+        # Initialize Random Number Generator for deterministic noise
+        self.seed: int = seed if seed is not None else np.random.randint(0, 2**32 - 1)
+        self.rng = np.random.default_rng(self.seed)
 
-        self.gyro_cov_mat: NDArray[np.float64] = np.eye(3) * gyro_cov if gyro_cov > 0 else np.zeros((3, 3))
-        self.accel_cov_mat: NDArray[np.float64] = np.eye(3) * accel_cov if accel_cov > 0 else np.zeros((3, 3))
-        self.magnetometer_cov_mat: NDArray[np.float64] = np.eye(3) * magnetometer_cov if magnetometer_cov > 0 else np.zeros((3, 3))
+        self.gyro_cov_mat: NDArray[np.float64] = np.eye(3) * gyro_cov
+        self.accel_cov_mat: NDArray[np.float64] = np.eye(3) * accel_cov
+        self.magnetometer_cov_mat: NDArray[np.float64] = np.eye(3) * magnetometer_cov
         
         self.gyro_bias: NDArray[np.float64] = to_col_vector(gyro_bias, 3)
         self.accel_bias: NDArray[np.float64] = to_col_vector(accel_bias, 3)
@@ -32,20 +49,32 @@ class SensorSimulator:
         self.m_i: NDArray[np.float64] = to_col_vector(magnetometer_inertial, 3)
 
     def get_readings(self, t: float) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
-        p, v, q = self.traj.get_state(t)
+        """
+        Returns simulated sensor readings at time t. All sensor readings are in the body frame and include bias and noise.
+        - Gyroscope (rad/s)
+        - Accelerometer (m/s^2)
+        - Magnetometer (unitless)
+        """
+        # Retrieve ground truth states from analytical trajectory, in iframe.
+        disp_i, vel_i, accel_i, q_i, omega_i = self.traj.get_state(t)
+        q_inv = inverse_quaternion(q_i)
+
+        # 1. Gyroscope: Rotate inertial angular velocity to body frame and add bias
+        gyro_reading = rotate_vector(omega_i, q_inv) + self.gyro_bias
         
-        # Gyroscope measurement model: y = omega + bias
-        gyro_reading = to_col_vector(self.traj.angular_vel_body, 3) + self.gyro_bias
-        
-        # Inertial to Body rotation requires the inverse (conjugate) quaternion
-        q_inv = inverse_quaternion(q)
-        
-        # Accelerometer measures specific force: f = R_i_to_b * (a_inertial - g_inertial)
-        # Note: If a_inertial is 0, reading is -g rotated into body frame
-        accel_total_inertial = to_col_vector(self.traj.accel_body, 3) - self.g_i
+        # 2. Accelerometer: Specific force in body frame f = R(q_inv) * (a_i - g_i)
+        accel_total_inertial = accel_i - self.g_i
         accel_reading = rotate_vector(accel_total_inertial, q_inv) + self.accel_bias
 
-        # Magnetometer measurement model: m_body = R_i_to_b * m_inertial
-        mag_reading = rotate_vector(self.m_i, q_inv)
-        
+        # 3. Magnetometer: Rotate inertial field to body frame and add bias
+        mag_reading = rotate_vector(self.m_i, q_inv) + self.magnetometer_bias
+
+        # Add Gaussian noise if covariance is non-zero
+        if np.any(self.gyro_cov_mat):
+            gyro_reading += to_col_vector(self.rng.multivariate_normal(np.zeros(3), self.gyro_cov_mat), 3)
+        if np.any(self.accel_cov_mat):
+            accel_reading += to_col_vector(self.rng.multivariate_normal(np.zeros(3), self.accel_cov_mat), 3)
+        if np.any(self.magnetometer_cov_mat):
+            mag_reading += to_col_vector(self.rng.multivariate_normal(np.zeros(3), self.magnetometer_cov_mat), 3)
+
         return gyro_reading, accel_reading, mag_reading
