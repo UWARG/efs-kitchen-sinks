@@ -8,16 +8,15 @@ A Python library for implementing and experimenting with Error-State Extended Ka
 pyekf/
 ├── src/pyekf/
 │   ├── __init__.py
-│   ├── ESMEKF.py                       # Error-State Multiplicative Extended Kalman Filter implementation
-│   ├── NominalState.py                 # Nominal state propagation and correction
-│   ├── Measurements.py                 # Sensor measurement handling and bias tracking
-│   ├── quaternions.py                  # Quaternion operations and utilities
-│   └── utils.py                        # Utility functions (vectors, matrices, constants)
+│   ├── ESMEKF.py                   # Error-State Multiplicative Extended Kalman Filter implementation
+│   ├── NominalState.py             # Nominal state propagation and correction
+│   ├── Measurements.py             # Sensor measurement handling and bias tracking
+│   ├── quaternions.py              # Quaternion operations and utilities
+│   └── utils.py                    # Utility functions (vectors, matrices, constants)
 │
 ├── tests/
-│   ├── test_es_mekf.py                 # ESMEKF filter tests
-│   ├── test_nominal_state.py           # Nominal state propagation tests
-│   └── test_quaternions.py             # Quaternion operation tests
+│   ├── sim/
+│   └── mission_planner/
 │
 ├── pyproject.toml
 ├── .python-version
