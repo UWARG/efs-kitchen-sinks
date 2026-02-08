@@ -2,6 +2,8 @@
 
 A Python library for implementing and experimenting with Error-State Extended Kalman Filters (ES-EKF) for UAV Sensor Fusion.
 
+Currently supports gyroscope, accelerometer, and magnetometer sensors only.
+
 ## Project Structure
 
 ```
@@ -16,7 +18,8 @@ pyekf/
 │
 ├── tests/
 │   ├── sim/
-│   └── mission_planner/
+│   ├── mission_planner/
+│   └── test_bunch_of_stuff.py
 │
 ├── pyproject.toml
 ├── .python-version
