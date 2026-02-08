@@ -2,47 +2,54 @@ import numpy as np
 import pytest
 
 from pyekf.ESMEKF import ESMEKF
-from tests.sim.trajectory import ConstantMotionTrajectory
+from tests.sim.constant_trajectory import ConstantMotionTrajectory
 from tests.sim.sensors import SensorSimulator
 
 def test_y_axis_rotation_90_degrees():
-    # 1. Setup Ground Truth
-    # Spin at pi/4 rad/s around Y (90 degrees in 2 seconds)
+    # 1. Setup Ground Truth (Constant rotation in I-frame)
+    # 90 degrees in 2 seconds -> pi/4 rad/s around Y-axis
     omega_y = np.pi / 4
+    angular_vel_i = np.array([[0.0], [omega_y], [0.0]])
+    
     traj = ConstantMotionTrajectory(
-        p0=np.zeros(3),
-        v0=np.zeros(3),
-        q0=np.array([1.0, 0.0, 0.0, 0.0]),
-        accel_body=np.zeros(3),
-        omega_body=np.array([0.0, omega_y, 0.0])
+        displacement_initial_iframe=np.zeros((3, 1)),
+        velocity_initial_iframe=np.zeros((3, 1)),
+        quaternion_initial_iframe=np.array([[1.0], [0.0], [0.0], [0.0]]),
+        accel_constant_iframe=np.zeros((3, 1)),
+        angular_vel_constant_iframe=angular_vel_i
     )
-    sim = SensorSimulator(traj)
+    
+    # Initialize simulator with zero noise for deterministic verification
+    sim = SensorSimulator(traj, gyro_cov=0.0, accel_cov=0.0, magnetometer_cov=0.0)
 
     # 2. Initialize Filter
-    # Get initial readings at t=0
-    g0, a0, m0 = sim.get_readings(0)
+    g0, a0, m0 = sim.get_readings(0.0)
     ekf = ESMEKF(
-        gyro_initial=g0, accel_initial=a0,
-        displacement_initial=np.zeros(3),
-        velocity_initial=np.zeros(3),
-        quaternion_initial=np.array([1.0, 0.0, 0.0, 0.0])
+        gyro_initial=g0, 
+        accel_initial=a0,
+        displacement_initial=np.zeros((3, 1)),
+        velocity_initial=np.zeros((3, 1)),
+        quaternion_initial=np.array([[1.0], [0.0], [0.0], [0.0]])
     )
 
-    # 3. Run Simulation
+    # 3. Run Simulation Loop
     dt = 0.01
     duration = 2.0
     for t in np.arange(dt, duration + dt, dt):
         gyro, accel, mag = sim.get_readings(t)
         ekf.state_extrapolation(gyro, accel, dt)
-        # Optional: ekf.measurement_update(mag) if you've implemented it
 
-    # 4. Deterministic Verification
-    final_p, final_v, final_q = traj.get_state(duration)
+    # 4. Verification
+    # Expected state at t=2.0 (Rotation: pi/2 around Y)
+    # q = [cos(theta/2), 0, sin(theta/2), 0]^T
+    expected_q = np.array([[np.cos(np.pi/4)], [0.0], [np.sin(np.pi/4)], [0.0]])
     
-    # At t=2, angle = (pi/4) * 2 = pi/2 (90 degrees)
-    # Expected Quat: [cos(pi/4), 0, sin(pi/4), 0] = [0.707, 0, 0.707, 0]
-    expected_q = np.array([np.cos(np.pi/4), 0.0, np.sin(np.pi/4), 0.0])
+    # Retrieve current nominal state
+    actual_p = ekf.nominal_state.displacement_new
+    actual_v = ekf.nominal_state.velocity_new
+    actual_q = ekf.nominal_state.quaternion_new
 
-    # Assertions
-    np.testing.assert_allclose(ekf.nominal_state.quaternion_new.flatten(), expected_q, atol=1e-5)
-    np.testing.assert_allclose(ekf.nominal_state.displacement_new.flatten(), [0, 0, 0], atol=1e-5)
+    # Assertions using column vector shapes
+    np.testing.assert_allclose(actual_q, expected_q, atol=1e-5)
+    np.testing.assert_allclose(actual_p, np.zeros((3, 1)), atol=1e-5)
+    np.testing.assert_allclose(actual_v, np.zeros((3, 1)), atol=1e-5)

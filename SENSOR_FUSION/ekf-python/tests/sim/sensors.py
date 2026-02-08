@@ -35,7 +35,7 @@ class SensorSimulator:
         self.traj: Trajectory = trajectory
         
         # Initialize Random Number Generator for deterministic noise
-        self.seed: int = seed if seed is not None else np.random.randint(0, 2**32 - 1)
+        self.seed: int = seed if seed is not None else int(np.random.randint(0, np.iinfo(np.int32).max))
         self.rng = np.random.default_rng(self.seed)
 
         self.gyro_cov_mat: NDArray[np.float64] = np.eye(3) * gyro_cov
