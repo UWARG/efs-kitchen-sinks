@@ -5,13 +5,17 @@ from pyekf.utils import to_col_vector
 from pyekf.quaternions import quaternion_exponential, multiply_quaternions
 
 class ConstantMotionTrajectory:
+    """
+    Simulates a deterministic trajectory of object with constant linear acceleration and constant angular velocity, both defined in the inertial frame (iframe).
+    """
+
     def __init__(
         self, 
-        displacement_initial_iframe: NDArray[np.float64], 
-        velocity_initial_iframe: NDArray[np.float64], 
-        quaternion_initial_iframe: NDArray[np.float64], 
-        accel_constant_iframe: NDArray[np.float64], 
-        angular_vel_constant_iframe: NDArray[np.float64]
+        displacement_initial_iframe: NDArray[np.float64],   # m
+        velocity_initial_iframe: NDArray[np.float64],       # m/s
+        quaternion_initial_iframe: NDArray[np.float64],     # unitless [w, x, y, z]
+        accel_constant_iframe: NDArray[np.float64],         # m/s^2
+        angular_vel_constant_iframe: NDArray[np.float64]    # rad/s
     ):
         self.displacement_initial_iframe: NDArray[np.float64] = to_col_vector(displacement_initial_iframe, 3)
         self.velocity_initial_iframe: NDArray[np.float64] = to_col_vector(velocity_initial_iframe, 3)
@@ -21,18 +25,18 @@ class ConstantMotionTrajectory:
 
     def get_state(self, t: float) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
         """
-        Returns the state of the trajectory at time t in the inertial frame. The state includes:
-        - Displacement (3x1 vector)
-        - Velocity (3x1 vector)
-        - Quaternion (4x1 vector)
-        - Angular velocity (3x1 vector)
+        Returns the state of the trajectory at time t in the inertial frame.
+        - Displacement (m)
+        - Velocity (m/s)
+        - Quaternion (unitless)
+        - Angular velocity (rad/s)
         """
-        # Integration of orientation in inertial frame
+        # Closed-form solution for quaternion in iframe at time t with constant angular velocity
         angle_axis_iframe = self.angular_vel_constant_iframe * t
         q_delta = quaternion_exponential(angle_axis_iframe)
         quaternion_iframe = multiply_quaternions(q_delta, self.quaternion_initial_iframe)
 
-        # Integration of constant acceleration in inertial frame
+        # Closed-form solution for velocity and displacement in iframe at time t with constant acceleration
         velocity_iframe = self.velocity_initial_iframe + self.accel_constant_iframe * t
         displacement_iframe = self.displacement_initial_iframe + self.velocity_initial_iframe * t + 0.5 * self.accel_constant_iframe * (t**2)
 
