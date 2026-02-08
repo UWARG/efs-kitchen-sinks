@@ -30,6 +30,14 @@ def normalize_quaternion(q: NDArray[np.float64]) -> NDArray[np.float64]:
     return q / norm
 
 def average_quaternions(q1: NDArray[np.float64], q2: NDArray[np.float64]) -> NDArray[np.float64]:
+    """
+    Computes the mid-point (geodesic average) between two unit quaternions.
+    
+    The algorithm maps the relative rotation between q1 and q2 into the Lie Algebra 
+    (tangent space) using the logarithmic map, halves the resulting rotation vector, 
+    and maps it back to the SO(3) manifold via the exponential map. This is 
+    mathematically equivalent to Slerp with t=0.5.
+    """
     q1 = normalize_quaternion(q1)
     q2 = normalize_quaternion(q2)
 
@@ -80,3 +88,30 @@ def b_to_i_frame_rot_matrix(q: NDArray[np.float64]) -> NDArray[np.float64]:
 
 def i_to_b_frame_rot_matrix(q: NDArray[np.float64]) -> NDArray[np.float64]:
     return b_to_i_frame_rot_matrix(inverse_quaternion(q))
+
+def quaternion_exponential(rotation_vector: NDArray[np.float64]) -> NDArray[np.float64]:
+    """
+    Converts a rotation vector (3x1) into a unit quaternion (4x1).
+    Formula: q = [cos(theta/2), sin(theta/2) * v/theta]^T
+    """
+    theta = np.linalg.norm(rotation_vector)
+    
+    if theta < 1e-12:
+        return np.array([[1.0], [0.0], [0.0], [0.0]])
+    
+    unit_axis = rotation_vector / theta
+    
+    q_w = np.cos(theta / 2.0)
+    q_xyz = unit_axis * np.sin(theta / 2.0)
+    
+    return np.vstack((np.array([[q_w]]), q_xyz))
+
+def rotate_vector(v: NDArray[np.float64], q: NDArray[np.float64]) -> NDArray[np.float64]:
+    """
+    Rotates a 3x1 vector v using quaternion q (4x1).
+    This computes v' = R(q) @ v.
+    """
+    v = v.reshape(3, 1)
+    q = normalize_quaternion(q)
+    R = b_to_i_frame_rot_matrix(q)
+    return R @ v
