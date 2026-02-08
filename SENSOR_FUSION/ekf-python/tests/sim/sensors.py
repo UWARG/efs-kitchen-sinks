@@ -3,6 +3,7 @@ from numpy.typing import NDArray
 
 from pyekf.utils import GRAVITY_INERTIAL, MAGNETOMETER_INERTIAL, to_col_vector
 from pyekf.quaternions import rotate_vector, inverse_quaternion
+from tests.sim.trajectory import Trajectory
 
 class SensorSimulator:
     """
@@ -12,7 +13,7 @@ class SensorSimulator:
 
     def __init__(
         self, 
-        trajectory: object,
+        trajectory: Trajectory,
 
         # Sensor random noise variances (diagonal covariance matrices)
         gyro_cov: float = 0,               # (rad/s)^2
@@ -31,7 +32,7 @@ class SensorSimulator:
         # Random seed for reproducibility of noise
         seed: int = None
     ):
-        self.traj = trajectory
+        self.traj: Trajectory = trajectory
         
         # Initialize Random Number Generator for deterministic noise
         self.seed: int = seed if seed is not None else np.random.randint(0, 2**32 - 1)
@@ -55,19 +56,19 @@ class SensorSimulator:
         - Accelerometer (m/s^2)
         - Magnetometer (unitless)
         """
-        # Retrieve ground truth states from analytical trajectory, in iframe.
-        disp_i, vel_i, accel_i, q_i, omega_i = self.traj.get_state(t)
-        q_inv = inverse_quaternion(q_i)
+        # Retrieve ground truth states from analytical trajectory, in iframe at time t.
+        disp_i, vel_i, accel_i, quat_i, angular_vel_i = self.traj.get_state(t)
+        quat_inv = inverse_quaternion(quat_i)
 
         # 1. Gyroscope: Rotate inertial angular velocity to body frame and add bias
-        gyro_reading = rotate_vector(omega_i, q_inv) + self.gyro_bias
+        gyro_reading = rotate_vector(angular_vel_i, quat_inv) + self.gyro_bias
         
-        # 2. Accelerometer: Specific force in body frame f = R(q_inv) * (a_i - g_i)
+        # 2. Accelerometer: Specific force in body frame f = R(quat_inv) * (a_i - g_i)
         accel_total_inertial = accel_i - self.g_i
-        accel_reading = rotate_vector(accel_total_inertial, q_inv) + self.accel_bias
+        accel_reading = rotate_vector(accel_total_inertial, quat_inv) + self.accel_bias
 
         # 3. Magnetometer: Rotate inertial field to body frame and add bias
-        mag_reading = rotate_vector(self.m_i, q_inv) + self.magnetometer_bias
+        mag_reading = rotate_vector(self.m_i, quat_inv) + self.magnetometer_bias
 
         # Add Gaussian noise if covariance is non-zero
         if np.any(self.gyro_cov_mat):
