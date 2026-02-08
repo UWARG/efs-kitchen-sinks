@@ -2,55 +2,96 @@ import numpy as np
 import pytest
 
 from pyekf.ESMEKF import ESMEKF
+from pyekf.utils import GRAVITY_INERTIAL, MAGNETOMETER_INERTIAL
 from tests.sim.constant_trajectory import ConstantMotionTrajectory
 from tests.sim.sensors import SensorSimulator
+from tests.sim.params import ConstantSimParams, SensorParams
 
-def test_y_axis_rotation_90_degrees():
-    # 1. Setup Ground Truth (Constant rotation in I-frame)
-    # 90 degrees in 2 seconds -> pi/4 rad/s around Y-axis
-    omega_y = np.pi / 4
-    angular_vel_i = np.array([[0.0], [omega_y], [0.0]])
-    
-    traj = ConstantMotionTrajectory(
+seed: int = 42
+
+def test_constant_rotation_no_noise_no_correction():
+    # 1. Setup Parameter Objects
+    sensor_params = SensorParams(
+        gyro_cov=0.0,
+        accel_cov=0.0,
+        magnetometer_cov=0.0,
+        gyro_bias=np.zeros((3, 1)),
+        accel_bias=np.zeros((3, 1)),
+        magnetometer_bias=np.zeros((3, 1))
+    )
+
+    sim_params = ConstantSimParams(
+        delta_t=0.01,
+        duration=2.0,
         displacement_initial_iframe=np.zeros((3, 1)),
         velocity_initial_iframe=np.zeros((3, 1)),
         quaternion_initial_iframe=np.array([[1.0], [0.0], [0.0], [0.0]]),
         accel_constant_iframe=np.zeros((3, 1)),
-        angular_vel_constant_iframe=angular_vel_i
+        angular_vel_constant_iframe=np.array([[0.0], [np.pi / 4], [0.0]]),
+        gravity_iframe=GRAVITY_INERTIAL,
+        mag_field_iframe=MAGNETOMETER_INERTIAL
+    )
+
+    # 2. Setup Ground Truth and Simulator
+    trajectory = ConstantMotionTrajectory(
+        displacement_initial_iframe=sim_params.displacement_initial_iframe,
+        velocity_initial_iframe=sim_params.velocity_initial_iframe,
+        quaternion_initial_iframe=sim_params.quaternion_initial_iframe,
+        accel_constant_iframe=sim_params.accel_constant_iframe,
+        angular_vel_constant_iframe=sim_params.angular_vel_constant_iframe
     )
     
-    # Initialize simulator with zero noise for deterministic verification
-    sim = SensorSimulator(traj, gyro_cov=0.0, accel_cov=0.0, magnetometer_cov=0.0)
+    simulator = SensorSimulator(
+        trajectory=trajectory, 
+        gyro_cov=sensor_params.gyro_cov, 
+        accel_cov=sensor_params.accel_cov, 
+        magnetometer_cov=sensor_params.magnetometer_cov,
+        gyro_bias=sensor_params.gyro_bias,
+        accel_bias=sensor_params.accel_bias,
+        magnetometer_bias=sensor_params.magnetometer_bias,
+        gravity_inertial=sim_params.gravity_iframe,
+        magnetometer_inertial=sim_params.mag_field_iframe,
+        seed=seed
+    )
 
-    # 2. Initialize Filter
-    g0, a0, m0 = sim.get_readings(0.0)
+    # 3. Initialize Filter
+    gyro_initial, accel_initial, mag_initial = simulator.get_readings(0.0)
     ekf = ESMEKF(
-        gyro_initial=g0, 
-        accel_initial=a0,
-        displacement_initial=np.zeros((3, 1)),
-        velocity_initial=np.zeros((3, 1)),
-        quaternion_initial=np.array([[1.0], [0.0], [0.0], [0.0]])
+        gyro_initial=gyro_initial, 
+        accel_initial=accel_initial,
+        displacement_initial=sim_params.displacement_initial_iframe,
+        velocity_initial=sim_params.velocity_initial_iframe,
+        quaternion_initial=sim_params.quaternion_initial_iframe
     )
 
-    # 3. Run Simulation Loop
-    dt = 0.01
-    duration = 2.0
-    for t in np.arange(dt, duration + dt, dt):
-        gyro, accel, mag = sim.get_readings(t)
-        ekf.state_extrapolation(gyro, accel, dt)
-
-    # 4. Verification
-    # Expected state at t=2.0 (Rotation: pi/2 around Y)
-    expected_p = np.zeros((3, 1))
-    expected_v = np.zeros((3, 1))
-    expected_q = np.array([[np.cos(np.pi/4)], [0.0], [np.sin(np.pi/4)], [0.0]])
+    # 4. Run Simulation Loop
+    delta_t = sim_params.delta_t
+    duration = sim_params.duration
     
-    # Retrieve current nominal state
-    actual_p = ekf.nominal_state.displacement_new
-    actual_v = ekf.nominal_state.velocity_new
-    actual_q = ekf.nominal_state.quaternion_new
+    print(f"\n{'Time':>5} | {'Type':>5} | {'Quaternion [w x y z]':^30} | {'Displacement':^18} | {'Velocity':^18}")
+    print("-" * 110)
 
-    # Assertions using column vector shapes
-    np.testing.assert_allclose(actual_q, expected_q, atol=1e-5)
-    np.testing.assert_allclose(actual_p, expected_p, atol=1e-5)
-    np.testing.assert_allclose(actual_v, expected_v, atol=1e-5)
+    for time_step in np.arange(delta_t, duration + delta_t, delta_t):
+        gyro_reading, accel_reading, mag_reading = simulator.get_readings(time_step)
+        ekf.state_extrapolation(gyro_reading, accel_reading, delta_t)
+        
+        gt_displacement, gt_velocity, gt_accel, gt_quaternion, gt_angular_vel = trajectory.get_state(time_step)
+        
+        est_displacement = ekf.nominal_state.displacement_new
+        est_velocity = ekf.nominal_state.velocity_new
+        est_quaternion = ekf.nominal_state.quaternion_new
+
+        print(f"{time_step:5.2f} | EKF   | {est_quaternion.flatten()} | {est_displacement.flatten()} | {est_velocity.flatten()}")
+        print(f"{' ':>5} | GT    | {gt_quaternion.flatten()} | {gt_displacement.flatten()} | {gt_velocity.flatten()}")
+        print("-" * 110)
+
+    # 5. Verification
+    expected_displacement, expected_velocity, expected_accel, expected_quaternion, expected_angular_vel = trajectory.get_state(duration)
+    
+    actual_displacement = ekf.nominal_state.displacement_new
+    actual_velocity = ekf.nominal_state.velocity_new
+    actual_quaternion = ekf.nominal_state.quaternion_new
+
+    np.testing.assert_allclose(actual_quaternion, expected_quaternion, atol=1e-5)
+    np.testing.assert_allclose(actual_displacement, expected_displacement, atol=1e-5)
+    np.testing.assert_allclose(actual_velocity, expected_velocity, atol=1e-5)
