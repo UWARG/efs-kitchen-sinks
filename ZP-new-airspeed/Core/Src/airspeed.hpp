@@ -22,16 +22,17 @@ class airspeed
 {
 private:
 	static constexpr int arraySize = 4;
-    uint8_t DMA_RX_Buffer[arraySize];
-    uint8_t process_RX_Buffer[arraySize];
+    uint8_t dmaRXBuffer[arraySize];
+    uint8_t processRXBuffer[arraySize];
 
     I2C_HandleTypeDef* hi2c;
     uint8_t devAddress;
 
-    double pressOff = 106.7902918;
-    double tempOff = 0.0;
+    double press_zero = 0.0;
 
-    bool success = false;
+    bool callibrate(int samples, int discard);
+    bool calibrated_ = false;
+    bool initSuccess_ = false;
 
     Status status_ = Status::Fault;
 
@@ -49,8 +50,8 @@ public:
     bool calculateAirspeed(double* data_out);
 
     // public getters
-    uint8_t* getDMARXBuffer() { return DMA_RX_Buffer; }
-    uint8_t* getProcessRXBuffer() { return process_RX_Buffer; }
+    uint8_t* getDMARXBuffer() { return dmaRXBuffer; }
+    uint8_t* getProcessRXBuffer() { return processRXBuffer; }
     uint8_t getDevAddress() { return devAddress; }
     uint8_t getArraySize() { return arraySize; }
     airspeedData getAirspeedDataStruct() { return airspeedData_; }
