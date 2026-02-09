@@ -83,5 +83,8 @@ class SensorSimulator:
             accel_reading += to_col_vector(self.rng.multivariate_normal(np.zeros(3), self.accel_cov_mat), 3)
         if np.any(self.magnetometer_cov_mat):
             mag_reading += to_col_vector(self.rng.multivariate_normal(np.zeros(3), self.magnetometer_cov_mat), 3)
+            mag_norm = np.linalg.norm(mag_reading)
+            if mag_norm > 1e-9:
+                mag_reading /= mag_norm
 
         return gyro_reading, accel_reading, mag_reading
