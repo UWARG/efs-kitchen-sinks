@@ -68,7 +68,7 @@ uv run pytest
 ## TODOS
 
 1. all todos in code
-2. fast inverse of psd matrices (3x3)
+2. fast inverse of psd matrices (3x3), also if check for singularity
 3. new testing framework + experiement class for logging + visualizing data
 4. make compatible with mission planner tests?
 5. outline assumptions, e.g. initial cov of sensors always independent across dims (diagonal), always col vectors, mag inertial, etc.
