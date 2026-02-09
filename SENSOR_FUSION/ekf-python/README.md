@@ -74,3 +74,5 @@ uv run pytest
 5. outline assumptions, e.g. initial cov of sensors always independent across dims (diagonal), always col vectors, mag inertial, etc.
 
 6. rearchitecture -> data struct for nominal state to use in tests, experiment class for printing, saving, ploting experiments, generic enough so can handle mission planner
+
+7. if adding more measurements, error state can be non zero then we need to account for it in predicting measurements, e.g. small angle error in magnetometer
