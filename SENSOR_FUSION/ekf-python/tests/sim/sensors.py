@@ -20,10 +20,10 @@ class SensorSimulator:
         accel_cov: float = 0,              # (m/s^2)^2
         magnetometer_cov: float = 0,       # unitless (normalized field)
 
-        # Sensor biases (constant offsets)
-        gyro_bias: NDArray[np.float64] = np.zeros((3, 1), dtype=np.float64),
-        accel_bias: NDArray[np.float64] = np.zeros((3, 1), dtype=np.float64),
-        magnetometer_bias: NDArray[np.float64] = np.zeros((3, 1), dtype=np.float64),
+        # Sensor bias variances (diagonal covariance matrices to pick constant offsets)
+        gyro_bias_cov: float = 0,          # (rad/s)^2
+        accel_bias_cov: float = 0,         # (m/s^2)^2
+        magnetometer_bias_cov: float = 0,  # unitless (normalized field)
 
         # Inertial reference values
         gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
@@ -42,9 +42,15 @@ class SensorSimulator:
         self.accel_cov_mat: NDArray[np.float64] = np.eye(3) * accel_cov
         self.magnetometer_cov_mat: NDArray[np.float64] = np.eye(3) * magnetometer_cov
         
-        self.gyro_bias: NDArray[np.float64] = to_col_vector(gyro_bias, 3)
-        self.accel_bias: NDArray[np.float64] = to_col_vector(accel_bias, 3)
-        self.magnetometer_bias: NDArray[np.float64] = to_col_vector(magnetometer_bias, 3)
+        # Initialize bias covariance matrices and pick constant offsets
+        gyro_bias_cov_mat = np.eye(3) * gyro_bias_cov
+        accel_bias_cov_mat = np.eye(3) * accel_bias_cov
+        mag_bias_cov_mat = np.eye(3) * magnetometer_bias_cov
+
+        # TODO: no drift in biases, maybe add drift or guassian random noise
+        self.gyro_bias: NDArray[np.float64] = to_col_vector(self.rng.multivariate_normal(np.zeros(3), gyro_bias_cov_mat), 3)
+        self.accel_bias: NDArray[np.float64] = to_col_vector(self.rng.multivariate_normal(np.zeros(3), accel_bias_cov_mat), 3)
+        self.magnetometer_bias: NDArray[np.float64] = to_col_vector(self.rng.multivariate_normal(np.zeros(3), mag_bias_cov_mat), 3)
 
         self.g_i: NDArray[np.float64] = to_col_vector(gravity_inertial, 3)
         self.m_i: NDArray[np.float64] = to_col_vector(magnetometer_inertial, 3)

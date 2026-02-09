@@ -129,6 +129,9 @@ class NominalState:
         velocity_corrected: NDArray[np.float64] = self.velocity_new + velocity_error
         displacement_corrected: NDArray[np.float64] = self.displacement_new + displacement_error
 
-        self.quaternion_new = self.quaternion_prev = quaternion_corrected
-        self.velocity_new = self.velocity_prev = velocity_corrected
-        self.displacement_new = self.displacement_prev = displacement_corrected
+        self.quaternion_new = quaternion_corrected.copy()
+        self.quaternion_prev = quaternion_corrected.copy()
+        self.velocity_new = velocity_corrected.copy()
+        self.velocity_prev = velocity_corrected.copy()
+        self.displacement_new = displacement_corrected.copy()
+        self.displacement_prev = displacement_corrected.copy()

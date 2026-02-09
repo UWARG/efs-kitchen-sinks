@@ -62,3 +62,14 @@ uv pip install .
 uv pip install -e .[dev]
 uv run pytest
 ```
+
+## Testing (TODO)
+
+## TODOS
+
+1. all todos in code
+2. fast inverse of psd matrices (3x3)
+3. new testing framework + experiement class for logging + visualizing data
+4. make compatible with mission planner tests?
+5. outline assumptions, e.g. initial cov of sensors always independent across dims, always col vectors, mag inertial, etc.
+

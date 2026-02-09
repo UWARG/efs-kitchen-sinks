@@ -4,16 +4,16 @@ from numpy.typing import NDArray
 
 @dataclass
 class SensorParams:
-    """Defines noise characteristics and constant biases for the sensor suite."""
-    # Variances (Diagonal of Covariance Matrices)
+    """Defines noise characteristics and bias stability for the sensor suite."""
+    # Sensor random noise variances (Diagonal of Covariance Matrices)
     gyro_cov: float                # (rad/s)^2
     accel_cov: float               # (m/s^2)^2
-    magnetometer_cov: float        # unitless (normalized)
+    magnetometer_cov: float        # unitless (normalized field)
 
-    # Constant Biases (3x1 column vectors)
-    gyro_bias: NDArray[np.float64]         # rad/s
-    accel_bias: NDArray[np.float64]        # m/s^2
-    magnetometer_bias: NDArray[np.float64] # unitless
+    # Sensor bias variances (Used to sample the constant offsets in Simulator)
+    gyro_bias_cov: float           # (rad/s)^2
+    accel_bias_cov: float          # (m/s^2)^2
+    magnetometer_bias_cov: float   # unitless (normalized field)
 
 @dataclass
 class ConstantSimParams:
