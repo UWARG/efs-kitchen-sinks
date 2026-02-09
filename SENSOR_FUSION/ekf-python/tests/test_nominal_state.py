@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
+from tests.utils import assert_quaternion_close
 from pyekf.NominalState import NominalState
 from pyekf.Measurements import Measurements
 from pyekf.utils import GRAVITY_INERTIAL
@@ -108,16 +109,11 @@ def test_nominal_state_constant_rotation_and_acceleration():
         atol=1e-8,
     )
 
-    # Quaternion sign ambiguity: q and -q represent same rotation
-    q_est = nominal_state.quaternion_new.flatten()
-    if np.dot(q_est, expected_q) < 0:
-        q_est = -q_est
-
-    assert_allclose(
-        q_est,
-        expected_q,
+    assert_quaternion_close(
+        estimate=nominal_state.quaternion_new.flatten(),
+        actual=expected_q,
         rtol=1e-6,
-        atol=1e-8,
+        atol=1e-8
     )
 
     print("Test passed: Nominal state matches analytical solution.")
