@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "nvm_driver.h"
 
 static inline void CS_LOW(void)  { HAL_GPIO_WritePin(FLASH_CS_PORT, FLASH_CS_PIN, GPIO_PIN_RESET); }
@@ -80,7 +81,8 @@ bool write_enable(void) {
  * function to wait a specific time and keep checking the SR register
  * use this to poll status reg after performing a read/write/erase
  */
-HAL_StatusTypeDef wait_ready(uint32_t timeout_ms) {
+HAL_StatusTypeDef wait_ready(int32_t timeout_ms) {
+	uint32_t timeout = (timeout_ms >= 0) ? timeout_ms : 500;
     uint32_t t0 = HAL_GetTick();
     while(1) {
         if ((read_sr() & 0x01) == 0) {	// finished when bit 0 of status reg is reset
@@ -91,7 +93,9 @@ HAL_StatusTypeDef wait_ready(uint32_t timeout_ms) {
             }
             return HAL_OK;
         }
-        if ((HAL_GetTick() - t0) > timeout_ms) return HAL_TIMEOUT;
+        if ((HAL_GetTick() - t0) > timeout) return HAL_TIMEOUT;
+
+        usleep(10000);
     }
 }
 

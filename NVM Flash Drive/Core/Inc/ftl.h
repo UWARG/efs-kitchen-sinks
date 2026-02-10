@@ -86,6 +86,12 @@ typedef struct __attribute__((packed)) {	// use packed so that no padding is ins
 
 
 
+// Waits
+
+#define FTL_MAX_WAIT ((uint32_t)60000u)
+
+
+
 // struct and function used for debugging and printing ftl globals
 typedef struct {
     uint32_t head_idx;
