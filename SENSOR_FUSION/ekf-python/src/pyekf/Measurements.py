@@ -29,7 +29,7 @@ class Measurements:
 
     def update_gyro(self, gyro_new: NDArray[np.float64]):
         self.gyro_prev = self.gyro_new
-        self.gyro_new = to_col_vector(gyro_new, 3) - self.gyro_bias_accumulated
+        self.gyro_new = to_col_vector(gyro_new, 3) - self.gyro_bias_accumulated # TODO: check this + or -
     
     def update_accel(self, accel_new: NDArray[np.float64]):
         self.accel_prev = self.accel_new

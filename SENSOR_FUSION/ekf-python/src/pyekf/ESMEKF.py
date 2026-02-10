@@ -90,7 +90,7 @@ class ESMEKF:
             f"    Gyro Bias:  {self.error_state[9:12].flatten()}\n"
             f"    Accelerometer Bias: {self.error_state[12:15].flatten()}\n"
             f"    Magnetometer Bias:  {self.error_state[15:18].flatten()}\n\n"
-            f"    WMM Inertial Magnetometer Vec:  {self.magnetometer_inertial.flatten()}\n\n"
+            f"  WMM Inertial Magnetometer Vec:  {self.magnetometer_inertial.flatten()}\n\n"
             f"  Error State Covariance Matrix:\n"
             f"{self.error_state_cov_mat}\n\n"
             f"  Kalman Gain:\n"
@@ -196,8 +196,10 @@ class ESMEKF:
             mag_bias_new=self.error_state[15:18, 0:1]
         )
 
+        # reset
         J = self._reset_op_jacobian()
         self.error_state_cov_mat = J @ self.error_state_cov_mat @ J.T
+        self.error_state = np.zeros((18, 1), dtype=float)
 
 
     def _observation_matrix_H_magnetometer(self):
