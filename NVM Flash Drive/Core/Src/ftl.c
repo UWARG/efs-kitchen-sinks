@@ -396,6 +396,65 @@ int ftl_write(const void *data, uint16_t len, uint32_t *out_id)
     return 0;
 }
 
+//erase function
+int ftl_erase(uint32_t block_id)
+{
+	//wait for write to finish
+	HAL_StatusTypeDef wait_result = wait_ready(FTL_MAX_WAIT);
+
+	if(wait_result != HAL_OK)
+	{
+		return -1;
+	}
+
+	if (!g_mounted) {
+			// Ensures the chip is mounted
+			return -2;
+		}
+
+		uint32_t idx = g_tail_idx;
+		ftl_record_header_t header;
+
+	// Search the chip for the matching ID block using the circular buffer
+	while (true) {
+		memset(&header, 0xFF, sizeof(header));
+		read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
+
+		if (header.status == FTL_STATUS_VALID && header.id == block_id) {
+			// Matching ID block found
+			break;
+		}
+
+		if (idx == g_head_idx) {
+			// Looped through all indices, did not find the matching ID block
+			return -3;
+		}
+
+		idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
+	}
+
+	uint32_t block_address = ftl_unit_base_addr(idx);
+
+	//erase the block
+	HAL_StatusTypeDef result = erase_4k(block_address);
+
+	switch(result){
+	//erase succeeded
+	case HAL_OK:
+		return 0;
+
+	//erase ran into an error
+	case HAL_ERROR:
+		return -4;
+
+	//erase timed out
+	case HAL_TIMEOUT:
+		return -5;
+	}
+
+	return 0;
+
+}
 
 // helper function for debugging
 ftl_state_view_t ftl_get_state(void)
