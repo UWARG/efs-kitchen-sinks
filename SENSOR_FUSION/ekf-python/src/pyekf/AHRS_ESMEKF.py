@@ -61,6 +61,9 @@ class AHRS_ESMEKF:
         self.gravity_inertial = gravity_inertial
         self.magnetometer_inertial = magnetometer_inertial
 
+        # Initialize Error State Vector (9x1) - this is what makes it ES-MEKF
+        self.error_state: NDArray[np.float64] = np.zeros((9, 1))
+        
         # Initialize Covariance Matrix P (9x9)
         self.P: NDArray[np.float64] = np.eye(9)
         self.P[0:3, 0:3] *= p_init_att
@@ -79,16 +82,24 @@ class AHRS_ESMEKF:
         
         # Initialize Kalman Gain Matrix
         self.kalman_gain = np.zeros((9, 3))
+        
+        # Error state reset threshold (radians for attitude, m/s^2 for biases)
+        self.reset_threshold_att = 0.1  # ~5.7 degrees
+        self.reset_threshold_bias = 0.5
 
     def __str__(self):
         return (
             "====================================================\n"
             "AHRS ESMEKF Internal State (9-State AHRS):\n"
             "----------------------------------------------------\n"
-            "  Error State Components (Current Covariance Indices):\n"
-            "    Small Angle Error [0:3]:  (Estimated in Correction Step)\n"
-            "    Gyro Bias Error   [3:6]:  {gb}\n"
-            "    Accel Bias Error  [6:9]:  {ab}\n\n"
+            "  Error State Vector (9x1):\n"
+            "    Small Angle Error [0:3]:  {att_err}\n"
+            "    Gyro Bias Error   [3:6]:  {gb_err}\n"
+            "    Accel Bias Error  [6:9]:  {ab_err}\n\n"
+            
+            "  Accumulated Biases:\n"
+            "    Gyro Bias:   {gb}\n"
+            "    Accel Bias:  {ab}\n\n"
             
             "  Environment:\n"
             "    Gravity Inertial:         {gi}\n"
@@ -106,6 +117,9 @@ class AHRS_ESMEKF:
             "{ms}" # Measurements __str__
             "===================================================="
         ).format(
+            att_err=self.error_state[0:3].flatten(),
+            gb_err=self.error_state[3:6].flatten(),
+            ab_err=self.error_state[6:9].flatten(),
             gb=self.measurements.gyro_bias_accumulated.flatten(),
             ab=self.measurements.accel_bias_accumulated.flatten(),
             gi=self.gravity_inertial.flatten(),
@@ -144,6 +158,9 @@ class AHRS_ESMEKF:
         F[0:3, 0:3] = np.eye(3) - (gyro_skew * dt) 
         F[0:3, 3:6] = -np.eye(3) * dt
 
+        # Propagate error state (ES-MEKF)
+        self.error_state = F @ self.error_state
+
         # Update P
         self.P = F @ self.P @ F.T + self.Q * dt
         self.P = (self.P + self.P.T) / 2.0
@@ -159,11 +176,11 @@ class AHRS_ESMEKF:
         m_pred_body = normalize_vector(m_pred_body)
         m_meas_body = normalize_vector(self.measurements.mag_new)
 
-        # Calculate innovation (residual) between measured and predicted magnetometer readings
-        innovation = m_meas_body - m_pred_body
+        # Calculate innovation accounting for error state (ES-MEKF)
+        m_skew = skew_symmetric(m_pred_body)
+        innovation = m_meas_body - m_pred_body - m_skew @ self.error_state[0:3]
 
         # Jacobian H (3x9)
-        m_skew = skew_symmetric(m_pred_body)
         H = np.zeros((3, 9))
         H[0:3, 0:3] = m_skew
 
@@ -190,11 +207,11 @@ class AHRS_ESMEKF:
         # Normalize the accelerometer measurement to avoid scale issues in innovation
         a_meas_body = normalize_vector(self.measurements.accel_new)
 
-        # Calculate the innovation (residual) between measured and predicted acceleration readings
-        innovation = a_meas_body - g_pred_body
+        # Calculate innovation accounting for error state (ES-MEKF)
+        g_skew = skew_symmetric(g_pred_body)
+        innovation = a_meas_body - g_pred_body - g_skew @ self.error_state[0:3] - self.error_state[6:9]
 
         # Jacobian H (3x9)
-        g_skew = skew_symmetric(g_pred_body)
         H = np.zeros((3, 9))
         H[0:3, 0:3] = g_skew
         H[0:3, 6:9] = np.eye(3)
@@ -218,21 +235,32 @@ class AHRS_ESMEKF:
         K = self.P @ H.T @ S_inv
         self.kalman_gain = K
 
+        # Update error state (ES-MEKF)
+        self.error_state = self.error_state + K @ y
+
         # Update P
         I = np.eye(9)
         self.P = (I - K @ H) @ self.P
         self.P = (self.P + self.P.T) / 2.0
 
-        # Calculate state_correction matrix (9x1)
-        state_correction = K @ y
+        # Check if error state exceeds threshold and reset if needed
+        self._check_and_reset_error_state()
 
-        # Pull out error components from state_correction
-        att_error = state_correction[0:3]
-        gyro_bias_error = state_correction[3:6]
-        accel_bias_error = state_correction[6:9]
-
-        # Correct nominal state using attitude error (small angle approximation)
-        self.nominal_state.correct_state(att_error, np.zeros((3,1)), np.zeros((3,1)))
+    def _check_and_reset_error_state(self):
+        att_error = self.error_state[0:3]
+        gyro_bias_error = self.error_state[3:6]
+        accel_bias_error = self.error_state[6:9]
         
-        # Correct biases in measurements for use in next step
-        self.measurements.update_biases(gyro_bias_error, accel_bias_error, np.zeros((3,1)))
+        # Check if any error component exceeds threshold
+        if (np.linalg.norm(att_error) > self.reset_threshold_att or
+            np.linalg.norm(gyro_bias_error) > self.reset_threshold_bias or
+            np.linalg.norm(accel_bias_error) > self.reset_threshold_bias):
+            
+            # Apply error state to nominal state
+            self.nominal_state.correct_state(att_error, np.zeros((3,1)), np.zeros((3,1)))
+            
+            # Apply bias errors to accumulated biases
+            self.measurements.update_biases(gyro_bias_error, accel_bias_error, np.zeros((3,1)))
+            
+            # Reset error state to zero
+            self.error_state = np.zeros((9, 1))
