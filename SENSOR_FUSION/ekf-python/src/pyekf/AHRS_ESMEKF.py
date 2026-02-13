@@ -1,0 +1,238 @@
+import numpy as np
+from numpy.typing import NDArray
+
+from pyekf.utils import (
+    skew_symmetric,
+    GRAVITY_INERTIAL,
+    MAGNETOMETER_INERTIAL,
+    normalize_vector,
+)
+from pyekf.quaternions import (
+    IDENTITY_QUATERNION,
+    b_to_i_frame_rot_matrix,
+)
+from pyekf.NominalState import NominalState
+from pyekf.Measurements import Measurements
+
+class AHRS_ESMEKF:
+    def __init__(
+            self,
+            # Initial Measurements
+            gyro_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            mag_initial: NDArray[np.float64] = np.zeros((3, 1)),
+
+            # Initial Nominal State
+            displacement_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            velocity_initial: NDArray[np.float64] = np.zeros((3, 1)),
+            quaternion_initial: NDArray[np.float64] = IDENTITY_QUATERNION,
+            gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
+
+            # Initial ESMEKF
+            magnetometer_inertial: NDArray[np.float64] = MAGNETOMETER_INERTIAL,
+            gyro_cov: np.float64 = np.float64(0.0),
+            accel_cov: np.float64 = np.float64(0.0),
+            magnetometer_cov: np.float64 = np.float64(0.0),
+            gyro_bias_cov: np.float64 = np.float64(0.0),
+            accel_bias_cov: np.float64 = np.float64(0.0),
+            magnetometer_bias_cov: np.float64 = np.float64(0.0),
+            
+            # Initial Covariance Estimates
+            p_init_att: float = 0.1,
+            p_init_bias: float = 0.01
+        ):
+
+        # Raw Measurements
+        self.measurements = Measurements(
+            gyro_initial=gyro_initial,
+            accel_initial=accel_initial,
+            mag_initial=mag_initial,
+        )
+
+        # Nominal State
+        self.nominal_state = NominalState(
+            displacement_initial=displacement_initial,
+            velocity_initial=velocity_initial,
+            quaternion_initial=quaternion_initial,
+            gravity_inertial=gravity_inertial
+        )
+        
+        # Store Environmental Constants
+        self.gravity_inertial = gravity_inertial
+        self.magnetometer_inertial = magnetometer_inertial
+
+        # Initialize Covariance Matrix P (9x9)
+        self.P: NDArray[np.float64] = np.eye(9)
+        self.P[0:3, 0:3] *= p_init_att
+        self.P[3:6, 3:6] *= p_init_bias # Gyro Bias Uncertainty
+        self.P[6:9, 6:9] *= p_init_bias # Accel Bias Uncertainty
+
+        # Initialize Process Noise Matrix Q (9x9)
+        self.Q = np.zeros((9, 9))
+        self.Q[0:3, 0:3] = np.eye(3) * gyro_cov
+        self.Q[3:6, 3:6] = np.eye(3) * gyro_bias_cov
+        self.Q[6:9, 6:9] = np.eye(3) * accel_bias_cov
+
+        # Initialize Measurement Noise Matrices R
+        self.R_accel = np.eye(3) * accel_cov
+        self.R_mag = np.eye(3) * magnetometer_cov
+        
+        # Initialize Kalman Gain Matrix
+        self.kalman_gain = np.zeros((9, 3))
+
+    def __str__(self):
+        return (
+            "====================================================\n"
+            "AHRS ESMEKF Internal State (9-State AHRS):\n"
+            "----------------------------------------------------\n"
+            "  Error State Components (Current Covariance Indices):\n"
+            "    Small Angle Error [0:3]:  (Estimated in Correction Step)\n"
+            "    Gyro Bias Error   [3:6]:  {gb}\n"
+            "    Accel Bias Error  [6:9]:  {ab}\n\n"
+            
+            "  Environment:\n"
+            "    Gravity Inertial:         {gi}\n"
+            "    Magnetometer Inertial:    {mi}\n\n"
+            
+            "  Uncertainty (Covariance P Diagonals):\n"
+            "    Attitude P: {p_att}\n"
+            "    G-Bias P:   {p_gb}\n"
+            "    A-Bias P:   {p_ab}\n\n"
+            
+            "  Latest Kalman Gain (9x3):\n"
+            "{kg}\n\n"
+            
+            "{ns}" # NominalState __str__
+            "{ms}" # Measurements __str__
+            "===================================================="
+        ).format(
+            gb=self.measurements.gyro_bias_accumulated.flatten(),
+            ab=self.measurements.accel_bias_accumulated.flatten(),
+            gi=self.gravity_inertial.flatten(),
+            mi=self.magnetometer_inertial.flatten(),
+            p_att=np.diag(self.P)[0:3],
+            p_gb=np.diag(self.P)[3:6],
+            p_ab=np.diag(self.P)[6:9],
+            kg=self.kalman_gain,
+            ns=str(self.nominal_state),
+            ms=str(self.measurements)
+        )
+
+    def state_extrapolation(
+            self,
+            gyro_new: NDArray[np.float64],
+            accel_new: NDArray[np.float64],
+            dt: np.float64
+        ):
+        # Update measurements with new data
+        self.measurements.update_gyro(gyro_new)
+        self.measurements.update_accel(accel_new)
+
+        # Propagate the nominal state using the new measurements
+        self.nominal_state.state_extrapolation(
+            self.measurements.gyro_new, self.measurements.gyro_prev,
+            self.measurements.accel_new, self.measurements.accel_prev,
+            dt
+        )
+
+        # Propagate error state covariance P
+        gyro_body = self.measurements.gyro_new
+        gyro_skew = skew_symmetric(gyro_body)
+
+        # Create the state transition matrix F (9x9)
+        F = np.eye(9)
+        F[0:3, 0:3] = np.eye(3) - (gyro_skew * dt) 
+        F[0:3, 3:6] = -np.eye(3) * dt
+
+        # Update P
+        self.P = F @ self.P @ F.T + self.Q * dt
+        self.P = (self.P + self.P.T) / 2.0
+
+    def correction_magnetometer(self, magnetometer_new: NDArray[np.float64], gate_threshold: float = 16.3):
+        self.measurements.update_mag(magnetometer_new)
+
+        # Predicted measurement in body frame
+        R_matrix = b_to_i_frame_rot_matrix(self.nominal_state.quaternion_new)
+        m_pred_body = R_matrix.T @ self.magnetometer_inertial
+
+        # Normalize magnetometer prediction and measurement to avoid scale issues in innovation
+        m_pred_body = normalize_vector(m_pred_body)
+        m_meas_body = normalize_vector(self.measurements.mag_new)
+
+        # Calculate innovation (residual) between measured and predicted magnetometer readings
+        innovation = m_meas_body - m_pred_body
+
+        # Jacobian H (3x9)
+        m_skew = skew_symmetric(m_pred_body)
+        H = np.zeros((3, 9))
+        H[0:3, 0:3] = m_skew
+
+        # Apply Measurement Update
+        self._apply_update(innovation, H, self.R_mag, gate_threshold)
+
+    def correction_accelerometer(self, accel_new: NDArray[np.float64], gate_threshold: float = 7.80):
+        self.measurements.update_accel(accel_new)
+
+        # TODO: Consider ignoring accelerometer updates when the device is accelerating significantly
+        # linearly (using accel norm) to avoid bad corrections during dynamic motion. This would require 
+        # a more complex gating strategy that considers both the innovation and the current acceleration 
+        # level. For now, we will rely on the Mahalanobis distance gating to reject outliers during dynamic 
+        # motion, but this is an area for future improvement.
+
+        # Predicted measurement in body frame
+        R_matrix = b_to_i_frame_rot_matrix(self.nominal_state.quaternion_new)
+        g_reaction_inertial = -self.gravity_inertial # Reaction force
+
+        # Normalize gravity prediction to avoid scale issues in innovation
+        g_pred_body = R_matrix.T @ g_reaction_inertial
+        g_pred_body = normalize_vector(g_pred_body)
+
+        # Normalize the accelerometer measurement to avoid scale issues in innovation
+        a_meas_body = normalize_vector(self.measurements.accel_new)
+
+        # Calculate the innovation (residual) between measured and predicted acceleration readings
+        innovation = a_meas_body - g_pred_body
+
+        # Jacobian H (3x9)
+        g_skew = skew_symmetric(g_pred_body)
+        H = np.zeros((3, 9))
+        H[0:3, 0:3] = g_skew
+        H[0:3, 6:9] = np.eye(3)
+
+        # Apply measurement update
+        self._apply_update(innovation, H, self.R_accel, gate_threshold)
+
+    def _apply_update(self, y, H, R, gate_threshold):
+        # S = H P H.T + R, where S is the innovation covariance
+        S = H @ self.P @ H.T + R
+        
+        # Mahalanobis Distance Gating
+        try:
+            S_inv = np.linalg.inv(S)
+            if y.T @ S_inv @ y > gate_threshold:
+                return 
+        except np.linalg.LinAlgError:
+            return
+
+        # Update the Kalman Gain K (9x3)
+        K = self.P @ H.T @ S_inv
+        self.kalman_gain = K
+
+        # Update P
+        I = np.eye(9)
+        self.P = (I - K @ H) @ self.P
+        self.P = (self.P + self.P.T) / 2.0
+
+        # Calculate state_correction matrix (9x1)
+        state_correction = K @ y
+
+        # Pull out error components from state_correction
+        att_error = state_correction[0:3]
+        gyro_bias_error = state_correction[3:6]
+        accel_bias_error = state_correction[6:9]
+
+        # Correct nominal state using attitude error (small angle approximation)
+        self.nominal_state.correct_state(att_error, np.zeros((3,1)), np.zeros((3,1)))
+        
+        # Correct biases in measurements for use in next step
+        self.measurements.update_biases(gyro_bias_error, accel_bias_error, np.zeros((3,1)))
