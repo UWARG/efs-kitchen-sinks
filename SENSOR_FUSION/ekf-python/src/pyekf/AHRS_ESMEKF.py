@@ -178,7 +178,7 @@ class AHRS_ESMEKF:
 
         # Calculate innovation accounting for error state (ES-MEKF)
         m_skew = skew_symmetric(m_pred_body)
-        innovation = m_meas_body - m_pred_body - m_skew @ self.error_state[0:3]
+        innovation = m_meas_body - m_pred_body
 
         # Jacobian H (3x9)
         H = np.zeros((3, 9))
@@ -200,16 +200,14 @@ class AHRS_ESMEKF:
         R_matrix = b_to_i_frame_rot_matrix(self.nominal_state.quaternion_new)
         g_reaction_inertial = -self.gravity_inertial # Reaction force
 
-        # Normalize gravity prediction to avoid scale issues in innovation
-        g_pred_body = R_matrix.T @ g_reaction_inertial
-        g_pred_body = normalize_vector(g_pred_body)
 
-        # Normalize the accelerometer measurement to avoid scale issues in innovation
-        a_meas_body = normalize_vector(self.measurements.accel_new)
+        # Get the predicted accelerometer reading in the body frame by rotating the inertial gravity vector
+        g_pred_body = R_matrix.T @ g_reaction_inertial
+        a_meas_body = self.measurements.accel_new
 
         # Calculate innovation accounting for error state (ES-MEKF)
         g_skew = skew_symmetric(g_pred_body)
-        innovation = a_meas_body - g_pred_body - g_skew @ self.error_state[0:3] - self.error_state[6:9]
+        innovation = a_meas_body - g_pred_body
 
         # Jacobian H (3x9)
         H = np.zeros((3, 9))
@@ -247,20 +245,25 @@ class AHRS_ESMEKF:
         self._check_and_reset_error_state()
 
     def _check_and_reset_error_state(self):
+        # Extract error components
         att_error = self.error_state[0:3]
         gyro_bias_error = self.error_state[3:6]
         accel_bias_error = self.error_state[6:9]
         
-        # Check if any error component exceeds threshold
-        if (np.linalg.norm(att_error) > self.reset_threshold_att or
-            np.linalg.norm(gyro_bias_error) > self.reset_threshold_bias or
-            np.linalg.norm(accel_bias_error) > self.reset_threshold_bias):
-            
-            # Apply error state to nominal state
-            self.nominal_state.correct_state(att_error, np.zeros((3,1)), np.zeros((3,1)))
-            
-            # Apply bias errors to accumulated biases
-            self.measurements.update_biases(gyro_bias_error, accel_bias_error, np.zeros((3,1)))
-            
-            # Reset error state to zero
-            self.error_state = np.zeros((9, 1))
+        # Inject Attitude, Velocity (0), and Position (0) errors into Nominal State
+        # Note: We pass zeros for velocity/displacement as we aren't estimating them in the error state
+        self.nominal_state.correct_state(
+            att_error, 
+            np.zeros((3, 1)), 
+            np.zeros((3, 1))
+        )
+        
+        # Inject Bias errors into Measurements
+        self.measurements.update_biases(
+            gyro_bias_error, 
+            accel_bias_error, 
+            np.zeros((3, 1))
+        )
+        
+        # 3. Reset Error State
+        self.error_state = np.zeros((9, 1))

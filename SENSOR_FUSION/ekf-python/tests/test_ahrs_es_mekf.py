@@ -6,6 +6,7 @@ from pyekf.utils import GRAVITY_INERTIAL, MAGNETOMETER_INERTIAL
 from tests.utils import assert_quaternion_close
 from tests.sim.constant_trajectory import ConstantMotionTrajectory
 from tests.sim.sensors import SensorSimulator
+from tests.test_grapher import ResultsCollector
 from tests.sim.params import ConstantSimParams, SensorParams
 
 seed: int = 42
@@ -55,11 +56,15 @@ def test_constant_rotation_and_accel_no_noise_no_correction():
         magnetometer_inertial=sim_params.mag_field_iframe
     )
 
+    grapher = ResultsCollector(title="AHRS_ESMEKF: (1)test_constant_rotation_and_accel_no_noise_no_correction")
     delta_t = sim_params.delta_t
     for curr_time in np.arange(delta_t, sim_params.duration + delta_t, delta_t):
         gyro_reading, accel_reading, _ = simulator.get_readings(curr_time)
         # ONLY extrapolation
         ekf.state_extrapolation(gyro_reading, accel_reading, delta_t)
+        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+
+    grapher.save_and_show(filename="1_ahrs_no_noise_no_correction.png")
 
     gt_disp, gt_vel, _, gt_quat, _ = trajectory.get_state(sim_params.duration)
     
@@ -115,10 +120,14 @@ def test_constant_rotation_and_accel_no_bias_no_correction():
         gyro_cov=sensor_params.gyro_cov, accel_cov=sensor_params.accel_cov
     )
 
+    grapher = ResultsCollector(title="AHRS_ESMEKF: (2)test_constant_rotation_and_accel_no_bias_no_correction")
     delta_t = sim_params.delta_t
     for curr_time in np.arange(delta_t, sim_params.duration + delta_t, delta_t):
         gyro_reading, accel_reading, _ = simulator.get_readings(curr_time)
         ekf.state_extrapolation(gyro_reading, accel_reading, delta_t)
+        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+
+    grapher.save_and_show(filename="2_ahrs_no_bias_no_correction.png")
 
     _, _, _, gt_quat, _ = trajectory.get_state(sim_params.duration)
     
@@ -130,8 +139,12 @@ def test_constant_rotation_and_accel_no_bias():
     Tests if Mag/Accel updates successfully pull the noisy estimate back to Ground Truth.
     """
     sensor_params = SensorParams(
-        gyro_cov=0.1, accel_cov=0.1, magnetometer_cov=0.0001,
-        gyro_bias_cov=0, accel_bias_cov=0, magnetometer_bias_cov=0
+        gyro_cov=1e-6,
+        accel_cov=1e-4,
+        magnetometer_cov=0.01,
+        gyro_bias_cov=0,
+        accel_bias_cov=0,
+        magnetometer_bias_cov=0
     )
 
     sim_params = ConstantSimParams(
@@ -173,6 +186,7 @@ def test_constant_rotation_and_accel_no_bias():
         magnetometer_cov=sensor_params.magnetometer_cov
     )
 
+    grapher = ResultsCollector(title="AHRS_ESMEKF: (3)test_constant_rotation_and_accel_no_bias")
     delta_t = sim_params.delta_t
     for curr_time in np.arange(delta_t, sim_params.duration + delta_t, delta_t):
         gyro_reading, accel_reading, mag_reading = simulator.get_readings(curr_time)
@@ -180,6 +194,9 @@ def test_constant_rotation_and_accel_no_bias():
         ekf.state_extrapolation(gyro_reading, accel_reading, delta_t)
         ekf.correction_magnetometer(magnetometer_new=mag_reading)
         ekf.correction_accelerometer(accel_new=accel_reading)
+        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+    
+    grapher.save_and_show(filename="3_ahrs_no_bias.png")
 
     _, _, _, gt_quat, _ = trajectory.get_state(sim_params.duration)
     
@@ -193,8 +210,8 @@ def test_ahrs_full_correction_constant_rotation():
     """
     # 1. Define Simulation Parameters
     sensor_params = SensorParams(
-        gyro_cov=0.01,
-        accel_cov=0.1,
+        gyro_cov=1e-6,
+        accel_cov=1e-4,
         magnetometer_cov=0.01,
         gyro_bias_cov=1e-5,
         accel_bias_cov=1e-4,
@@ -258,6 +275,7 @@ def test_ahrs_full_correction_constant_rotation():
     )
 
     # 4. Run Simulation Loop
+    grapher = ResultsCollector(title="AHRS_ESMEKF: (4)test_ahrs_full_correction_constant_rotation")
     delta_t = sim_params.delta_t
     fmt_vec = lambda v: "[" + " ".join(f"{x:8.4f}" for x in v.flatten()) + "]"
     
@@ -270,6 +288,8 @@ def test_ahrs_full_correction_constant_rotation():
         ekf.state_extrapolation(gyro_reading, accel_reading, delta_t)
         ekf.correction_magnetometer(magnetometer_new=mag_reading)
         ekf.correction_accelerometer(accel_new=accel_reading)
+        
+        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
 
         if curr_time % 0.5 < delta_t:
             gt_disp, gt_vel, _, gt_quat, _ = trajectory.get_state(curr_time)
@@ -284,6 +304,8 @@ def test_ahrs_full_correction_constant_rotation():
             print(f"{' ':>5} | GT    | {fmt_vec(gt_quat)} | {fmt_vec(gt_disp)} | {fmt_vec(gt_vel)}")
             print("-" * 130)
 
+    grapher.save_and_show(filename="4_ahrs_full_correction_constant_rotation.png")
+    
     # 5. Verification
     _, _, _, expected_quat, _ = trajectory.get_state(sim_params.duration)
     assert_quaternion_close(actual=expected_quat, estimate=ekf.nominal_state.quaternion_new, atol=2e-1, rtol=1e-1)
