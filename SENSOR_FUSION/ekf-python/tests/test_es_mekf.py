@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pyekf.ESMEKF import ESMEKF
+from pyekf.ins_esmekf.ESMEKF import ESMEKF
 from pyekf.utils import GRAVITY_INERTIAL, MAGNETOMETER_INERTIAL
 from tests.utils.utils import assert_quaternion_close
 from tests.sim.constant_trajectory import ConstantMotionTrajectory
