@@ -14,7 +14,7 @@ from pyekf.quaternions import (
     b_to_i_frame_rot_matrix,
     i_to_b_frame_rot_matrix,
 )
-from pyekf.NominalState import NominalState
+from pyekf.ins_esmekf.NominalState import NominalState
 from pyekf.Measurements import Measurements
 
 class ESMEKF:
@@ -179,11 +179,47 @@ class ESMEKF:
         self.kalman_gain = self.error_state_cov_mat @ observation_matrix_H.T @ np.linalg.inv(
             observation_matrix_H @ self.error_state_cov_mat @ observation_matrix_H.T + self.magnetometer_cov_mat
         )
+        # print(self.error_state_cov_mat)
+        # print(self.kalman_gain)
+        np.set_printoptions(
+            linewidth=250,
+            threshold=np.inf,
+            precision=5,
+            suppress=True
+        )
+        # print(mag_innovation)
+        # print(self.error_state_cov_mat)
+        # def is_psd(P: np.ndarray, tol: float = 1e-10) -> bool:
+        #     # P should be symmetric, but enforce numerically
+        #     P_sym = 0.5 * (P + P.T)
+        #     eigvals = np.linalg.eigvalsh(P_sym)
+        #     return np.all(eigvals >= -tol)
+        # def is_error_cov_psd(error_state_cov_mat: np.ndarray, tol: float = 1e-10) -> bool:
+        #     eigenvalues = np.linalg.eigvalsh(error_state_cov_mat)
+        #     return np.all(eigenvalues >= -tol)
+
+
+        # if not is_error_cov_psd(self.error_state_cov_mat, 0):
+        #     print("WARNING: Covariance is not PSD")
+        # else:
+        #     print("INFO: Cov is PSD")
+        # print(self.kalman_gain @ observation_matrix_H)
+        # print()
+        # Force the magnetometer to ONLY affect orientation (indices 0-3) and biases (indices 9-18)
+        # self.kalman_gain[3:, :] = 0.0
 
         # TODO: technically error state is 0 here, so could just set it, but need to check how to have different correction steps for multiple sensors
         self.error_state = self.error_state + self.kalman_gain @ mag_innovation
 
-        self.error_state_cov_mat = (np.eye(18, dtype=float) - self.kalman_gain @ observation_matrix_H) @ self.error_state_cov_mat
+        # self.error_state_cov_mat = (np.eye(18, dtype=float) - self.kalman_gain @ observation_matrix_H) @ self.error_state_cov_mat
+        self.error_state_cov_mat = (
+            (np.eye(18, dtype=float) - self.kalman_gain @ observation_matrix_H)
+            @ self.error_state_cov_mat
+            @ (np.eye(18, dtype=float) - self.kalman_gain @ observation_matrix_H).T
+            + self.kalman_gain
+            @ self.magnetometer_cov_mat
+            @ self.kalman_gain.T
+        )
 
         self.nominal_state.correct_state(
             small_angle_error=self.error_state[0:3, 0:1],
@@ -205,10 +241,8 @@ class ESMEKF:
     def _observation_matrix_H_magnetometer(self):
         # non-zero submatrices of H
         small_angle_update_matrix = skew_symmetric(
-            np.dot(
-                i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
-                self.magnetometer_inertial
-            )
+            # i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)) @ self.magnetometer_inertial
+            i_to_b_frame_rot_matrix(self.nominal_state.quaternion_new) @ self.magnetometer_inertial
         )
 
         H = np.zeros(shape=(3, 18), dtype=float)
@@ -221,10 +255,11 @@ class ESMEKF:
     # instead, we use the measured mag - predicted mag
     def _mag_innovation(self):
         mag_predicted = np.dot(
-            i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
+            # i_to_b_frame_rot_matrix(average_quaternions(self.nominal_state.quaternion_new, self.nominal_state.quaternion_prev)),
+            i_to_b_frame_rot_matrix(self.nominal_state.quaternion_new),
             self.magnetometer_inertial
         )
-        return self.measurements.mag_bar - mag_predicted # TODO: maybe don't use mag bar here, since longer time period and not integrating it?
+        return self.measurements.mag_new - mag_predicted # TODO: maybe don't use mag bar here, since longer time period and not integrating it?
 
     # TODO: test with and without, close to I so could be dropped
     def _reset_op_jacobian(self):

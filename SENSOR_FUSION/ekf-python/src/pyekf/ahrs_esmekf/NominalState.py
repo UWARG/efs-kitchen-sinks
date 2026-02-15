@@ -2,40 +2,26 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyekf.utils import (
-    skew_symmetric,
-    GRAVITY_INERTIAL,
     to_col_vector,
 )
 from pyekf.quaternions import (
     IDENTITY_QUATERNION,
     normalize_quaternion,
     multiply_quaternions,
-    b_to_i_frame_rot_matrix,
 )
 
 class NominalState:
     def __init__(
             self,
-            displacement_initial: NDArray[np.float64] = np.zeros((3, 1)),
-            velocity_initial: NDArray[np.float64] = np.zeros((3, 1)),
             quaternion_initial: NDArray[np.float64] = IDENTITY_QUATERNION,
-            gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
         ):
 
         # convention: on initialization, both prev and new are the same
-        self.displacement_prev = to_col_vector(displacement_initial, 3)
-        self.velocity_prev = to_col_vector(velocity_initial, 3)
         self.quaternion_prev = normalize_quaternion(to_col_vector(quaternion_initial, 4))
-        self.displacement_new = self.displacement_prev.copy()
-        self.velocity_new = self.velocity_prev.copy()
         self.quaternion_new = self.quaternion_prev.copy()
-
-        self.gravity_inertial = to_col_vector(gravity_inertial, 3)
 
     def __str__(self):
         return (f"Nominal State:\n"
-                f"  Displacement (p):   {self.displacement_new.flatten()} m\n"
-                f"  Velocity (v):   {self.velocity_new.flatten()} m/s\n"
                 f"  Quaternion (q): {self.quaternion_new.flatten()} (w,x,y,z)\n"
 )
 
@@ -43,18 +29,12 @@ class NominalState:
             self,
             gyro_new: NDArray[np.float64],
             gyro_prev: NDArray[np.float64],
-            accel_new: NDArray[np.float64],
-            accel_prev: NDArray[np.float64],
             dt: np.float64
         ):
 
         self.quaternion_prev = self.quaternion_new
-        self.velocity_prev = self.velocity_new
-        self.displacement_prev = self.displacement_new
 
         self.quaternion_new = self._extrapolate_quaternion(gyro_new, gyro_prev, dt)
-        self.velocity_new = self._extrapolate_velocity(accel_new, accel_prev, dt)
-        self.displacement_new = self._extrapolate_displacement(dt)
     
     def _extrapolate_quaternion(
             self,
@@ -93,45 +73,18 @@ class NominalState:
         )) 
 
         return (np.cos(norm_sigma) * np.eye(4) + np.sin(norm_sigma)/norm_gyro*gyro_mult_matrix)
-    
-    def _extrapolate_velocity(
-            self,
-            accel_body_new: NDArray[np.float64],
-            accel_body_prev: NDArray[np.float64],
-            dt: np.float64
-        ):
-
-        accel_inertial_new = np.dot(b_to_i_frame_rot_matrix(self.quaternion_new), accel_body_new)
-        accel_inertial_old = np.dot(b_to_i_frame_rot_matrix(self.quaternion_prev), accel_body_prev)
-        accel_bar = (accel_inertial_new + accel_inertial_old) / 2
-        return (accel_bar + self.gravity_inertial) * dt + self.velocity_prev
-
-    def _extrapolate_displacement(
-            self,
-            dt: np.float64
-        ):
-
-        velocity_bar = (self.velocity_new + self.velocity_prev) / 2
-        return velocity_bar * dt + self.displacement_prev
 
     def correct_state(
             self,
             small_angle_error: NDArray[np.float64],
-            velocity_error: NDArray[np.float64],
-            displacement_error: NDArray[np.float64],
         ):
         quaternion_error = np.vstack([
             [1.0],
             0.5 * small_angle_error
         ])
-         # TODO: test experimentally if normalize is needed
+        # TODO: test experimentally if normalize is needed
         quaternion_corrected: NDArray[np.float64] = normalize_quaternion(multiply_quaternions(self.quaternion_new, quaternion_error))
-        velocity_corrected: NDArray[np.float64] = self.velocity_new + velocity_error
-        displacement_corrected: NDArray[np.float64] = self.displacement_new + displacement_error
+        # quaternion_corrected: NDArray[np.float64] = normalize_quaternion(multiply_quaternions(quaternion_error, self.quaternion_new)) # check this order
 
-        self.quaternion_new = quaternion_corrected.copy()
+        self.quaternion_new = quaternion_corrected
         self.quaternion_prev = quaternion_corrected.copy()
-        self.velocity_new = velocity_corrected.copy()
-        self.velocity_prev = velocity_corrected.copy()
-        self.displacement_new = displacement_corrected.copy()
-        self.displacement_prev = displacement_corrected.copy()

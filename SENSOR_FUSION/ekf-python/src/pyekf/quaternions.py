@@ -86,6 +86,7 @@ def b_to_i_frame_rot_matrix(q: NDArray[np.float64]) -> NDArray[np.float64]:
         [2*x*z - 2*y*w,     2*y*z + 2*x*w,     1 - 2*x*x - 2*y*y],
     ], dtype=np.float64)
 
+# TODO: also could just return transpose of b_to_i_frame_rot_matrix
 def i_to_b_frame_rot_matrix(q: NDArray[np.float64]) -> NDArray[np.float64]:
     return b_to_i_frame_rot_matrix(inverse_quaternion(q))
 
@@ -115,3 +116,23 @@ def rotate_vector(v: NDArray[np.float64], q: NDArray[np.float64]) -> NDArray[np.
     q = normalize_quaternion(q)
     R = b_to_i_frame_rot_matrix(q)
     return R @ v
+
+def angular_distance_degrees(q_true: NDArray[np.float64], q_est: NDArray[np.float64]) -> float:
+        # Relative rotation: q_err = q_est^{-1} x q_true
+        q_err = multiply_quaternions(
+            inverse_quaternion(q_est),
+            q_true,
+        )
+
+        q_err = normalize_quaternion(q_err)
+
+        # Enforce shortest rotation (q and -q represent same orientation)
+        if q_err[0, 0] < 0.0:
+            q_err = -q_err
+
+        w = np.clip(q_err[0, 0], -1.0, 1.0)
+
+        # Geodesic distance on SO(3)
+        angle_rad = 2.0 * np.arccos(w)
+
+        return np.degrees(angle_rad)

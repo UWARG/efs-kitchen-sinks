@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
+from typing import Optional
 
 from pyekf.utils import to_col_vector
 
@@ -39,10 +40,18 @@ class Measurements:
         self.mag_prev = self.mag_new
         self.mag_new = to_col_vector(mag_new, 3) - self.mag_bias_accumulated
 
-    def update_biases(self, gyro_bias_new: NDArray[np.float64], accel_bias_new: NDArray[np.float64], mag_bias_new: NDArray[np.float64]):
-        self.gyro_bias_accumulated += to_col_vector(gyro_bias_new, 3)
-        self.accel_bias_accumulated += to_col_vector(accel_bias_new, 3)
-        self.mag_bias_accumulated += to_col_vector(mag_bias_new, 3)
+    def update_biases(
+            self,
+            gyro_bias_new: Optional[NDArray[np.float64]],
+            accel_bias_new: Optional[NDArray[np.float64]],
+            mag_bias_new: Optional[NDArray[np.float64]]
+        ):
+        if gyro_bias_new is not None:
+            self.gyro_bias_accumulated += to_col_vector(gyro_bias_new, 3)
+        if accel_bias_new is not None:
+            self.accel_bias_accumulated += to_col_vector(accel_bias_new, 3)
+        if mag_bias_new is not None:
+            self.mag_bias_accumulated += to_col_vector(mag_bias_new, 3)
 
     @property
     def gyro_bar(self) -> NDArray[np.float64]:

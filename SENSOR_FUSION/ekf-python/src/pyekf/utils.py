@@ -27,3 +27,6 @@ def to_col_vector(v: NDArray[np.float64], cols: int) -> NDArray[np.float64]:
     if v_flat.size != cols:
         raise ValueError(f"Expected vector with {cols} elements, got shape {v.shape}")
     return v_flat.reshape(cols, 1)
+
+def ensure_symmetric_matrix(M: NDArray[np.float64]) -> NDArray[np.float64]:
+    return (M + M.T) / 2.0

@@ -11,7 +11,7 @@ from pyekf.quaternions import (
     IDENTITY_QUATERNION,
     b_to_i_frame_rot_matrix,
 )
-from pyekf.NominalState import NominalState
+from pyekf.ins_esmekf.NominalState import NominalState
 from pyekf.Measurements import Measurements
 
 class AHRS_ESMEKF:
