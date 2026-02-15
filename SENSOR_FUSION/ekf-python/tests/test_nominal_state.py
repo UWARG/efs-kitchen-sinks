@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from tests.utils import assert_quaternion_close
+from tests.utils.utils import assert_quaternion_close
 from pyekf.NominalState import NominalState
 from pyekf.Measurements import Measurements
 from pyekf.utils import GRAVITY_INERTIAL

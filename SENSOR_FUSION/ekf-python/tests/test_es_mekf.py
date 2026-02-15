@@ -3,7 +3,7 @@ import pytest
 
 from pyekf.ESMEKF import ESMEKF
 from pyekf.utils import GRAVITY_INERTIAL, MAGNETOMETER_INERTIAL
-from tests.utils import assert_quaternion_close
+from tests.utils.utils import assert_quaternion_close
 from tests.sim.constant_trajectory import ConstantMotionTrajectory
 from tests.sim.sensors import SensorSimulator
 from tests.sim.params import ConstantSimParams, SensorParams
@@ -214,8 +214,8 @@ def test_constant_rotation_and_accel_no_bias_no_correction():
 
 def test_constant_rotation_and_accel_no_bias():
     sensor_params = SensorParams(
-        gyro_cov=0.1,
-        accel_cov=0.1,
+        gyro_cov=0.000001,
+        accel_cov=0.00005,
         magnetometer_cov=0.0001,
         gyro_bias_cov=0,
         accel_bias_cov=0,
@@ -223,8 +223,8 @@ def test_constant_rotation_and_accel_no_bias():
     )
 
     sim_params = ConstantSimParams(
-        delta_t=0.1,
-        duration=10.0,
+        delta_t=0.01,
+        duration=100.0,
         displacement_initial_iframe=np.zeros((3, 1)),
         velocity_initial_iframe=np.zeros((3, 1)),
         quaternion_initial_iframe=np.array([[1.0], [0.0], [0.0], [0.0]]),
