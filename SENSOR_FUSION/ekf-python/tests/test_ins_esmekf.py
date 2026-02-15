@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pyekf.ins_esmekf.ESMEKF import ESMEKF
+from pyekf.ins_esmekf.INS_ESMEKF import INS_ESMEKF
 from pyekf.utils import GRAVITY_INERTIAL, MAGNETOMETER_INERTIAL
 from tests.utils.utils import assert_quaternion_close
 from tests.sim.constant_trajectory import ConstantMotionTrajectory
@@ -56,7 +56,7 @@ def test_constant_rotation_and_accel_no_noise_no_correction():
 
     # 3. Initialize Filter
     gyro_initial, accel_initial, mag_initial = simulator.get_readings(0.0)
-    ekf = ESMEKF(
+    ekf = INS_ESMEKF(
         gyro_initial=gyro_initial, 
         accel_initial=accel_initial,
         mag_initial=mag_initial,
@@ -157,7 +157,7 @@ def test_constant_rotation_and_accel_no_bias_no_correction():
 
     # 3. Initialize Filter
     gyro_initial, accel_initial, mag_initial = simulator.get_readings(0.0)
-    ekf = ESMEKF(
+    ekf = INS_ESMEKF(
         gyro_initial=gyro_initial, 
         accel_initial=accel_initial,
         mag_initial=mag_initial,
@@ -258,7 +258,7 @@ def test_constant_rotation_and_accel_no_bias():
 
     # 3. Initialize Filter
     gyro_initial, accel_initial, mag_initial = simulator.get_readings(0.0)
-    ekf = ESMEKF(
+    ekf = INS_ESMEKF(
         gyro_initial=gyro_initial, 
         accel_initial=accel_initial,
         mag_initial=mag_initial,

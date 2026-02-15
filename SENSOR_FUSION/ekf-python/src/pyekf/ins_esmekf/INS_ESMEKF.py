@@ -17,7 +17,7 @@ from pyekf.quaternions import (
 from pyekf.ins_esmekf.NominalState import NominalState
 from pyekf.Measurements import Measurements
 
-class ESMEKF:
+class INS_ESMEKF:
     def __init__(
             self,
             # Initial Measurements
