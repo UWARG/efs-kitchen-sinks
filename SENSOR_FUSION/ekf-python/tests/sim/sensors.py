@@ -70,7 +70,7 @@ class SensorSimulator:
         gyro_reading = rotate_vector(angular_vel_i, quat_inv) + self.gyro_bias
         
         # 2. Accelerometer: Specific force in body frame f = R(quat_inv) * (a_i - g_i)
-        accel_total_inertial = accel_i - self.g_i
+        accel_total_inertial = accel_i + self.g_i
         accel_reading = rotate_vector(accel_total_inertial, quat_inv) + self.accel_bias
 
         # 3. Magnetometer: Rotate inertial field to body frame and add bias

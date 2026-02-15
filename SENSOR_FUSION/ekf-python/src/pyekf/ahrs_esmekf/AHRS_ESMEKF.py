@@ -178,7 +178,7 @@ class AHRS_ESMEKF:
         # ------------------------------------------------------------------
         # 2. Innovation
         # ------------------------------------------------------------------
-        accel_predicted = i_to_b_frame_rot_matrix(self.nominal_state.quaternion_new) @ -self.gravity_inertial
+        accel_predicted = i_to_b_frame_rot_matrix(self.nominal_state.quaternion_new) @ self.gravity_inertial
         innovation = self.measurements.accel_new - accel_predicted
     
         # ------------------------------------------------------------------
@@ -253,8 +253,8 @@ class AHRS_ESMEKF:
 
         try:
             S_inv = np.linalg.inv(S)
-            if y.T @ S_inv @ y > gate_threshold:
-                return 
+            # if y.T @ S_inv @ y > gate_threshold:
+            #     return 
         except np.linalg.LinAlgError:
             return
         

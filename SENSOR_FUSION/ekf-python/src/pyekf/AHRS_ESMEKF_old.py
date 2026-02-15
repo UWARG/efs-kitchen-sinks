@@ -198,7 +198,7 @@ class AHRS_ESMEKF:
 
         # Predicted measurement in body frame
         R_matrix = b_to_i_frame_rot_matrix(self.nominal_state.quaternion_new)
-        g_reaction_inertial = -self.gravity_inertial # Reaction force
+        g_reaction_inertial = self.gravity_inertial # Reaction force
 
 
         # Get the predicted accelerometer reading in the body frame by rotating the inertial gravity vector
