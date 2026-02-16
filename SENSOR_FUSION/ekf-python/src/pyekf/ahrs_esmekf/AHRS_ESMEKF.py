@@ -178,7 +178,7 @@ class AHRS_ESMEKF:
         # ------------------------------------------------------------------
         # 2. Innovation
         # ------------------------------------------------------------------
-        accel_predicted = i_to_b_frame_rot_matrix(self.nominal_state.quaternion_new) @ self.gravity_inertial
+        accel_predicted = i_to_b_frame_rot_matrix(self.nominal_state.quaternion_new) @ -self.gravity_inertial
         innovation = self.measurements.accel_new - accel_predicted
     
         # ------------------------------------------------------------------
