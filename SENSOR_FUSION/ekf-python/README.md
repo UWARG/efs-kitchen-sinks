@@ -67,12 +67,14 @@ uv run pytest
 
 ## TODOS
 
-1. all todos in code
-2. fast inverse of psd matrices (3x3), also if check for singularity
-3. new testing framework + experiement class for logging + visualizing data
-4. make compatible with mission planner tests?
-5. outline assumptions, e.g. initial cov of sensors always independent across dims (diagonal), always col vectors, mag inertial, etc.
+fast inverse of psd matrices (3x3), also if check for singularity
+add better tests for different rate of mag, compared to imu
+mission planner test
+3 opts -> reset, F taylor, process noise corrs
+update readme -> outline assumptions, e.g. initial cov of sensors always independent across dims (diagonal), always col vectors, mag inertial, etc.
 
-6. rearchitecture -> data struct for nominal state to use in tests, experiment class for printing, saving, ploting experiments, generic enough so can handle mission planner
 
-7. if adding more measurements, error state can be non zero then we need to account for it in predicting measurements, e.g. small angle error in magnetometer
+ins
+gps basic + barometer
+airspeed add state
+better gps error model

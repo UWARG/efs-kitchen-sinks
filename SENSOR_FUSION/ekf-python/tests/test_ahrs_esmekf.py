@@ -11,12 +11,17 @@ from tests.sim.params import ConstantSimParams, SensorParams
 
 seed: int = 42
 
-def test_constant_rotation_and_accel_no_noise_no_correction():
+def test_constant_rotation_and_accel_no_noise_no_correction(plots_dir):
     """
     BASELINE: Zero noise, zero bias, and NO correction updates.
     Tests if the kinematic integration (state extrapolation) alone 
     can perfectly track a constant rotation.
     """
+    sensor_params = SensorParams(
+        gyro_cov=0.0, accel_cov=0.0, magnetometer_cov=0.0,
+        gyro_bias_cov=0, accel_bias_cov=0, magnetometer_bias_cov=0
+    )
+
     sim_params = ConstantSimParams(
         delta_t=0.01,
         duration=100.0,
@@ -39,33 +44,62 @@ def test_constant_rotation_and_accel_no_noise_no_correction():
     
     simulator = SensorSimulator(
         trajectory=trajectory, 
-        gyro_cov=0.0, accel_cov=0.0, magnetometer_cov=0.0,
-        gyro_bias_cov=0.0, accel_bias_cov=0.0, magnetometer_bias_cov=0.0,
+        gyro_cov=sensor_params.gyro_cov, 
+        accel_cov=sensor_params.accel_cov, 
+        magnetometer_cov=sensor_params.magnetometer_cov,
+        gyro_bias_cov=sensor_params.gyro_bias_cov,
+        accel_bias_cov=sensor_params.accel_bias_cov,
+        magnetometer_bias_cov=sensor_params.magnetometer_bias_cov,
         gravity_inertial=sim_params.gravity_iframe,
         magnetometer_inertial=sim_params.mag_field_iframe,
         seed=seed
     )
 
-    gyro_init, accel_init, mag_init = simulator.get_readings(0.0)
+    gyro_initial, accel_initial, mag_initial = simulator.get_readings(0.0)
     ekf = AHRS_ESMEKF(
-        gyro_initial=gyro_init,
-        accel_initial=accel_init,
-        mag_initial=mag_init,
+        gyro_initial=gyro_initial, 
+        accel_initial=accel_initial,
+        mag_initial=mag_initial,
         quaternion_initial=sim_params.quaternion_initial_iframe,
         gravity_inertial=sim_params.gravity_iframe,
-        magnetometer_inertial=sim_params.mag_field_iframe
+        magnetometer_inertial=sim_params.mag_field_iframe,
+        gyro_cov=sensor_params.gyro_cov,
+        accel_cov=sensor_params.accel_cov,
+        magnetometer_cov=sensor_params.magnetometer_cov,
+        gyro_bias_cov=sensor_params.gyro_bias_cov,
+        accel_bias_cov=sensor_params.accel_bias_cov,
+        accel_gate_threshold=1000.0,
+        magnetometer_gate_threshold=1000.0,
+        p_init_att=0.1,
+        p_init_bias=0.01,
+    )
+
+    grapher = ResultsCollector(
+        title="AHRS_ESMEKF: (1)test_constant_rotation_and_accel_no_noise_no_correction",
+        metadata={
+            "dt": sim_params.delta_t,
+            "T_total": sim_params.duration,
+            "gyro_var": sensor_params.gyro_cov,
+            "accel_var": sensor_params.accel_cov,
+            "mag_var": sensor_params.magnetometer_cov,
+            "gyro_bias_cov": sensor_params.gyro_bias_cov,
+            "accel_bias_cov": sensor_params.accel_bias_cov,
+            "mag_bias_cov": sensor_params.magnetometer_bias_cov,
+        },
     )
 
     delta_t = sim_params.delta_t
     print(f"\n{'Time':>5} | {'Gyro [x y z]':^30} | {'Accel [x y z]':^30}")
     print("-" * 70)
-    print(f"Time: {0.00:5.2f} | Gyro: {gyro_init.flatten()} | Accel: {accel_init.flatten()}")
+    print(f"Time: {0.00:5.2f} | Gyro: {gyro_initial.flatten()} | Accel: {accel_initial.flatten()}")
     for curr_time in np.arange(delta_t, sim_params.duration + delta_t, delta_t):
         gyro_reading, accel_reading, _ = simulator.get_readings(curr_time)
         print(f"Time: {curr_time:.2f} | Gyro: {gyro_reading.flatten()} | Accel: {accel_reading.flatten()}")
         ekf.state_extrapolation(gyro_reading, delta_t)
+        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
 
 
+    grapher.save_and_show(output_dir=plots_dir, filename="1_ahrs_no_noise_no_correction.png")
     _, _, _, gt_quat, _ = trajectory.get_state(sim_params.duration)
     
     # Should be precise to 4 decimal places
@@ -102,20 +136,34 @@ def test_constant_rotation_and_accel_no_bias_no_correction(plots_dir):
     
     simulator = SensorSimulator(
         trajectory=trajectory, 
-        gyro_cov=sensor_params.gyro_cov, accel_cov=sensor_params.accel_cov, 
+        gyro_cov=sensor_params.gyro_cov, 
+        accel_cov=sensor_params.accel_cov, 
         magnetometer_cov=sensor_params.magnetometer_cov,
-        gyro_bias_cov=0, accel_bias_cov=0, magnetometer_bias_cov=0,
+        gyro_bias_cov=sensor_params.gyro_bias_cov,
+        accel_bias_cov=sensor_params.accel_bias_cov,
+        magnetometer_bias_cov=sensor_params.magnetometer_bias_cov,
         gravity_inertial=sim_params.gravity_iframe,
-        magnetometer_inertial=sim_params.mag_field_iframe, seed=seed
+        magnetometer_inertial=sim_params.mag_field_iframe,
+        seed=seed
     )
 
-    gyro_init, accel_init, mag_init = simulator.get_readings(0.0)
+    gyro_initial, accel_initial, mag_initial = simulator.get_readings(0.0)
     ekf = AHRS_ESMEKF(
-        gyro_initial=gyro_init, accel_initial=accel_init, mag_initial=mag_init,
+        gyro_initial=gyro_initial, 
+        accel_initial=accel_initial,
+        mag_initial=mag_initial,
         quaternion_initial=sim_params.quaternion_initial_iframe,
         gravity_inertial=sim_params.gravity_iframe,
         magnetometer_inertial=sim_params.mag_field_iframe,
-        gyro_cov=sensor_params.gyro_cov, accel_cov=sensor_params.accel_cov
+        gyro_cov=sensor_params.gyro_cov,
+        accel_cov=sensor_params.accel_cov,
+        magnetometer_cov=sensor_params.magnetometer_cov,
+        gyro_bias_cov=sensor_params.gyro_bias_cov,
+        accel_bias_cov=sensor_params.accel_bias_cov,
+        accel_gate_threshold=1000.0,
+        magnetometer_gate_threshold=1000.0,
+        p_init_att=0.1,
+        p_init_bias=0.01,
     )
 
     grapher = ResultsCollector(
@@ -139,6 +187,7 @@ def test_constant_rotation_and_accel_no_bias_no_correction(plots_dir):
 
     grapher.save_and_show(output_dir=plots_dir, filename="2_ahrs_no_bias_no_correction.png")
 
+    # EXPECT DRIFT: With noise and no corrections, we expect to be very far from Ground Truth after 100s
     # _, _, _, gt_quat, _ = trajectory.get_state(sim_params.duration)
     # assert_quaternion_close(actual=gt_quat, estimate=ekf.nominal_state.quaternion_new, atol=2e-1, rtol=1e-1)
 
@@ -172,21 +221,34 @@ def test_constant_rotation_and_accel_no_bias(plots_dir):
     
     simulator = SensorSimulator(
         trajectory=trajectory, 
-        gyro_cov=sensor_params.gyro_cov, accel_cov=sensor_params.accel_cov, 
+        gyro_cov=sensor_params.gyro_cov, 
+        accel_cov=sensor_params.accel_cov, 
         magnetometer_cov=sensor_params.magnetometer_cov,
-        gyro_bias_cov=0, accel_bias_cov=0, magnetometer_bias_cov=0,
+        gyro_bias_cov=sensor_params.gyro_bias_cov,
+        accel_bias_cov=sensor_params.accel_bias_cov,
+        magnetometer_bias_cov=sensor_params.magnetometer_bias_cov,
         gravity_inertial=sim_params.gravity_iframe,
-        magnetometer_inertial=sim_params.mag_field_iframe, seed=seed
+        magnetometer_inertial=sim_params.mag_field_iframe,
+        seed=seed
     )
 
-    gyro_init, accel_init, mag_init = simulator.get_readings(0.0)
+    gyro_initial, accel_initial, mag_initial = simulator.get_readings(0.0)
     ekf = AHRS_ESMEKF(
-        gyro_initial=gyro_init, accel_initial=accel_init, mag_initial=mag_init,
+        gyro_initial=gyro_initial, 
+        accel_initial=accel_initial,
+        mag_initial=mag_initial,
         quaternion_initial=sim_params.quaternion_initial_iframe,
         gravity_inertial=sim_params.gravity_iframe,
         magnetometer_inertial=sim_params.mag_field_iframe,
-        gyro_cov=sensor_params.gyro_cov, accel_cov=sensor_params.accel_cov,
-        magnetometer_cov=sensor_params.magnetometer_cov
+        gyro_cov=sensor_params.gyro_cov,
+        accel_cov=sensor_params.accel_cov,
+        magnetometer_cov=sensor_params.magnetometer_cov,
+        gyro_bias_cov=sensor_params.gyro_bias_cov,
+        accel_bias_cov=sensor_params.accel_bias_cov,
+        accel_gate_threshold=1000.0,
+        magnetometer_gate_threshold=1000.0,
+        p_init_att=0.1,
+        p_init_bias=0.01,
     )
 
     grapher = ResultsCollector(
@@ -276,8 +338,10 @@ def test_ahrs_full_correction_constant_rotation(plots_dir):
         magnetometer_cov=sensor_params.magnetometer_cov,
         gyro_bias_cov=sensor_params.gyro_bias_cov,
         accel_bias_cov=sensor_params.accel_bias_cov,
-        # p_init_att=0.1,
-        # p_init_bias=0.01
+        accel_gate_threshold=1000.0,
+        magnetometer_gate_threshold=1000.0,
+        p_init_att=0.1,
+        p_init_bias=0.01,
     )
 
     # 4. Run Simulation Loop

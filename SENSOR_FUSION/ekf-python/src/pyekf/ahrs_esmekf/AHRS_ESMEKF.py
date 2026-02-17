@@ -31,12 +31,20 @@ class AHRS_ESMEKF:
             # Initialize Nominal State
             quaternion_initial: NDArray[np.float64] = IDENTITY_QUATERNION,
 
-            # Initialize ESMEKF
+            # Initialize ESMEKF (tunable)
             gyro_cov: np.float64 = np.float64(0.0),
             accel_cov: np.float64 = np.float64(0.0),
             magnetometer_cov: np.float64 = np.float64(0.0),
             gyro_bias_cov: np.float64 = np.float64(0.0),
             accel_bias_cov: np.float64 = np.float64(0.0),
+
+            # Mahalanobis Gating Threshold (tunable)
+            accel_gate_threshold: np.float64 = np.float64(7.80), # corresponds to 3-sigma for 3 DOF, 95% confidence interval
+            magnetometer_gate_threshold: np.float64 = np.float64(16.3), # corresponds to 3-sigma for 3 DOF, 99.9% confidence interval
+
+            # Initial Covariance Estimates (tunable)
+            p_init_att: float = 0.1,
+            p_init_bias: float = 0.01,
 
             # Environmental Constants
             gravity_inertial: NDArray[np.float64] = GRAVITY_INERTIAL,
@@ -70,7 +78,13 @@ class AHRS_ESMEKF:
         self.error_state = np.zeros((self.ERROR_STATE_SZ, 1), dtype=np.float64) # strictly here for logging
         self.kalman_gain = np.zeros((self.ERROR_STATE_SZ, 3), dtype=np.float64) # strictly here for logging, 3 can change based on observation size
         self.P: NDArray[np.float64] = np.zeros((self.ERROR_STATE_SZ, self.ERROR_STATE_SZ), dtype=float) # Error State Covariance Matrix
-        # TODO: initialize P with some small non-zero values on the diagonals for better numerical stability?
+        self.P[0:3, 0:3] = np.eye(3, dtype=np.float64) * p_init_att
+        self.P[3:6, 3:6] = np.eye(3, dtype=np.float64) * p_init_bias # Gyro Bias Uncertainty
+        self.P[6:9, 6:9] = np.eye(3, dtype=np.float64) * p_init_bias # Accel Bias Uncertainty
+
+        # Malhanobis Gating Threshold (tunable)
+        self.accel_gate_threshold = accel_gate_threshold
+        self.magnetometer_gate_threshold = magnetometer_gate_threshold
 
         # environmental constants
         self.gravity_inertial = to_col_vector(gravity_inertial, 3)
@@ -196,7 +210,7 @@ class AHRS_ESMEKF:
             y=innovation,
             H=H,
             R=self.accel_cov_mat,
-            gate_threshold=1000
+            gate_threshold=self.accel_gate_threshold
         )
 
     def correction_magnetometer(
@@ -228,7 +242,7 @@ class AHRS_ESMEKF:
             y=innovation,
             H=H,
             R=self.magnetometer_cov_mat,
-            gate_threshold=1000
+            gate_threshold=self.magnetometer_gate_threshold
         )
 
     def _apply_update(
@@ -283,13 +297,8 @@ class AHRS_ESMEKF:
         # ------------------------------------------------------------------
         # 4. Reset Error State
         # ------------------------------------------------------------------
-        J = self._reset_op_jacobian(error_state)
+        J = np.eye(self.ERROR_STATE_SZ, dtype=float) # reset op jacobian
+        J[0:3, 0:3] = np.eye(3, dtype=float) - 0.5 * skew_symmetric(error_state[0:3, 0:1])
+
         self.P = J @ self.P @ J.T
         self.P = ensure_symmetric_matrix(self.P)
-
-
-    # TODO: test with and without, close to I so could be dropped
-    def _reset_op_jacobian(self, error_state: NDArray[np.float64]):
-        J: NDArray[np.float64] = np.eye(self.ERROR_STATE_SZ, dtype=float)
-        J[0:3, 0:3] = np.eye(3, dtype=float) - 0.5 * skew_symmetric(error_state[0:3, 0:1])
-        return J
