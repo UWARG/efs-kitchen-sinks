@@ -267,8 +267,8 @@ class AHRS_ESMEKF:
 
         try:
             S_inv = np.linalg.inv(S)
-            # if y.T @ S_inv @ y > gate_threshold:
-            #     return 
+            if y.T @ S_inv @ y > gate_threshold:
+                return 
         except np.linalg.LinAlgError:
             return
         
