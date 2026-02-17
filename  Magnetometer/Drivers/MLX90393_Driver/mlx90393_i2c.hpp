@@ -143,6 +143,7 @@ class MLX90393{
 		float get_x_data();
 		float get_y_data();
 		float get_z_data();
+		bool calibrate_4element();
 
 	private:
 		struct RawData{
@@ -172,9 +173,15 @@ class MLX90393{
 			uint8_t osr;
 		};
 
+		struct CorrectionFactors {
+			uint8_t soft_iron[3][3];
+			uint8_t hard_iron[3];
+		};
+
 		volatile struct RawData raw;
 		volatile struct ConvertedData converted;
 		volatile struct RegVal reg;
+		CorrectionFactors correction_factors;
 		I2C_HandleTypeDef *hi2c;
 		uint8_t zyxt;
 		bool rm_flag;
