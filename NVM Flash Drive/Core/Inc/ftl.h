@@ -120,6 +120,8 @@ int ftl_write(const void *data, uint16_t len, uint32_t *out_id);
 
 int ftl_erase(uint32_t block_id);
 
+int ftl_update(uint32_t block_id, const void* data, uint16_t len);
+
 
 // testing functions
 void test_format(void);

@@ -399,21 +399,21 @@ int ftl_write(const void *data, uint16_t len, uint32_t *out_id)
 //erase function
 int ftl_erase(uint32_t block_id)
 {
+	if (!g_mounted) {
+		// Ensures the chip is mounted
+		return -1;
+	}
+
 	//wait for write to finish
 	HAL_StatusTypeDef wait_result = wait_ready(FTL_MAX_WAIT);
 
 	if(wait_result != HAL_OK)
 	{
-		return -1;
+		return -2;
 	}
 
-	if (!g_mounted) {
-			// Ensures the chip is mounted
-			return -2;
-		}
-
-		uint32_t idx = g_tail_idx;
-		ftl_record_header_t header;
+	uint32_t idx = g_tail_idx;
+	ftl_record_header_t header;
 
 	// Search the chip for the matching ID block using the circular buffer
 	while (true) {
@@ -454,6 +454,80 @@ int ftl_erase(uint32_t block_id)
 
 	return 0;
 
+}
+
+int ftl_update(uint32_t block_id, const void* data, uint16_t len) {
+	if (!g_mounted) {
+		return -1;
+	}
+
+	HAL_StatusTypeDef st = wait_ready(FTL_MAX_WAIT);
+	if (st != HAL_OK) {
+		return -2;
+	}
+
+	if (len == 0 || len > FTL_MAX_PAYLOAD) {
+		return -3;   // invalid length
+	}
+
+	uint8_t buf[FTL_MAX_PAYLOAD];
+	st = ftl_read(block_id, buf, NULL);
+	if (st == -2) {
+		return -4; // Invalid id, not updating a previous block
+	}
+
+	uint32_t idx = g_next_idx;      // which block to use
+	uint32_t addr_base = ftl_unit_base_addr(idx);
+	uint32_t id = g_next_id;       // record ID
+
+	// ======================= Erase the 4 KB block we are going to use
+	st = erase_4k(addr_base);
+	if (st != HAL_OK) {
+		return -5;
+	}
+
+	ftl_record_header_t hdr;
+	memset(&hdr, 0xFF, sizeof(hdr));
+	hdr.id = id;
+	hdr.length = len;
+	hdr.status = FTL_STATUS_VALID;
+	hdr.crc = ftl_crc32((const uint8_t*) data, len);
+
+	st = page_program(addr_base + FTL_HEADER_OFFSET, (const uint8_t*) &hdr, (uint16_t) sizeof(hdr));
+	if (st != HAL_OK) {
+		return -6;
+	}
+
+	const uint8_t* src = (const uint8_t*) data;
+	uint32_t remaining = len;
+	uint32_t write_addr = addr_base + FTL_PAYLOAD_OFFSET;
+
+	while (remaining > 0) {
+		uint16_t chunk = remaining > FLASH_PAGE_SIZE_256 ? FLASH_PAGE_SIZE_256 : (uint16_t) remaining;
+
+		st = page_program(write_addr, src, chunk);
+		if (st != HAL_OK) {
+			return -7;
+		}
+
+		src 	   += chunk;
+		write_addr += chunk;
+		remaining  -= chunk;
+	}
+
+	g_head_idx = idx;
+	if (idx == g_tail_idx) {
+		g_tail_idx = (g_tail_idx + 1u) % FTL_NUM_UNITS;
+	}
+
+	g_next_id = id + 1u;
+
+	st = ftl_erase(block_id);
+	if (st != 0) {
+		return -8;
+	}
+
+	return 0;
 }
 
 // helper function for debugging
