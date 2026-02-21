@@ -1,0 +1,666 @@
+#include "ftl.h"
+
+
+
+extern HAL_StatusTypeDef erase_4k(uint32_t addr24);
+extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
+
+
+/*
+ * Internal FTL state (file-local).
+ *
+ * We maintain a minimal view of the circular log:
+ *
+ *   g_head_idx : index (0..FTL_NUM_UNITS-1) of newest VALID record,
+ *                or 0xFFFFFFFF if none exist.
+ *
+ *   g_tail_idx : index of oldest VALID record,
+ *                or 0xFFFFFFFF if none exist.
+ *
+ *   g_next_idx : index where the next append() will write.
+ *
+ *   g_next_id  : record ID that will be assigned to the next append().
+ *
+ *   g_mounted  : set to true after a successful ftl_mount().
+ *
+ * For now these are only used inside this file; we can add public
+ * accessors later once we implement append/read APIs.
+ */
+
+//Make a singleton FTL class
+
+class FTL
+{
+	protected:
+		FTL() = default;
+
+	public:
+		static FTL& get_instance()
+		{
+			static FTL instance;
+			return instance;
+		}
+
+		/*
+		 * ftl_format
+		 *
+		 * Erase every 4 KB unit in the FTL region.
+		 * Since we use the entire external flash as the log, this is:
+		 *
+		 *   for each unit i in [0 .. FTL_NUM_UNITS-1]:
+		 *       erase_4k(i * 4KB)
+		 *
+		 * After this, every header is effectively:
+		 *   status = 0xFFFF (FTL_STATUS_EMPTY)
+		 *   id     = 0xFFFFFFFF (unused)
+		 *   length = 0xFFFF (ignored)
+		 *   crc    = 0xFFFFFFFF (ignored)
+		 */
+		int ftl_format(void)
+		{
+			HAL_StatusTypeDef st = erase_full();
+			if (st != HAL_OK) {
+				return -1;
+			}
+
+		    // Reset in-RAM state
+		    g_head_idx = 0xFFFFFFFFu;
+		    g_tail_idx = 0xFFFFFFFFu;
+		    g_next_idx = 0u;    // next write will go to unit 0
+		    g_next_id  = 0u;    // first record will have ID 0
+		    g_mounted  = false;
+
+		    return 0;
+		}
+
+		/*
+		 * ftl_mount
+		 *
+		 * Scan all units, looking at the header in the first 256 B page of each.
+		 *
+		 * For each unit i:
+		 *   - Read ftl_record_header_t from address (i * FTL_UNIT_SIZE).
+		 *   - If status == FTL_STATUS_EMPTY && id == 0xFFFFFFFF:
+		 *         -> block is completely unused, skip.
+		 *   - Else if status == FTL_STATUS_VALID and length is sane:
+		 *         -> treat as a candidate record, and use hdr.id to track:
+		 *              * min_id: oldest (tail)
+		 *              * max_id: newest (head)
+		 *
+		 * For now we DO NOT recompute CRC here; we simply trust VALID headers.
+		 * CRC checking can be added later.
+		 *
+		 * After scanning all units:
+		 *   - If no VALID records were found:
+		 *         * treat this as an empty log:
+		 *             g_head_idx = g_tail_idx = 0xFFFFFFFF
+		 *             g_next_idx = 0
+		 *             g_next_id  = 0
+		 *
+		 *   - If at least one VALID record was found:
+		 *         * g_tail_idx = index of smallest ID (oldest record)
+		 *         * g_head_idx = index of largest ID (newest record)
+		 *         * g_next_id  = max_id + 1
+		 *         * g_next_idx = (g_head_idx + 1) % FTL_NUM_UNITS
+		 *
+		 * Returns:
+		 *   0  on success
+		 *  <0 on error (basic IO error handling for now).
+		 */
+
+		int ftl_mount(void)
+		{
+		    uint32_t min_id  = 0xFFFFFFFFu;
+		    uint32_t max_id  = 0u;
+		    uint32_t min_idx = 0xFFFFFFFFu;
+		    uint32_t max_idx = 0xFFFFFFFFu;
+
+		    // Scan every 4 KB unit in the FTL region
+		    for (uint32_t i = 0; i < FTL_NUM_UNITS; i++) {
+		        uint32_t base_addr = ftl_unit_base_addr(i);
+		        uint32_t hdr_addr  = base_addr + FTL_HEADER_OFFSET;
+		        uint32_t payload_addr = base_addr + FTL_PAYLOAD_OFFSET;
+
+		        ftl_record_header_t hdr;
+		        memset(&hdr, 0xFF, sizeof(hdr));  // just defensive
+		        read_data(hdr_addr, (uint8_t *)&hdr, (uint16_t)sizeof(hdr));
+
+		        // Case 1: completely erased / never used block
+		        if (hdr.status == FTL_STATUS_EMPTY && hdr.id == 0xFFFFFFFFu) {
+		            continue;
+		        }
+
+		        // For now, we only care about blocks marked VALID.
+		        if (hdr.status != FTL_STATUS_VALID) {
+		            continue;
+		        }
+
+		        // Basic sanity check on length
+		        if (hdr.length == 0u || hdr.length > FTL_MAX_PAYLOAD) {
+		            // Length is nonsense; ignore this header.
+		            continue;
+		        }
+
+		        // (Optional future step: CRC check of payload bytes.
+		        //  We'll add that once append/write is in place.)
+		        uint8_t buffer[hdr.length];
+		        read_data(payload_addr, buffer, hdr.length);
+
+		        if (hdr.crc != ftl_crc32(buffer, hdr.length)) {
+		        	hdr.status = FTL_STATUS_BAD;
+		        	//TODO: handle corrupted block
+		        	continue;
+		        }
+
+
+		        // Track oldest (min_id) and newest (max_id) record
+		        if (hdr.id < min_id) {
+		            min_id  = hdr.id;
+		            min_idx = i;
+		        }
+		        if (max_idx == 0xFFFFFFFFu || hdr.id > max_id) {
+		            max_id  = hdr.id;
+		            max_idx = i;
+		        }
+		    }
+
+		    if (min_idx == 0xFFFFFFFFu) {
+		        // No VALID records found at all.
+		        // This is either a freshly formatted device or fully erased.
+		        g_head_idx = 0xFFFFFFFFu;
+		        g_tail_idx = 0xFFFFFFFFu;
+		        g_next_idx = 0u;  // start writing at unit 0
+		        g_next_id  = 0u;  // first record will have ID 0
+		    } else {
+		        // We found at least one VALID record.
+		        g_head_idx = max_idx;       // newest
+		        g_tail_idx = min_idx;       // oldest
+		        g_next_id  = max_id + 1u;   // ID for the next record
+
+		        // Next write goes after 'head', wrapping around
+		        uint32_t next = g_head_idx + 1u;
+		        if (next >= FTL_NUM_UNITS) {
+		            next = 0u;
+		        }
+		        g_next_idx = next;
+		    }
+
+		    g_mounted = true;
+		    return 0;
+		}
+
+		/*
+		 * ftl_write
+		 *
+		 * Write a amount of data
+		 * maximum amount of data is
+		 *
+		 * Steps:
+		 *   - Use g_next_idx as the physical block to write into.
+		 *   - Use g_next_id as the record ID to store in the header.
+		 *   - Erase the entire 4 KB unit before writing (always required for reuse).
+		 *   - Write the header into the first 256-byte page.
+		 *   - Write the payload starting at FTL_PAYLOAD_OFFSET.
+		 *   - Update FTL state:
+		 *        head_idx = g_next_idx
+		 *        if overwriting tail: advance tail_idx
+		 *        next_idx = (g_next_idx + 1) % FTL_NUM_UNITS
+		 *        next_id  = g_next_id + 1
+		 *
+		 * Each block stores exactly one immutable record.
+		 * Updating requires writing a new record, not modifying the old one.
+		 *
+		 * Returns 0 on success, <0 on error.
+		 */
+
+		int ftl_write(const void *data, uint16_t len, uint32_t *out_id)
+		{
+
+			// ensure that chip is mounted
+		    if (!g_mounted) {
+		        return -1;   // not mounted yet
+		    }
+		    if (len == 0 || len > FTL_MAX_PAYLOAD) {
+		        return -2;   // invalid length
+		    }
+
+		    uint32_t idx = g_next_idx;      // which block to use
+		    uint32_t addr_base = ftl_unit_base_addr(idx);
+		    uint32_t id = g_next_id;       // record ID
+
+		    // ======================= Erase the 4 KB block we are going to use
+		    // TODO: make a low priority task erase in background to save time on writes?
+		    HAL_StatusTypeDef st = erase_4k(addr_base);
+		    if (st != HAL_OK) {
+		        return -3;
+		    }
+		    // Build header
+		    ftl_record_header_t hdr;
+		    memset(&hdr, 0xFF, sizeof(hdr));   // start with entire header as if erased
+		    hdr.id = id;
+		    hdr.status = FTL_STATUS_VALID;     // TODO: set this as valid but add crc
+		    hdr.length = len;
+		    hdr.crc = ftl_crc32((const uint8_t *)data, len);
+
+		    // ============================  actually write to the chip
+
+		    // program header into first 256-byte page
+		    st = page_program(addr_base + FTL_HEADER_OFFSET, (const uint8_t *)&hdr, (uint16_t)sizeof(hdr));
+		    if (st != HAL_OK) return -4;
+
+		    // program payload (actual data) starting at FTL_PAYLOAD_OFFSET
+		    const uint8_t *src = (const uint8_t *)data;	// convert void data pointer to uint8_t pointer
+		    uint32_t remaining = len;	// use this to track what is left, must write page by page
+		    uint32_t write_addr = addr_base + FTL_PAYLOAD_OFFSET;
+
+		    while (remaining > 0) {
+		    	// if remaining bytes is larger than one page, write 256, otherwise if at end of data, write < 256 bytes
+		        uint16_t chunk = (remaining > FLASH_PAGE_SIZE_256) ? FLASH_PAGE_SIZE_256: (uint16_t)remaining;
+
+		        st = page_program(write_addr, src, chunk);
+		        if (st != HAL_OK) {
+		            return -5;
+		        }
+
+		        src        += chunk;
+		        write_addr += chunk;
+		        remaining  -= chunk;
+		    }
+
+		    // =========================================== now must update in-RAM FTL state
+
+		    // If this is the first ever record:
+		    if (g_head_idx == 0xFFFFFFFFu) {
+		        g_head_idx = idx;
+		        g_tail_idx = idx;
+		    } else {
+		        g_head_idx = idx;
+
+		        // If we just overwrote the oldest record, move tail forward
+		        if (idx == g_tail_idx) {
+		            uint32_t new_tail = g_tail_idx + 1u;
+		            if (new_tail >= FTL_NUM_UNITS) {
+		                new_tail = 0u;
+		            }
+		            g_tail_idx = new_tail;
+		        }
+		    }
+
+		    // Compute next index (circular)
+		    uint32_t next = idx + 1u;
+		    if (next >= FTL_NUM_UNITS) {
+		        next = 0u;
+		    }
+		    g_next_idx = next;
+
+
+		    g_next_id = id + 1u; // increment id by 1, wraparound happens naturally
+
+		    if (out_id) *out_id = id;	// return the out id so user can access data later
+
+		    return 0;
+		}
+
+		/**
+		 * ftl_read
+		 *
+		 * Reads a block of data according to its ID
+		 *
+		 * Steps:
+		 * 	- Scanning for the block ID in each block's header
+		 * 	- Starts from g_tail_idx
+		 * 	- Ends at g_head_idx, if this is reached, no valid block was found
+		 * 	- Once a valid block with the correct block ID is found, stop searching
+		 * 	- With the correct block, read the payload using header.length
+		 * 	- Copy the payload to user-provided output buffer
+		 * 	- Return the payload length
+		 *
+		 * Each block's CRC is not checked
+		 *
+		 * @return
+		 *   0		on success
+		 *   -1		if FTL is not mounted
+		 *   -2		if no valid record for the specified block ID could be found
+		 */
+		int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
+			if (!g_mounted) {
+				// Ensures the chip is mounted
+				return -1;
+			}
+
+			uint32_t idx = g_tail_idx;
+			ftl_record_header_t header;
+
+			// Search the chip for the matching ID block using the circular buffer
+			while (true) {
+				memset(&header, 0xFF, sizeof(header));
+				read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
+
+				if (header.status == FTL_STATUS_VALID && header.id == block_id) {
+					// Matching ID block found
+					break;
+				}
+
+				if (idx == g_head_idx) {
+					// Looped through all indices, did not find the matching ID block
+					return -2;
+				}
+
+				idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
+			}
+
+			// Debug print
+			printf("Header:\r\n");
+			printf("  ID:        %lu\r\n", (unsigned long) header.id);
+			printf("  Status:    0x%04X\r\n", header.status);
+			printf("  Length:    %u\r\n", header.length);
+			printf("  CRC32:     0x%08lX\r\n", (unsigned long) header.crc);
+			printf("  Reserved:  ");
+			for (int i = 0; i < 8; i++) printf("%02X ", header.reserved[i]);
+			printf("\r\n");
+
+			uint32_t addr_base = ftl_unit_base_addr(idx);
+			// TODO: Add success/error check to read_data
+			read_data(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
+
+			// Returns the length of the data read
+			if (len) *len = header.length;
+
+			return 0;
+		}
+
+		//erase function
+		int ftl_erase(uint32_t block_id)
+		{
+			//wait for write to finish
+			HAL_StatusTypeDef wait_result = wait_ready(FTL_MAX_WAIT);
+
+			if(wait_result != HAL_OK)
+			{
+				return -1;
+			}
+
+			if (!g_mounted) {
+					// Ensures the chip is mounted
+					return -2;
+				}
+
+				uint32_t idx = g_tail_idx;
+				ftl_record_header_t header;
+
+			// Search the chip for the matching ID block using the circular buffer
+			while (true) {
+				memset(&header, 0xFF, sizeof(header));
+				read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
+
+				if (header.status == FTL_STATUS_VALID && header.id == block_id) {
+					// Matching ID block found
+					break;
+				}
+
+				if (idx == g_head_idx) {
+					// Looped through all indices, did not find the matching ID block
+					return -3;
+				}
+
+				idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
+			}
+
+			uint32_t block_address = ftl_unit_base_addr(idx);
+
+			//erase the block
+			HAL_StatusTypeDef result = erase_4k(block_address);
+
+			switch(result){
+			//erase succeeded
+			case HAL_OK:
+				return 0;
+
+			//erase ran into an error
+			case HAL_ERROR:
+				return -4;
+
+			//erase timed out
+			case HAL_TIMEOUT:
+				return -5;
+			}
+
+			return 0;
+
+		}
+
+
+	private:
+		uint32_t g_head_idx  = 0xFFFFFFFFu;
+		uint32_t g_tail_idx  = 0xFFFFFFFFu;
+		uint32_t g_next_idx  = 0u;
+		uint32_t g_next_id   = 0u;
+		bool     g_mounted   = false;
+
+		// Helper function to compute the base address in flash for a given unit index
+		inline uint32_t ftl_unit_base_addr(uint32_t unit_index)
+		{
+			return (unit_index * FTL_UNIT_SIZE);  // FTL_DATA_BASE is 0, so this is fine
+		}
+
+
+		/*
+		 * - uint8_t *data: data array
+		 * - int len: the length of input data array
+		 * returns LSB-first (reflected) CRC result.
+		 */
+		static uint32_t ftl_crc32(const uint8_t *data, uint32_t len) {
+			//append 8 zero bits by shifting to the left
+			uint32_t crc = 0xFFFFFFFF;
+
+		    for (int i = 0; i < len; i++) {
+		        crc ^= data[i];
+		        for (int j = 0; j < 8; j++) {
+		            if (crc & 1)
+		                crc = (crc >> 1) ^ FTL_CRC_POLY;
+		            else
+		                crc >>= 1;
+		        }
+		    }
+
+		    return crc ^ 0xFFFFFFFF;
+		}
+
+		// helper function for debugging
+		ftl_state_view_t ftl_get_state(void)
+		{
+		    ftl_state_view_t s;
+		    s.head_idx = g_head_idx;
+		    s.tail_idx = g_tail_idx;
+		    s.next_idx = g_next_idx;
+		    s.next_id  = g_next_id;
+		    s.mounted  = g_mounted;
+		    return s;
+		}
+
+
+};
+
+
+
+
+
+void test_format(void){
+	printf("starting function to test formatting \r\n");
+	printf("Formatting...\r\n");
+	int r = ftl_format();
+	printf("ftl_format() = %d\r\n", r);
+}
+
+void test_mount(void){
+	printf("starting function to test mounting...\r\n");
+
+	printf("Mounting...\r\n");
+	int r = ftl_mount();
+	printf("ftl_mount() = %d\r\n", r);
+
+	ftl_state_view_t st = ftl_get_state();
+	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
+	       (unsigned long)st.head_idx,
+	       (unsigned long)st.tail_idx,
+	       (unsigned long)st.next_idx,
+	       (unsigned long)st.next_id,
+	       (int)st.mounted);
+}
+
+void test_format_and_mount(void){
+
+	ftl_format();              // ensure everything is erased first
+
+	ftl_record_header_t h;
+	memset(&h, 0xFF, sizeof(h));
+	h.id     = 2;
+	h.status = FTL_STATUS_VALID;
+	h.length = 100;
+	h.crc    = 0x12345678;
+
+	page_program(0, (uint8_t *)&h, sizeof(h));
+
+	int r = ftl_mount();
+
+	printf("ftl_mount() = %d\r\n", r);
+	ftl_state_view_t st = ftl_get_state();
+	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
+	       (unsigned long)st.head_idx,
+	       (unsigned long)st.tail_idx,
+	       (unsigned long)st.next_idx,
+	       (unsigned long)st.next_id,
+	       (int)st.mounted);
+	/*
+	 * we expect the following output:
+	 * head_idx = 0, tail_idx = 0, next_idx = 1, next_id = 3
+	 */
+}
+
+
+void test_format_and_mount_two_records(void)
+{
+    // 1) Ensure flash is clean
+    ftl_format();
+
+    /*
+     * 2) Create and write FIRST record (index = 0, ID = 2)
+     */
+    ftl_record_header_t h1;
+    memset(&h1, 0xFF, sizeof(h1));
+    h1.id     = 2;
+    h1.status = FTL_STATUS_VALID;
+    h1.length = 50;
+    h1.crc    = 0xAAAA5555;   // dummy CRC for now
+
+    // Write header for record at physical block index 0
+    page_program(0, (uint8_t *)&h1, sizeof(h1));
+
+
+    /*
+     * 3) Create and write SECOND record (index = 5, ID = 7)
+     */
+    ftl_record_header_t h2;
+    memset(&h2, 0xFF, sizeof(h2));
+    h2.id     = 7;
+    h2.status = FTL_STATUS_VALID;
+    h2.length = 120;
+    h2.crc    = 0x1234ABCD;   // dummy CRC again
+
+    // Write header for record at physical block index 5
+    // base address = 5 * 4096 = 0x5000 (decimal 20480)
+    uint32_t block5_addr = 5 * FTL_UNIT_SIZE;
+    page_program(block5_addr, (uint8_t *)&h2, sizeof(h2));
+
+
+    /*
+     * 4) Mount the FTL and examine internal state
+     */
+    int r = ftl_mount();
+    printf("ftl_mount() = %d\r\n", r);
+
+    ftl_state_view_t st = ftl_get_state();
+    printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
+           (unsigned long)st.head_idx,
+           (unsigned long)st.tail_idx,
+           (unsigned long)st.next_idx,
+           (unsigned long)st.next_id,
+           (int)st.mounted);
+
+    /*
+     * EXPECTED OUTPUT:
+     *
+     * Written VALID blocks:
+     *   index 0 → id = 2
+     *   index 5 → id = 7
+     *
+     * → oldest record  = smallest ID = 2 → tail_idx = 0
+     * → newest record  = largest  ID = 7 → head_idx = 5
+     *
+     * next_idx = (head_idx + 1) % FTL_NUM_UNITS = 6
+     * next_id  = max_id + 1 = 8
+     *
+     * So we expect:
+     *   head_idx = 5
+     *   tail_idx = 0
+     *   next_idx = 6
+     *   next_id  = 8
+     *   mounted  = 1
+     */
+}
+
+void test_write_and_read_latest(void)
+{
+	printf("starting test_write_and_read_latest function...\r\n");
+//    ftl_format();
+    ftl_mount();   // sets next_idx=0, next_id=0
+    printf("finished formatting and mounting\r\n");
+
+    const char msg1[] = "hello world!";
+    const char msg2[] = "write and read works!";
+
+    uint32_t id1, id2;
+
+    ftl_write(msg1, sizeof(msg1), &id1);  // writes in block 0
+    ftl_write(msg2, sizeof(msg2), &id2);  // writes in block 1
+
+    printf("id1=%lu id2=%lu\r\n", (unsigned long)id1, (unsigned long)id2);
+
+    ftl_state_view_t st = ftl_get_state();
+    printf("head=%lu tail=%lu next=%lu next_id=%lu\r\n",
+           (unsigned long)st.head_idx,
+           (unsigned long)st.tail_idx,
+           (unsigned long)st.next_idx,
+           (unsigned long)st.next_id);
+
+
+    // ================
+
+    uint8_t buf[FTL_MAX_PAYLOAD + 1];
+	uint16_t len;
+
+	memset(buf, 0, sizeof(buf));
+	int readSt0 = ftl_read(id1, buf, &len);
+	if (readSt0) {
+		printf("Read Error: %d", readSt0);
+	}
+
+	uint32_t crc0 = ftl_crc32(buf, len);
+	buf[len] = '\0';
+	printf("%s\r\n", (char*) buf);
+	printf("0x%08lX\r\n", crc0);
+
+	printf("\r\n");
+
+	memset(buf, 0, sizeof(buf));
+	int readSt1 = ftl_read(id2, buf, &len);
+	if (readSt1) {
+		printf("Read Error: %d", readSt1);
+	}
+	uint32_t crc1 = ftl_crc32(buf, len);
+	buf[len] = '\0';
+	printf("%s\r\n", (char*) buf);
+	printf("0x%08lX\r\n", crc1);
+
+	printf("\r\n\n\nDone reading data \r\n");
+}
