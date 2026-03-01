@@ -56,7 +56,7 @@ class FTL
 		 *   length = 0xFFFF (ignored)
 		 *   crc    = 0xFFFFFFFF (ignored)
 		 */
-		int ftl_format(void)
+		int format(void)
 		{
 			HAL_StatusTypeDef st = erase_full();
 			if (st != HAL_OK) {
@@ -64,11 +64,11 @@ class FTL
 			}
 
 		    // Reset in-RAM state
-		    g_head_idx = 0xFFFFFFFFu;
-		    g_tail_idx = 0xFFFFFFFFu;
-		    g_next_idx = 0u;    // next write will go to unit 0
-		    g_next_id  = 0u;    // first record will have ID 0
-		    g_mounted  = false;
+		    head_idx = 0xFFFFFFFFu;
+		    tail_idx = 0xFFFFFFFFu;
+		    next_idx = 0u;    // next write will go to unit 0
+		    next_id  = 0u;    // first record will have ID 0
+		    mounted  = false;
 
 		    return 0;
 		}
@@ -108,7 +108,7 @@ class FTL
 		 *  <0 on error (basic IO error handling for now).
 		 */
 
-		int ftl_mount(void)
+		int mount(void)
 		{
 		    uint32_t min_id  = 0xFFFFFFFFu;
 		    uint32_t max_id  = 0u;
@@ -167,25 +167,25 @@ class FTL
 		    if (min_idx == 0xFFFFFFFFu) {
 		        // No VALID records found at all.
 		        // This is either a freshly formatted device or fully erased.
-		        g_head_idx = 0xFFFFFFFFu;
-		        g_tail_idx = 0xFFFFFFFFu;
-		        g_next_idx = 0u;  // start writing at unit 0
-		        g_next_id  = 0u;  // first record will have ID 0
+		        head_idx = 0xFFFFFFFFu;
+		        tail_idx = 0xFFFFFFFFu;
+		        next_idx = 0u;  // start writing at unit 0
+		        next_id  = 0u;  // first record will have ID 0
 		    } else {
 		        // We found at least one VALID record.
-		        g_head_idx = max_idx;       // newest
-		        g_tail_idx = min_idx;       // oldest
-		        g_next_id  = max_id + 1u;   // ID for the next record
+		        head_idx = max_idx;       // newest
+		        tail_idx = min_idx;       // oldest
+		        next_id  = max_id + 1u;   // ID for the next record
 
 		        // Next write goes after 'head', wrapping around
 		        uint32_t next = g_head_idx + 1u;
 		        if (next >= FTL_NUM_UNITS) {
 		            next = 0u;
 		        }
-		        g_next_idx = next;
+		        next_idx = next;
 		    }
 
-		    g_mounted = true;
+		    mounted = true;
 		    return 0;
 		}
 
@@ -213,20 +213,20 @@ class FTL
 		 * Returns 0 on success, <0 on error.
 		 */
 
-		int ftl_write(const void *data, uint16_t len, uint32_t *out_id)
+		int write(const void *data, uint16_t len, uint32_t *out_id)
 		{
 
 			// ensure that chip is mounted
-		    if (!g_mounted) {
+		    if (!mounted) {
 		        return -1;   // not mounted yet
 		    }
 		    if (len == 0 || len > FTL_MAX_PAYLOAD) {
 		        return -2;   // invalid length
 		    }
 
-		    uint32_t idx = g_next_idx;      // which block to use
+		    uint32_t idx = next_idx;      // which block to use
 		    uint32_t addr_base = ftl_unit_base_addr(idx);
-		    uint32_t id = g_next_id;       // record ID
+		    uint32_t id = next_id;       // record ID
 
 		    // ======================= Erase the 4 KB block we are going to use
 		    // TODO: make a low priority task erase in background to save time on writes?
@@ -270,19 +270,19 @@ class FTL
 		    // =========================================== now must update in-RAM FTL state
 
 		    // If this is the first ever record:
-		    if (g_head_idx == 0xFFFFFFFFu) {
-		        g_head_idx = idx;
-		        g_tail_idx = idx;
+		    if (head_idx == 0xFFFFFFFFu) {
+		        head_idx = idx;
+		        tail_idx = idx;
 		    } else {
-		        g_head_idx = idx;
+		        head_idx = idx;
 
 		        // If we just overwrote the oldest record, move tail forward
-		        if (idx == g_tail_idx) {
-		            uint32_t new_tail = g_tail_idx + 1u;
+		        if (idx == tail_idx) {
+		            uint32_t new_tail = tail_idx + 1u;
 		            if (new_tail >= FTL_NUM_UNITS) {
 		                new_tail = 0u;
 		            }
-		            g_tail_idx = new_tail;
+		            tail_idx = new_tail;
 		        }
 		    }
 
@@ -291,10 +291,10 @@ class FTL
 		    if (next >= FTL_NUM_UNITS) {
 		        next = 0u;
 		    }
-		    g_next_idx = next;
+		    next_idx = next;
 
 
-		    g_next_id = id + 1u; // increment id by 1, wraparound happens naturally
+		    next_id = id + 1u; // increment id by 1, wraparound happens naturally
 
 		    if (out_id) *out_id = id;	// return the out id so user can access data later
 
@@ -322,13 +322,13 @@ class FTL
 		 *   -1		if FTL is not mounted
 		 *   -2		if no valid record for the specified block ID could be found
 		 */
-		int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len) {
-			if (!g_mounted) {
+		int read(uint32_t block_id, uint8_t* out, uint16_t* len) {
+			if (!mounted) {
 				// Ensures the chip is mounted
 				return -1;
 			}
 
-			uint32_t idx = g_tail_idx;
+			uint32_t idx = tail_idx;
 			ftl_record_header_t header;
 
 			// Search the chip for the matching ID block using the circular buffer
@@ -341,7 +341,7 @@ class FTL
 					break;
 				}
 
-				if (idx == g_head_idx) {
+				if (idx == head_idx) {
 					// Looped through all indices, did not find the matching ID block
 					return -2;
 				}
@@ -370,7 +370,7 @@ class FTL
 		}
 
 		//erase function
-		int ftl_erase(uint32_t block_id)
+		int erase(uint32_t block_id)
 		{
 			//wait for write to finish
 			HAL_StatusTypeDef wait_result = wait_ready(FTL_MAX_WAIT);
@@ -380,12 +380,12 @@ class FTL
 				return -1;
 			}
 
-			if (!g_mounted) {
+			if (!mounted) {
 					// Ensures the chip is mounted
 					return -2;
 				}
 
-				uint32_t idx = g_tail_idx;
+				uint32_t idx = tail_idx;
 				ftl_record_header_t header;
 
 			// Search the chip for the matching ID block using the circular buffer
@@ -398,7 +398,7 @@ class FTL
 					break;
 				}
 
-				if (idx == g_head_idx) {
+				if (idx == head_idx) {
 					// Looped through all indices, did not find the matching ID block
 					return -3;
 				}
@@ -431,14 +431,14 @@ class FTL
 
 
 	private:
-		uint32_t g_head_idx  = 0xFFFFFFFFu;
-		uint32_t g_tail_idx  = 0xFFFFFFFFu;
-		uint32_t g_next_idx  = 0u;
-		uint32_t g_next_id   = 0u;
-		bool     g_mounted   = false;
+		uint32_t head_idx  = 0xFFFFFFFFu;
+		uint32_t tail_idx  = 0xFFFFFFFFu;
+		uint32_t next_idx  = 0u;
+		uint32_t next_id   = 0u;
+		bool     mounted   = false;
 
 		// Helper function to compute the base address in flash for a given unit index
-		inline uint32_t ftl_unit_base_addr(uint32_t unit_index)
+		inline uint32_t unit_base_addr(uint32_t unit_index)
 		{
 			return (unit_index * FTL_UNIT_SIZE);  // FTL_DATA_BASE is 0, so this is fine
 		}
@@ -449,7 +449,7 @@ class FTL
 		 * - int len: the length of input data array
 		 * returns LSB-first (reflected) CRC result.
 		 */
-		static uint32_t ftl_crc32(const uint8_t *data, uint32_t len) {
+		static uint32_t crc32(const uint8_t *data, uint32_t len) {
 			//append 8 zero bits by shifting to the left
 			uint32_t crc = 0xFFFFFFFF;
 
@@ -467,14 +467,14 @@ class FTL
 		}
 
 		// helper function for debugging
-		ftl_state_view_t ftl_get_state(void)
+		ftl_state_view_t get_state(void)
 		{
 		    ftl_state_view_t s;
-		    s.head_idx = g_head_idx;
-		    s.tail_idx = g_tail_idx;
-		    s.next_idx = g_next_idx;
-		    s.next_id  = g_next_id;
-		    s.mounted  = g_mounted;
+		    s.head_idx = head_idx;
+		    s.tail_idx = tail_idx;
+		    s.next_idx = next_idx;
+		    s.next_id  = next_id;
+		    s.mounted  = mounted;
 		    return s;
 		}
 
