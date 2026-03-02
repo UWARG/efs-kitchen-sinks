@@ -1,6 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (13.3.rel1)
+# Toolchain: GNU Tools for STM32 (14.3.rel1)
 ################################################################################
 
 -include ../makefile.init
@@ -13,6 +13,22 @@ RM := rm -rf
 -include Drivers/MLX90393_Driver/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include CMSIS-DSP/Source/WindowFunctions/subdir.mk
+-include CMSIS-DSP/Source/TransformFunctions/subdir.mk
+-include CMSIS-DSP/Source/SupportFunctions/subdir.mk
+-include CMSIS-DSP/Source/StatisticsFunctions/subdir.mk
+-include CMSIS-DSP/Source/SVMFunctions/subdir.mk
+-include CMSIS-DSP/Source/QuaternionMathFunctions/subdir.mk
+-include CMSIS-DSP/Source/MatrixFunctions/subdir.mk
+-include CMSIS-DSP/Source/InterpolationFunctions/subdir.mk
+-include CMSIS-DSP/Source/FilteringFunctions/subdir.mk
+-include CMSIS-DSP/Source/FastMathFunctions/subdir.mk
+-include CMSIS-DSP/Source/DistanceFunctions/subdir.mk
+-include CMSIS-DSP/Source/ControllerFunctions/subdir.mk
+-include CMSIS-DSP/Source/ComplexMathFunctions/subdir.mk
+-include CMSIS-DSP/Source/CommonTables/subdir.mk
+-include CMSIS-DSP/Source/BayesFunctions/subdir.mk
+-include CMSIS-DSP/Source/BasicMathFunctions/subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)

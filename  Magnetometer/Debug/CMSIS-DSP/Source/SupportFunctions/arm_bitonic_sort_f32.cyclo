@@ -1,0 +1,2 @@
+../CMSIS-DSP/Source/SupportFunctions/arm_bitonic_sort_f32.c:38:13:arm_bitonic_sort_core_f32	7
+../CMSIS-DSP/Source/SupportFunctions/arm_bitonic_sort_f32.c:915:24:arm_bitonic_sort_f32	5

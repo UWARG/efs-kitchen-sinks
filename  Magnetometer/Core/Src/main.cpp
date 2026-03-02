@@ -60,9 +60,11 @@ static void MX_I2C3_Init(void);
 /* USER CODE BEGIN 0 */
 MLX90393 mlx90393(&hi2c3);
 
-float mag_x;
-float mag_y;
-float mag_z;
+float mag_x = -1;
+float mag_y = -1;
+float mag_z = -1;
+float hard_iron[3] = {0};
+bool status;
 
 
 
@@ -151,23 +153,11 @@ int main(void)
   while (1)
   {
 
-	      // 1. Trigger measurement
-	      mlx90393.i2c_SM();
+	      status = mlx90393.calibrate_4element();
 
-	      // 2. Wait for conversion (2–3 ms is enough for your settings)
-	      HAL_Delay(3);
-
-	      // 3. Read the measurement from the sensor
-	      mlx90393.i2c_RM();
-
-	      // 4. Convert raw data → real magnetic field values
-	      mlx90393.decode();
-	      mlx90393.convert();
-
-	      // 5. Store in globals for Live Expressions
-	      mag_x = mlx90393.get_x_data();
-	      mag_y = mlx90393.get_y_data();
-	      mag_z = mlx90393.get_z_data();
+	      hard_iron[0] = mlx90393.correction_factors.hard_iron[0];
+	      hard_iron[1] = mlx90393.correction_factors.hard_iron[1];
+	      hard_iron[2] = mlx90393.correction_factors.hard_iron[2];
 
 	      // Small delay to avoid overloading debugger
 	      HAL_Delay(10);

@@ -9,6 +9,7 @@
 #include "stm32l5xx_hal.h"
 #include "stm32l5xx_hal_i2c.h"
 #include <math.h>
+#include "arm_math.h"
 
 MLX90393::MLX90393(I2C_HandleTypeDef *hi2c){
 	this->hi2c = hi2c;
@@ -267,8 +268,13 @@ bool MLX90393::i2c_read_data(){
 
 bool MLX90393::calibrate_4element(){
 	uint32_t current_time = HAL_GetTick();
-	float matrix_x[4][4] = {0};
-	float matrix_y[4] = {0};
+	const uint8_t matrix_size = 4;
+	float32_t matrix_x[matrix_size][matrix_size] = {0};
+	float32_t matrix_y[4] = {0};
+	float32_t matrix_result[4] = {0};
+	arm_matrix_instance_f32 arm_matrix_x;
+	arm_matrix_instance_f32 arm_matrix_y;
+	arm_matrix_instance_f32 arm_matrix_result;
 
 	while(HAL_GetTick() < current_time + 1000) {
 		// 1. Trigger measurement
@@ -284,32 +290,49 @@ bool MLX90393::calibrate_4element(){
 		this->decode();
 		this->convert();
 
-		matrix_x[0][0] = pow(this->converted.x, 2);
-		matrix_x[0][1] = this->converted.x * this->converted.y;
-		matrix_x[0][2] = this->converted.x * this->converted.z;
-		matrix_x[0][3] = this->converted.x;
+		matrix_x[0][0] += pow(this->converted.x, 2);
+		matrix_x[0][1] += this->converted.x * this->converted.y;
+		matrix_x[0][2] += this->converted.x * this->converted.z;
+		matrix_x[0][3] += this->converted.x;
 
-		matrix_x[1][0] = this->converted.x * this->converted.y;
-		matrix_x[1][1] = pow(this->converted.y, 2);
-		matrix_x[1][2] = this->converted.y * this->converted.z;
-		matrix_x[1][3] = this->converted.y;
+		matrix_x[1][0] += this->converted.x * this->converted.y;
+		matrix_x[1][1] += pow(this->converted.y, 2);
+		matrix_x[1][2] += this->converted.y * this->converted.z;
+		matrix_x[1][3] += this->converted.y;
 
-		matrix_x[2][0] = this->converted.x * this->converted.z;
-		matrix_x[2][1] = this->converted.y * this->converted.z;
-		matrix_x[2][2] = pow(this->converted.z, 2);
-		matrix_x[2][3] = this->converted.z;
+		matrix_x[2][0] += this->converted.x * this->converted.z;
+		matrix_x[2][1] += this->converted.y * this->converted.z;
+		matrix_x[2][2] += pow(this->converted.z, 2);
+		matrix_x[2][3] += this->converted.z;
 
-		matrix_x[3][0] = this->converted.x;
-		matrix_x[3][1] = this->converted.y;
-		matrix_x[3][2] = this->converted.z;
-		matrix_x[3][3] = 1;
+		matrix_x[3][0] += this->converted.x;
+		matrix_x[3][1] += this->converted.y;
+		matrix_x[3][2] += this->converted.z;
+		matrix_x[3][3] += 1;
 
-		matrix_y[0] = this->converted.x * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
-		matrix_y[1] = this->converted.y * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
-		matrix_y[2] = this->converted.z * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
-		matrix_y[4] = pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2);
+		matrix_y[0] += this->converted.x * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
+		matrix_y[1] += this->converted.y * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
+		matrix_y[2] += this->converted.z * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
+		matrix_y[4] += pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2);
 
 	}
+	arm_mat_init_f32(&arm_matrix_x, matrix_size, matrix_size, (float32_t *)matrix_x);
+	arm_mat_init_f32(&arm_matrix_y, matrix_size, matrix_size, (float32_t *)matrix_y);
+	arm_mat_init_f32(&arm_matrix_result, matrix_size, matrix_size, (float32_t *)matrix_result);
+
+	if(arm_mat_inverse_f32(&arm_matrix_x, &arm_matrix_x) != ARM_MATH_SUCCESS) {
+		return false;
+	}
+
+	if (arm_mat_mult_f32(&arm_matrix_x, &arm_matrix_y, &arm_matrix_result) != ARM_MATH_SUCCESS) {
+		return false;
+	}
+
+	this->correction_factors.hard_iron[0] = 0.5 * matrix_result[0];
+	this->correction_factors.hard_iron[1] = 0.5 * matrix_result[1];
+	this->correction_factors.hard_iron[2] = 0.5 * matrix_result[2];
+
+	return true;
 
 }
 
