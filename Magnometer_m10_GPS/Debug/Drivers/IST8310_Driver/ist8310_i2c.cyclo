@@ -1,0 +1,3 @@
+../Drivers/IST8310_Driver/ist8310_i2c.hpp:22:6:void IST_8310_init(IST8310_Handle_t*, IST8310_Handle_t*)	1
+../Drivers/IST8310_Driver/ist8310_i2c.hpp:26:9:uint8_t IST8310_ReadData(IST8310_Handle_t*)	0
+../Drivers/IST8310_Driver/ist8310_i2c.cpp:9:6:void IST8310_Init(IST8310_Handle_t*, I2C_HandleTypeDef*)	1
