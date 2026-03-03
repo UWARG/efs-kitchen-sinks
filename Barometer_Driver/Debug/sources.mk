@@ -41,5 +41,6 @@ SUBDIRS := \
 Core/Src \
 Core/Startup \
 Drivers/BSP/STM32L5xx_Nucleo \
+Drivers/ICP-20100_Driver \
 Drivers/STM32L5xx_HAL_Driver/Src \
 

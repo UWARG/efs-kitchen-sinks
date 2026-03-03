@@ -10,6 +10,7 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include Drivers/STM32L5xx_HAL_Driver/Src/subdir.mk
+-include Drivers/ICP-20100_Driver/subdir.mk
 -include Drivers/BSP/STM32L5xx_Nucleo/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
@@ -85,8 +86,8 @@ all: main-build
 main-build: Barometer_Driver.elf secondary-outputs
 
 # Tool invocations
-Barometer_Driver.elf Barometer_Driver.map: $(OBJS) $(USER_OBJS) /Users/leon/Developer/STM32/Barometer_Driver/STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "Barometer_Driver.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"/Users/leon/Developer/STM32/Barometer_Driver/STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Barometer_Driver.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+Barometer_Driver.elf Barometer_Driver.map: $(OBJS) $(USER_OBJS) C:\Users\junch\Downloads\Projects\efs-kitchen-sinks\Barometer_Driver\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "Barometer_Driver.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\junch\Downloads\Projects\efs-kitchen-sinks\Barometer_Driver\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Barometer_Driver.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

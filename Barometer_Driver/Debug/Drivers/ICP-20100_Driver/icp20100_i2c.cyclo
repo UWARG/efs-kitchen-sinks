@@ -1,0 +1,2 @@
+../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:7:1:ICP20100::ICP20100(I2C_HandleTypeDef*)	1
+../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:12:6:void ICP20100::transmit()	2
