@@ -226,6 +226,26 @@ class FTL
 
 		//erase function
 		int erase(uint32_t block_id);
+		// Erase all FTL units (destroys all data).
+		int ftl_format(void);
+
+		// Scan all units, find oldest/newest VALID records, init internal FTL state.
+		int ftl_mount(void);
+
+		int ftl_read(uint32_t block_id, uint8_t* out, uint16_t* len);
+
+		// write one record (1 record per 4KB unit). Returns 0 on success.
+		int ftl_write(const void *data, uint16_t len, uint32_t *out_id);
+
+
+		// testing functions
+		void test_format(void);
+		void test_mount(void);
+		void test_format_and_mount(void);
+		void test_format_and_mount_two_records(void);
+		void test_write_and_read_latest(void);
+
+		void test_read(void);
 
 
 	private:
