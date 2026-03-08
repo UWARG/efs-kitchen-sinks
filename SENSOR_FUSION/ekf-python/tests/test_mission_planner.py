@@ -13,10 +13,9 @@ def test_mission_planner(plots_dir):
     print("Starting mission planner test with connection string:", CONNECTION_STRING)
 
     drone_connection = Drone(connection_string=CONNECTION_STRING)
-    drone_connection.request_raw_sensor_stream(rate_hz=10)
+    drone_connection.request_sensor_streams(imu_rate=1, gps_rate=1)
 
     while (True):
-        print("Waiting for sensor data...")
         imu = drone_connection.get_scaled_imu_data()
         gps = drone_connection.get_gps_data()
         if (imu):
