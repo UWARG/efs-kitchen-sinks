@@ -1,10 +1,9 @@
-import pymavlink
 from pymavlink import mavutil
 
 class Drone:
     def __init__(self, connection_string):
         self.connection_string = connection_string
-        self.mavlink_connection = pymavlink.mavutil.mavlink_connection(connection_string)
+        self.mavlink_connection = mavutil.mavlink_connection(connection_string)
         self.mavlink_connection.wait_heartbeat()
         print("Connected to drone and received heartbeat.")
         
@@ -97,7 +96,7 @@ class Drone:
 
         print(f"Requested HIGH_REZ_RAW_SENSOR stream: {rate_hz} hz.")
 
-    def get_imu_data(self, timeout=5):
+    def get_raw_imu_data(self, timeout=5):
         """
         Waits for a RAW_IMU MAVLink message and returns the IMU data.
         :param timeout: Maximum time in seconds to wait for the message.
@@ -108,23 +107,16 @@ class Drone:
             print("Timeout waiting for RAW_IMU message.")
             return None
         
-        imu_data = {
-            'time_usec': msg.time_usec,
-            'xacc': msg.xacc,
-            'yacc': msg.yacc,
-            'zacc': msg.zacc,
-            'xgyro': msg.xgyro,
-            'ygyro': msg.ygyro,
-            'zgyro': msg.zgyro,
-            'xmag': msg.xmag,
-            'ymag': msg.ymag,
-            'zmag': msg.zmag,
-            # 'abs_pressure': msg.abs_pressure,
-            # 'diff_pressure': msg.diff_pressure,
-            # 'pressure_alt': msg.pressure_alt,
-            # 'temperature': msg.temperature
-        }
-        return imu_data
+    def get_scaled_imu_data(self, timeout=5):
+        """
+        Waits for a SCALED_IMU MAVLink message and returns the IMU data.
+        :param timeout: Maximum time in seconds to wait for the message.
+        :return: Dictionary with IMU values or None if timeout.
+        """
+        msg = self.mavlink_connection.recv_match(type='SCALED_IMU', blocking=True, timeout=timeout)
+        if msg is None:
+            print("Timeout waiting for SCALED_IMU message.")
+            return None
     
     def get_gps_data(self, timeout=5):
         """
