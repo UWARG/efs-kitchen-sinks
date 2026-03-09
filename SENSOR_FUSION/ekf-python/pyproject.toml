@@ -31,3 +31,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+    "mission_planner: marks tests that require a live connection to Mission Planner or SITL"
+]

@@ -15,10 +15,11 @@ from tests.sim.params import SensorParams
 load_dotenv()
 seed: int = 42
 
+@pytest.mark.mission_planner
 def test_ahrs_with_mission_planner(plots_dir):
     """
-    Test AHRS_ESMEKF using live/simulated MAVLink data from the Drone class.
-    Pulls SCALED_IMU, ATTITUDE, and ATTITUDE_QUATERNION messages.
+    Test AHRS_ESMEKF using live/simulated data from Mission Planner.
+    Pulls SCALED_IMU and ATTITUDE_QUATERNION messages.
     """
     CONNECTION_STRING = os.getenv("CONNECTION_STRING")
     assert CONNECTION_STRING is not None, "CONNECTION_STRING env var must be set."
