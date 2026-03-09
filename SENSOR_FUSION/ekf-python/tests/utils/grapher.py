@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -23,12 +24,15 @@ class ResultsCollector:
         self.gt_quaternions: list[np.ndarray] = []
         self.est_quaternions: list[np.ndarray] = []
 
-    def collect(self, time, gt_state, ekf_nominal_state):
+    def collect(
+        self,
+        time: float,
+        gt_state: NDArray[np.float64],
+        ekf_nominal_state: NDArray[np.float64]
+    ):
         self.times.append(time)
-        self.gt_quaternions.append(normalize_quaternion(gt_state[3]))
-        self.est_quaternions.append(
-            normalize_quaternion(ekf_nominal_state.quaternion_new)
-        )
+        self.gt_quaternions.append(normalize_quaternion(gt_state))
+        self.est_quaternions.append(normalize_quaternion(ekf_nominal_state))
 
     def _format_metadata_block(self) -> str:
         if not self.metadata:

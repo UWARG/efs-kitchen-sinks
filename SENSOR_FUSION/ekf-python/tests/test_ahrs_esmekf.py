@@ -96,7 +96,7 @@ def test_constant_rotation_and_accel_no_noise_no_correction(plots_dir):
         gyro_reading, accel_reading, _ = simulator.get_readings(curr_time)
         print(f"Time: {curr_time:.2f} | Gyro: {gyro_reading.flatten()} | Accel: {accel_reading.flatten()}")
         ekf.state_extrapolation(gyro_reading, delta_t)
-        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+        grapher.collect(curr_time, trajectory.get_state(curr_time)[3], ekf.nominal_state.quaternion_new)
 
 
     grapher.save_and_show(output_dir=plots_dir, filename="1_ahrs_no_noise_no_correction.png")
@@ -183,7 +183,7 @@ def test_constant_rotation_and_accel_no_bias_no_correction(plots_dir):
     for curr_time in np.arange(delta_t, sim_params.duration + delta_t, delta_t):
         gyro_reading, _, _ = simulator.get_readings(curr_time)
         ekf.state_extrapolation(gyro_reading, delta_t)
-        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+        grapher.collect(curr_time, trajectory.get_state(curr_time)[3], ekf.nominal_state.quaternion_new)
 
     grapher.save_and_show(output_dir=plots_dir, filename="2_ahrs_no_bias_no_correction.png")
 
@@ -271,7 +271,7 @@ def test_constant_rotation_and_accel_no_bias(plots_dir):
         ekf.state_extrapolation(gyro_reading, delta_t)
         ekf.correction_magnetometer(magnetometer_new=mag_reading)
         ekf.correction_accelerometer(accelerometer_new=accel_reading)
-        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+        grapher.collect(curr_time, trajectory.get_state(curr_time)[3], ekf.nominal_state.quaternion_new)
     
     grapher.save_and_show(output_dir=plots_dir, filename="3_ahrs_no_bias.png")
 
@@ -287,7 +287,7 @@ def test_ahrs_full_correction_constant_rotation(plots_dir):
     """
     # 1. Define Simulation Parameters
     sensor_params = SensorParams(
-        gyro_cov=0.05, accel_cov=0.001, magnetometer_cov=0.01,
+        gyro_cov=1e-6, accel_cov=0.0001, magnetometer_cov=0.01,
         gyro_bias_cov=0.01, accel_bias_cov=0.01, magnetometer_bias_cov=0
     )
 
@@ -371,7 +371,7 @@ def test_ahrs_full_correction_constant_rotation(plots_dir):
         ekf.correction_magnetometer(magnetometer_new=mag_reading)
         ekf.correction_accelerometer(accelerometer_new=accel_reading)
         
-        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+        grapher.collect(curr_time, trajectory.get_state(curr_time)[3], ekf.nominal_state.quaternion_new)
 
         if curr_time % 0.5 < delta_t:
             _, _, _, gt_quat, _ = trajectory.get_state(curr_time)

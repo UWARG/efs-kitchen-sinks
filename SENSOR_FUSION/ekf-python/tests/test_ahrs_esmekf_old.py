@@ -83,7 +83,7 @@ def test_constant_rotation_and_accel_no_noise_no_correction():
         gyro_reading, accel_reading, _ = simulator.get_readings(curr_time)
         # ONLY extrapolation
         ekf.state_extrapolation(gyro_reading, accel_reading, delta_t)
-        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+        grapher.collect(curr_time, trajectory.get_state(curr_time)[3], ekf.nominal_state.quaternion_new)
 
     grapher.save_and_show(filename="1_ahrs_no_noise_no_correction.png")
 
@@ -161,7 +161,7 @@ def test_constant_rotation_and_accel_no_bias_no_correction():
     for curr_time in np.arange(delta_t, sim_params.duration + delta_t, delta_t):
         gyro_reading, accel_reading, _ = simulator.get_readings(curr_time)
         ekf.state_extrapolation(gyro_reading, accel_reading, delta_t)
-        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+        grapher.collect(curr_time, trajectory.get_state(curr_time)[3], ekf.nominal_state.quaternion_new)
 
     grapher.save_and_show(filename="2_ahrs_no_bias_no_correction.png")
 
@@ -240,7 +240,7 @@ def test_constant_rotation_and_accel_no_bias():
         ekf.state_extrapolation(gyro_reading, accel_reading, delta_t)
         ekf.correction_magnetometer(magnetometer_new=mag_reading, gate_threshold=1000)
         ekf.correction_accelerometer(accel_new=accel_reading, gate_threshold=1000)
-        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+        grapher.collect(curr_time, trajectory.get_state(curr_time)[3], ekf.nominal_state.quaternion_new)
     
     grapher.save_and_show(filename="3_ahrs_no_bias.png")
 
@@ -346,7 +346,7 @@ def test_ahrs_full_correction_constant_rotation():
         ekf.correction_magnetometer(magnetometer_new=mag_reading)
         ekf.correction_accelerometer(accel_new=accel_reading)
         
-        grapher.collect(curr_time, trajectory.get_state(curr_time), ekf.nominal_state)
+        grapher.collect(curr_time, trajectory.get_state(curr_time)[3], ekf.nominal_state.quaternion_new)
 
         if curr_time % 0.5 < delta_t:
             gt_disp, gt_vel, _, gt_quat, _ = trajectory.get_state(curr_time)
