@@ -1,6 +1,7 @@
 import pytest
 import os
 from dotenv import load_dotenv
+from pymavlink import mavutil
 
 load_dotenv()
 
@@ -13,13 +14,17 @@ def test_mission_planner(plots_dir):
     print("Starting mission planner test with connection string:", CONNECTION_STRING)
 
     drone_connection = Drone(connection_string=CONNECTION_STRING)
-    drone_connection.request_sensor_streams(imu_rate=1, gps_rate=1)
+    drone_connection.request_message_interval(message_id=mavutil.mavlink.MAVLINK_MSG_ID_SCALED_IMU, rate_hz=1)
+    drone_connection.request_message_interval(message_id=mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, rate_hz=1)
+    drone_connection.request_message_interval(message_id=mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE_QUATERNION, rate_hz=1)
 
     while (True):
         imu = drone_connection.get_scaled_imu_data()
-        gps = drone_connection.get_gps_data()
+        attitude = drone_connection.get_attitude_data()
+        attitude_quaternion = drone_connection.get_attitude_quaternion_data()
         if (imu):
             print("IMU:", imu)
-        if (gps):
-            print("GPS: ", gps)
-
+        if (attitude):
+            print("Attitude: ", attitude)
+        if (attitude_quaternion):
+            print("Attitude Quaternion: ", attitude_quaternion)

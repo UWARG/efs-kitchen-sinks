@@ -23,33 +23,6 @@ class Drone:
             0, 0, 0, 0, 0
         )
 
-    def request_sensor_streams(self, imu_rate=50, gps_rate=10):
-        """
-        Request all telemetry streams needed.
-        """
-
-        # RAW_IMU
-        self.request_message_interval(
-            mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU,
-            imu_rate
-        )
-
-        # SCALED_IMU
-        self.request_message_interval(
-            mavutil.mavlink.MAVLINK_MSG_ID_SCALED_IMU,
-            imu_rate
-        )
-
-        # GPS
-        self.request_message_interval(
-            mavutil.mavlink.MAVLINK_MSG_ID_GPS_RAW_INT,
-            gps_rate
-        )
-
-        print(f"Requested RAW_IMU & SCALED_IMU @ {imu_rate} Hz")
-        print(f"Requested GPS_RAW_INT @ {gps_rate} Hz")
-
-
     def get_raw_imu_data(self, timeout=5):
         """
         Waits for a RAW_IMU MAVLink message and returns the IMU data.
@@ -67,6 +40,9 @@ class Drone:
         Waits for a SCALED_IMU MAVLink message and returns the IMU data in standard units.
         :param timeout: Maximum time in seconds to wait for the message.
         :return: Dictionary with IMU values or None if timeout.
+        - Gyroscope (rad/s)
+        - Accelerometer (m/s^2)
+        - Magnetometer (unitless)
         """
         msg = self.mavlink_connection.recv_match(type='SCALED_IMU', blocking=True, timeout=timeout)
         if msg is None:
@@ -107,6 +83,55 @@ class Drone:
             'temperature': msg.temperature / 100.0  # cdegC to °C
         }
         return scaled_imu_data
+
+    def get_attitude_data(self, timeout=5):
+        """
+        Waits for an ATTITUDE MAVLink message and returns the attitude data.
+        :param timeout: Maximum time in seconds to wait for the message.
+        :return: Dictionary with attitude values or None if timeout.
+        - Roll, Pitch, Yaw (rad)
+        - Angular velocities (rad/s)
+        """
+        msg = self.mavlink_connection.recv_match(type='ATTITUDE', blocking=True, timeout=timeout)
+        if msg is None:
+            print("Timeout waiting for ATTITUDE message.")
+            return None
+
+        attitude_data = {
+            'time_boot_ms': msg.time_boot_ms,
+            'roll': msg.roll,
+            'pitch': msg.pitch,
+            'yaw': msg.yaw,
+            'rollspeed': msg.rollspeed,
+            'pitchspeed': msg.pitchspeed,
+            'yawspeed': msg.yawspeed
+        }
+        return attitude_data
+    
+    def get_attitude_quaternion_data(self, timeout=5):
+        """
+        Waits for an ATTITUDE_QUATERNION MAVLink message and returns the attitude data in quaternion form.
+        :param timeout: Maximum time in seconds to wait for the message.
+        :return: Dictionary with attitude quaternion values or None if timeout.
+        - Quaternion (unitless)
+        - Angular velocities (rad/s)
+        """
+        msg = self.mavlink_connection.recv_match(type='ATTITUDE_QUATERNION', blocking=True, timeout=timeout)
+        if msg is None:
+            print("Timeout waiting for ATTITUDE_QUATERNION message.")
+            return None
+
+        attitude_quaternion_data = {
+            'time_boot_ms': msg.time_boot_ms,
+            'q1': msg.q1,
+            'q2': msg.q2,
+            'q3': msg.q3,
+            'q4': msg.q4,
+            'rollspeed': msg.rollspeed,
+            'pitchspeed': msg.pitchspeed,
+            'yawspeed': msg.yawspeed
+        }
+        return attitude_quaternion_data
     
     def get_gps_data(self, timeout=5):
         """
