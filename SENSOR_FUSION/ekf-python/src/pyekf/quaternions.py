@@ -136,3 +136,33 @@ def angular_distance_degrees(q_true: NDArray[np.float64], q_est: NDArray[np.floa
         angle_rad = 2.0 * np.arccos(w)
 
         return np.degrees(angle_rad)
+
+def quat_to_euler(q: NDArray[np.float64]) -> NDArray[np.float64]:
+    """
+    Converts a unit quaternion (4x1) to Euler angles (3x1) in radians.
+    
+    Convention: Z-Y-X (Yaw, Pitch, Roll)
+    Returns: np.array([[roll], [pitch], [yaw]]) as a column vector.
+    """
+    q = normalize_quaternion(q)
+    w, x, y, z = q[:, 0]
+
+    # Roll (x-axis rotation)
+    sinr_cosp = 2.0 * (w * x + y * z)
+    cosr_cosp = 1.0 - 2.0 * (x * x + y * y)
+    roll = np.arctan2(sinr_cosp, cosr_cosp)
+
+    # Pitch (y-axis rotation)
+    sinp = 2.0 * (w * y - z * x)
+    if np.abs(sinp) >= 1:
+        # Use 90 degrees if out of range
+        pitch = np.sign(sinp) * np.pi / 2.0
+    else:
+        pitch = np.arcsin(sinp)
+
+    # Yaw (z-axis rotation)
+    siny_cosp = 2.0 * (w * z + x * y)
+    cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
+    yaw = np.arctan2(siny_cosp, cosy_cosp)
+
+    return np.array([[roll], [pitch], [yaw]], dtype=np.float64)

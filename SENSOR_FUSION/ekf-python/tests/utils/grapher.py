@@ -8,6 +8,7 @@ import os
 from pyekf.quaternions import (
     normalize_quaternion,
     angular_distance_degrees,
+    quat_to_euler,
 )
 
 
@@ -49,57 +50,58 @@ class ResultsCollector:
     def save_and_show(
         self,
         output_dir: str = "test_plots",
-        filename: str = "quat_angular_error.png",
+        filename: str = "orientation_analysis.png",
     ):
         t = np.array(self.times)
 
+        # 1. Calculate Angular Distance
         angular_errors_deg = np.array([
             angular_distance_degrees(q_true, q_est)
             for q_true, q_est in zip(self.gt_quaternions, self.est_quaternions)
         ])
 
-        mean_error = float(np.mean(angular_errors_deg))
+        # 2. Calculate Euler Errors (Roll, Pitch, Yaw)
+        gt_eulers = np.array([quat_to_euler(q).flatten() for q in self.gt_quaternions])
+        est_eulers = np.array([quat_to_euler(q).flatten() for q in self.est_quaternions])
+        
+        euler_errors_rad = gt_eulers - est_eulers
+        euler_errors_deg = np.degrees((euler_errors_rad + np.pi) % (2 * np.pi) - np.pi)
 
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, axes = plt.subplots(4, 1, figsize=(12, 14), sharex=True)
         fig.suptitle(self.title, fontsize=16, fontweight="bold")
 
-        ax.plot(
-            t,
-            angular_errors_deg,
-            linewidth=1.8,
-            label="Angular Error (deg)",
-        )
+        labels = ["Total Angular Error (deg)", "Roll Error (deg)", "Pitch Error (deg)", "Yaw Error (deg)"]
+        colors = ["black", "tab:red", "tab:green", "tab:blue"]
+        
+        # Combine data for easier iteration
+        data_to_plot = [angular_errors_deg] + [euler_errors_deg[:, i] for i in range(3)]
 
-        ax.axhline(
-            mean_error,
-            linestyle="--",
-            label=f"Mean Error = {mean_error:.4f} deg",
-        )
+        for i, ax in enumerate(axes):
+            ax.plot(t, data_to_plot[i], linewidth=1.5, color=colors[i], label=labels[i])
+            
+            if i > 0: # RPY plots
+                ax.axhline(0, color='black', linewidth=0.8, alpha=0.5)
+            else: # Total error plot
+                mean_err = float(np.mean(angular_errors_deg))
+                ax.axhline(mean_err, linestyle="--", color='gray', label=f"Mean = {mean_err:.4f}")
 
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Smallest Orientation Difference (deg)")
-        ax.grid(True, alpha=0.3)
-        ax.legend()
+            # --- FIX: Remove scientific notation and offsets ---
+            ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
+            ax.ticklabel_format(style='plain', axis='y') # Force "plain" decimal format
+            
+            ax.set_ylabel(labels[i])
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc="upper right")
 
-        upper_bound = max(np.max(angular_errors_deg) * 1.2, 0.01)
-        ax.set_ylim(0.0, upper_bound)
-
+        axes[-1].set_xlabel("Time (s)")
+        
         metadata_text = self._format_metadata_block()
         if metadata_text:
-            fig.text(
-                0.5,
-                0.01,
-                metadata_text,
-                ha="center",
-                va="bottom",
-                fontsize=9,
-                family="monospace",
-            )
+            fig.text(0.5, 0.01, metadata_text, ha="center", va="bottom", fontsize=9, family="monospace")
 
-        plt.tight_layout(rect=[0, 0.05, 1, 0.95])
-
+        plt.tight_layout(rect=[0, 0.03, 1, 0.96])
         os.makedirs(output_dir, exist_ok=True)
         filepath = os.path.join(output_dir, filename)
         plt.savefig(filepath, dpi=200)
-        print(f"\n>>> Angular error analysis saved to: {filepath}")
+        print(f"\n>>> Orientation analysis saved to: {filepath}")
         plt.close(fig)

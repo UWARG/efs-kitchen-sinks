@@ -41,7 +41,7 @@ def test_ahrs_with_mission_planner(plots_dir):
 
     # 3. Initialize AHRS_ESMEKF filter
     sensor_params = SensorParams(
-        gyro_cov=1e-6, accel_cov=0.0001, magnetometer_cov=0.01,
+        gyro_cov=1e-5, accel_cov=0.001, magnetometer_cov=0.001,
         gyro_bias_cov=0.01, accel_bias_cov=0.01, magnetometer_bias_cov=0
     )
 
@@ -64,7 +64,7 @@ def test_ahrs_with_mission_planner(plots_dir):
     )
 
     # 4. Initialize grapher
-    total_time_secs = 100.0
+    total_time_secs = 120.0
     grapher = ResultsCollector(
         title="AHRS_ESMEKF: (5)test_ahrs_with_mission_planner",
         metadata={
@@ -117,5 +117,5 @@ def test_ahrs_with_mission_planner(plots_dir):
         time.sleep(1/rate_hz)
 
     # 6. Simple verification: quaternion norm should be ~1
-    assert_quaternion_close(actual=gt_quat.flatten(), estimate=ekf.nominal_state.quaternion_new.flatten(), atol=2e-1, rtol=1e-1)
     grapher.save_and_show(output_dir=plots_dir, filename="5_ahrs_with_mission_planner.png")
+    assert_quaternion_close(actual=gt_quat.flatten(), estimate=ekf.nominal_state.quaternion_new.flatten(), atol=2e-1, rtol=1e-1)
