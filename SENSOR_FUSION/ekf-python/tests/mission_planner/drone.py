@@ -1,4 +1,6 @@
+import math
 from pymavlink import mavutil
+from pymavlink.mavextra import expected_earth_field_lat_lon
 
 class Drone:
     def __init__(self, connection_string):
@@ -60,7 +62,6 @@ class Drone:
         zgyro = msg.zgyro / 1000.0
 
         # Normalize magnetometer vector (unitless)
-        import math
         mag_norm = math.sqrt(msg.xmag**2 + msg.ymag**2 + msg.zmag**2)
         if mag_norm > 0:
             xmag = msg.xmag / mag_norm
@@ -157,6 +158,26 @@ class Drone:
             'satellites_visible': msg.satellites_visible
         }
         return gps_data
+    
+    def get_initial_earth_magnetic_field_from_gps(self):
+        """
+        Uses the expected_earth_field_lat_lon function to get the expected magnetic field at current location according to gps.
+        :return: Dictionary with magnetic field components (x, y, z) in microteslas.
+        """
+        gps_data = self.get_gps_data()
+        if gps_data:
+            lat = gps_data['lat']
+            lon = gps_data['lon']
+        else:
+            raise ValueError("Latitude and Longitude must be provided or available from GPS data.")
+
+        field_vector = expected_earth_field_lat_lon(lat, lon)
+        mag_norm = math.sqrt(field_vector.x**2 + field_vector.y**2 + field_vector.z**2)
+        
+        if mag_norm > 0:
+            return {'x': field_vector.x / mag_norm, 'y': field_vector.y / mag_norm, 'z': field_vector.z / mag_norm}
+        else:
+            return {'x': 0.0, 'y': 0.0, 'z': 0.0}
 
     # def request_raw_sensor_stream(self, rate_hz = 10):
     #     """

@@ -38,6 +38,8 @@ def test_ahrs_with_mission_planner(plots_dir):
     initial_gyro = np.array([[imu['xgyro']], [imu['ygyro']], [imu['zgyro']]])
     initial_accel = np.array([[imu['xacc']], [imu['yacc']], [imu['zacc']]])
     initial_mag = np.array([[imu['xmag']], [imu['ymag']], [imu['zmag']]])
+    mag_dict = drone.get_initial_earth_magnetic_field_from_gps()
+    magnetometer_inertial = np.array([[mag_dict['x']], [mag_dict['y']], [mag_dict['z']]])
 
     # 3. Initialize AHRS_ESMEKF filter
     sensor_params = SensorParams(
@@ -51,7 +53,7 @@ def test_ahrs_with_mission_planner(plots_dir):
         mag_initial=initial_mag,
         quaternion_initial=np.array([[1.0], [0.0], [0.0], [0.0]]),
         gravity_inertial=GRAVITY_INERTIAL,
-        magnetometer_inertial=initial_mag,
+        magnetometer_inertial=magnetometer_inertial,
         gyro_cov=sensor_params.gyro_cov,
         accel_cov=sensor_params.accel_cov,
         magnetometer_cov=sensor_params.magnetometer_cov,
