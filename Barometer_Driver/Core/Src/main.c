@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -21,9 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include <math.h>
-#include "icp20100_i2c.hpp"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,29 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ICP20100_I2C_ADDR (0x64 << 1) // i2c is 7 bit address, left shit by 1 to make 1 byte.
 
-#define ICP20100_REG_MODE_SELECT 0xC0
-#define ICP20100_DEVICE_ID 0x0C
-#define ICP20100_MASTER_LOCK 0xBE
-#define ICP20100_OTP_CONFIG_1 0xAC
-#define ICP20100_OTP_STATUS2 0xBF
-
-#define ICP20100_REG_MODE_SELECT_KEY 0x04
-#define ICP20100_MASTER_UNLOCK_KEY 0x1F
-#define ICP20100_OTP_ENABLE_BOTH 0x03
-#define ICP20100_OTP_STATUS2_BOOTUP 0x01
-
-#define ICP20100_POWER_MODE (1 << 2)
-#define ICP20100_FORCED_MES_TRIGGER (1 << 4)
-
-#define ICP20100_TRIGGER_COMMAND_MEAS (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER)
-
-#define ICP20100_PRESS_DATA_0 0xFA
-
-#define SCALE 131072.0f
-#define Alt_min 70.0f
-#define Alt_max 40.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -69,7 +45,6 @@ COM_InitTypeDef BspCOMInit;
 I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
-uint8_t dummy2 = 0;
 
 /* USER CODE END PV */
 
@@ -84,7 +59,6 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-ICP20100 icp20100(&hi2c1);
 
 /* USER CODE END 0 */
 
@@ -120,11 +94,6 @@ int main(void)
   MX_ICACHE_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t dummy = 0x00;
-
-  //first time
-  //second time
-  //HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, ICP20100_MASTER_LOCK, I2C_MEMADD_SIZE_8BIT, &dummy, 1, 100); // i guess this triggers the boot, / clock
 
   /* USER CODE END 2 */
 
@@ -151,19 +120,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  uint8_t trigger = ICP20100_FORCED_MES_TRIGGER;
-	  //write/configure the mode select
-
-	  //then, stand by for conversion
-	  //now, start reading the actual pressure data
-	  if (HAL_I2C_IsDeviceReady(&hi2c1, ICP20100_I2C_ADDR, 5, 100) == HAL_OK)
-	  {
-	      BSP_LED_On(LED_GREEN);
-	  }
-
-	  icp20100.initiateBarometer();
-
-
 
     /* USER CODE END WHILE */
 

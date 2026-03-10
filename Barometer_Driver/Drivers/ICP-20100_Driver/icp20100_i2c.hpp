@@ -14,6 +14,8 @@
 #define ICP20100_MASTER_LOCK 0xBE
 #define ICP20100_OTP_CONFIG_1 0xAC
 #define ICP20100_OTP_STATUS2 0xBF
+#define ICP20100_VERSION_REG 0xD3 // Version register
+#define ICP20100_OTP_DBG2 0xBC
 
 #define ICP20100_REG_MODE_SELECT_KEY 0x04
 #define ICP20100_MASTER_UNLOCK_KEY 0x1F
@@ -36,6 +38,8 @@ class ICP20100{
 		ICP20100(I2C_HandleTypeDef *hi2c);
 		void toggleBlueLed();
 		void transmit();
+		void initiateBarometer();
+		float readPressure();
 
 	private:
 		I2C_HandleTypeDef *hi2c;

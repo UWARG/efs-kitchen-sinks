@@ -67,6 +67,7 @@
     <booleanAttribute key="org.eclipse.cdt.dsf.gdb.UPDATE_THREADLIST_ON_SUSPEND" value="false"/>
     <intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="2"/>
     <stringAttribute key="org.eclipse.cdt.launch.COREFILE_PATH" value=""/>
+    <stringAttribute key="org.eclipse.cdt.launch.DEBUGGER_REGISTER_GROUPS" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#13;&#10;&lt;registerGroups&gt;&#13;&#10;    &lt;group memento=&quot;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot; standalone=&amp;quot;no&amp;quot;?&amp;gt;&amp;#13;&amp;#10;&amp;lt;registerGroup enabled=&amp;quot;true&amp;quot; name=&amp;quot;Group_1&amp;quot; parent_id=&amp;quot;&amp;quot;&amp;gt;&amp;#13;&amp;#10;    &amp;lt;register name=&amp;quot;s25&amp;quot; originalGroupName=&amp;quot;Main&amp;quot;/&amp;gt;&amp;#13;&amp;#10;&amp;lt;/registerGroup&amp;gt;&amp;#13;&amp;#10;&quot;/&gt;&#13;&#10;&lt;/registerGroups&gt;&#13;&#10;"/>
     <stringAttribute key="org.eclipse.cdt.launch.DEBUGGER_START_MODE" value="remote"/>
     <booleanAttribute key="org.eclipse.cdt.launch.DEBUGGER_STOP_AT_MAIN" value="true"/>
     <stringAttribute key="org.eclipse.cdt.launch.DEBUGGER_STOP_AT_MAIN_SYMBOL" value="main"/>
