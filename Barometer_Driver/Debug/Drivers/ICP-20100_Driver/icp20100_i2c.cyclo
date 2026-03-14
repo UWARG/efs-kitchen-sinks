@@ -1,4 +1,5 @@
 ../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:7:1:ICP20100::ICP20100(I2C_HandleTypeDef*)	1
 ../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:12:6:void ICP20100::transmit()	1
-../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:51:6:void ICP20100::initiateBarometer()	3
-../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:146:7:float ICP20100::readPressure()	1
+../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:363:6:void ICP20100::initiateBarometer()	52
+../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:666:7:float ICP20100::readPressure()	1
+../Drivers/ICP-20100_Driver/icp20100_i2c.cpp:725:6:bool ICP20100::selfTest(float&)	10

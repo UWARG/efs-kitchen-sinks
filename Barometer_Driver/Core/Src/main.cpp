@@ -122,10 +122,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   uint8_t dummy = 0x00;
 
-  //first time
-  //second time
-  //HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, ICP20100_MASTER_LOCK, I2C_MEMADD_SIZE_8BIT, &dummy, 1, 100); // i guess this triggers the boot, / clock
-
+  //icp20100.initiateBarometer();
   /* USER CODE END 2 */
 
   /* Initialize leds */
@@ -151,17 +148,38 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  uint32_t err;
+	  float pressure;
 	  uint8_t trigger = ICP20100_FORCED_MES_TRIGGER;
 	  //write/configure the mode select
 
 	  //then, stand by for conversion
 	  //now, start reading the actual pressure data
-	  if (HAL_I2C_IsDeviceReady(&hi2c1, ICP20100_I2C_ADDR, 5, 100) == HAL_OK)
+
+
+
+	  // Force reset the I2C peripheral
+	  __HAL_RCC_I2C1_FORCE_RESET();   // replace I2C1 with your instance
+	  HAL_Delay(1);
+	  __HAL_RCC_I2C1_RELEASE_RESET();
+	  HAL_Delay(1);
+
+	  HAL_I2C_DeInit(&hi2c1);   // your handle
+	  HAL_Delay(1);
+	  HAL_I2C_Init(&hi2c1);
+
+	  if (HAL_I2C_IsDeviceReady(&hi2c1, ICP20100_I2C_ADDR, 5, HAL_MAX_DELAY) == HAL_OK)
 	  {
 	      BSP_LED_On(LED_GREEN);
 	  }
+	  else
+	  {
+	      err = HAL_I2C_GetError(&hi2c1);
+	  }
+
 
 	  icp20100.initiateBarometer();
+	  //icp20100.selfTest(pressure);
 
 
 

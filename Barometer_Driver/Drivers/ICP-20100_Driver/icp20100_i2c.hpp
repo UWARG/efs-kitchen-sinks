@@ -9,13 +9,27 @@
 
 #define ICP20100_I2C_ADDR (0x64 << 1) // i2c is 7 bit address, left shit by 1 to make 1 byte.
 
-#define ICP20100_REG_MODE_SELECT 0xC0
-#define ICP20100_DEVICE_ID 0x0C
-#define ICP20100_MASTER_LOCK 0xBE
-#define ICP20100_OTP_CONFIG_1 0xAC
-#define ICP20100_OTP_STATUS2 0xBF
-#define ICP20100_VERSION_REG 0xD3 // Version register
-#define ICP20100_OTP_DBG2 0xBC
+#define ICP20100_REG_MODE_SELECT 	0xC0
+#define ICP20100_DEVICE_ID 			0x0C
+#define ICP20100_MASTER_LOCK 		0xBE
+#define ICP20100_OTP_CONFIG_1 		0xAC
+#define ICP20100_OTP_STATUS			0xB9
+#define ICP20100_OTP_STATUS2 		0xBF
+#define ICP20100_VERSION_REG 		0xD3 // Version register
+#define ICP20100_OTP_DBG2 			0xBC
+#define ICP20100_OTP_MRA_LSB 		0xAF
+#define ICP20100_OTP_MRA_MSB		0xB0
+#define ICP20100_OTP_MRB_LSB 		0xB1
+#define ICP20100_OTP_MRB_MSB		0xB2
+#define ICP20100_OTP_MR_LSB 		0xAD
+#define ICP20100_OTP_MR_MSB			0xAE
+#define ICP20100_OTP_ADDRESS		0xB5
+#define ICP20100_OTP_COMMAND		0xB6
+#define ICP20100_OTP_RDATA 			0xB8
+#define ICP20100_TRIM1_MSB 			0x05
+#define ICP20100_TRIM2_LSB			0x06
+#define ICP20100_TRIM2_MSB 			0x07
+
 
 #define ICP20100_REG_MODE_SELECT_KEY 0x04
 #define ICP20100_MASTER_UNLOCK_KEY 0x1F
@@ -40,6 +54,7 @@ class ICP20100{
 		void transmit();
 		void initiateBarometer();
 		float readPressure();
+		bool selfTest(float &pressure_out);
 
 	private:
 		I2C_HandleTypeDef *hi2c;
