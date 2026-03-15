@@ -81,7 +81,7 @@ bool write_enable(void) {
  * function to wait a specific time and keep checking the SR register
  * use this to poll status reg after performing a read/write/erase
  */
-HAL_StatusTypeDef wait_ready(int32_t timeout_ms) {
+HAL_StatusTypeDef wait_ready(uint32_t timeout_ms) {
 	uint32_t timeout = (timeout_ms >= 0) ? timeout_ms : 500;
     uint32_t t0 = HAL_GetTick();
     while(1) {
@@ -95,7 +95,7 @@ HAL_StatusTypeDef wait_ready(int32_t timeout_ms) {
         }
         if ((HAL_GetTick() - t0) > timeout) return HAL_TIMEOUT;
 
-        usleep(10000);
+        HAL_Delay(10);
     }
 }
 
