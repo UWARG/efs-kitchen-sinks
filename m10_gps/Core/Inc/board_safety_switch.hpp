@@ -8,4 +8,6 @@ class BoardSafetySwitch : public ISafetySwitch
 {
     public:
     bool isPressed() const override; 
+    void buzzerOn() const override;
+    void buzzerOff() const override;
 };

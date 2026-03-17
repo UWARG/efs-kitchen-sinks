@@ -286,12 +286,12 @@ int main(void)
 
     if(safety_enabled == 0)
     {
-      HAL_GPIO_WritePin(GPS_BUZZER_N_GPIO_Port, GPS_BUZZER_N_Pin, GPIO_PIN_SET );
+      boardSafetySwitch.buzzerOn();
       buzzer_PinState = 0;
     }
     else
     {
-      HAL_GPIO_WritePin(GPS_BUZZER_N_GPIO_Port, GPS_BUZZER_N_Pin, GPIO_PIN_RESET);
+      boardSafetySwitch.buzzerOff();
       buzzer_PinState = 1;
     }
     /* USER CODE END WHILE */

@@ -9,5 +9,7 @@ protected:
 public:
     virtual ~ISafetySwitch() = default;
     virtual bool isPressed() const = 0;
+    virtual void buzzerOn() const = 0;
+    virtual void buzzerOff() const = 0;
 
 };
