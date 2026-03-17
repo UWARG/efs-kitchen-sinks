@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "safety_manager.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,7 +32,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define GPS_BUFFER_SIZE 128
-#define GPS_TIMEOUT_MS 1000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,9 +52,11 @@ volatile uint8_t sentence_ready = 0;
 volatile uint8_t gps_fix_valid = 0; 
 volatile uint8_t Safety_switch_PinState = 0; 
 volatile uint16_t gps_fix_quality = 0; 
+
 volatile uint8_t safety_switch_pressed = 0; 
-volatile uint8_t buzzer_PinState = 1;
 volatile uint8_t safety_enabled = 0; 
+
+volatile uint8_t buzzer_PinState = 1;
 volatile uint32_t last_GPS_Update = 0;
 volatile uint32_t nmea_total_count = 0;
 volatile uint32_t nmea_gga_count = 0;
@@ -244,15 +245,30 @@ int main(void)
       }
       sentence_ready = 0;
     }
+    SafetyManagerInput_t safety_input;
+    SafetyManagerOutput_t safety_output;
+
     Safety_switch_PinState = HAL_GPIO_ReadPin(GPS_Safety_SW_GPIO_Port, GPS_Safety_SW_Pin);
-    if(Safety_switch_PinState == GPIO_PIN_SET)
+
+    if (Safety_switch_PinState == GPIO_PIN_SET)
     {
-      safety_switch_pressed = 1;
+        safety_switch_pressed = 1;
     }
     else
     {
-      safety_switch_pressed = 0;
+        safety_switch_pressed = 0;
     }
+
+    safety_input.switch_pressed = safety_switch_pressed;
+    safety_input.gps_fix_valid = gps_fix_valid;
+    safety_input.gps_fix_quality = gps_fix_quality;
+    safety_input.last_gps_update_ms = last_GPS_Update;
+    safety_input.now_ms = HAL_GetTick();
+
+    SafetyManager_Update(&safety_input, &safety_output);
+
+    safety_enabled = safety_output.safety_enabled;
+
 
     uint32_t time = HAL_GetTick();
     if(time - last_GPS_Update > GPS_TIMEOUT_MS){
@@ -276,14 +292,6 @@ int main(void)
              gps_fix_quality);
     }
 
-    if(safety_switch_pressed && gps_fix_valid && gps_fix_quality > 0)
-    {
-      safety_enabled = 1;
-    }
-    else
-    {
-      safety_enabled = 0;
-    }
 
     if(safety_enabled == 0)
     {
