@@ -120,7 +120,7 @@ int main(void)
   MX_ICACHE_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t dummy = 0x00;
+
 
   //icp20100.initiateBarometer();
   /* USER CODE END 2 */
@@ -146,28 +146,28 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint32_t err;
+  uint8_t dummy = 0x00;
+
+// Force reset the I2C peripheral
+  if (HAL_I2C_IsDeviceReady(&hi2c1, ICP20100_I2C_ADDR, 5, HAL_MAX_DELAY) == HAL_OK)
+  {
+      BSP_LED_On(LED_GREEN);
+  }
+  else
+  {
+      err = HAL_I2C_GetError(&hi2c1);
+      while (1);
+  }
+
+  icp20100.initiateBarometer();
+
   while (1)
   {
-	  uint32_t err;
+	  
 	  float pressure;
 	  uint8_t trigger = ICP20100_FORCED_MES_TRIGGER;
-
-
-    uint8_t dummy_lock_val = 0;
-    // Write to lock register thrice
-    for (int i = 0; i < 3; i++)
-      err |= HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, 0xBE, I2C_MEMADD_SIZE_8BIT, &dummy_lock_val, 1, HAL_MAX_DELAY);
-
-	  // Force reset the I2C peripheral
-
-	  if (HAL_I2C_IsDeviceReady(&hi2c1, ICP20100_I2C_ADDR, 5, HAL_MAX_DELAY) == HAL_OK)
-	  {
-	      BSP_LED_On(LED_GREEN);
-	  }
-	  else
-	  {
-	      err = HAL_I2C_GetError(&hi2c1);
-	  }
+    
 
 	  uint8_t rx_buf[3];
 
@@ -177,13 +177,6 @@ int main(void)
 		   float pressure_reading_kpa = ((float) raw_pressure / SCALE) * Alt_max + Alt_min;
 		   float altitude_reading = 44330.0f * (1.0f - powf((pressure_reading_kpa/ 101.325f), 0.190295f));
 	  }
-
-
-	  icp20100.initiateBarometer();
-	  //icp20100.selfTest(pressure);
-
-
-
 
 
     /* USER CODE END WHILE */
