@@ -521,7 +521,7 @@ void ICP20100::initiateBarometer()
 
 	if(timeout <= 0)
 	{
-	    err = OTP_TIMEOUT;
+	    err = HAL_TIMEOUT;
 	    return;
 	}
 
@@ -545,7 +545,7 @@ void ICP20100::initiateBarometer()
 	// STEP 14: Wait for OTP read to finish
 
 	status = 1;
-	int timeout = 1000;
+	timeout = 1000;
 	while((status & 0x01) && timeout--)
 		{
 		    if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR,
@@ -562,7 +562,7 @@ void ICP20100::initiateBarometer()
 
 	if(timeout <= 0)
 	{
-	    err = OTP_TIMEOUT;
+	    err = HAL_TIMEOUT;
 	    return;
 	}
 
@@ -585,7 +585,7 @@ void ICP20100::initiateBarometer()
 
 	// STEP 17: Wait for OTP read to finish
 	status = 1;
-	int timeout = 1000;
+	timeout = 1000;
 	while((status & 0x01) && timeout--)
 			{
 			    if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR,
@@ -602,7 +602,7 @@ void ICP20100::initiateBarometer()
 
 	if(timeout <= 0)
 	{
-		err = OTP_TIMEOUT;
+		err = HAL_TIMEOUT;
 		return;
 	}
 

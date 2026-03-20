@@ -1,8 +1,8 @@
-../Core/Src/main.cpp:95:5:int main()	3
-../Core/Src/main.cpp:197:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:248:13:void MX_I2C1_Init()	4
-../Core/Src/main.cpp:296:13:void MX_ICACHE_Init()	3
-../Core/Src/main.cpp:328:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:352:6:void Error_Handler()	1
-../Core/Src/main.cpp:361:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:361:1:cpp)	1
+../Core/Src/main.cpp:95:5:int main()	5
+../Core/Src/main.cpp:194:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:245:13:void MX_I2C1_Init()	4
+../Core/Src/main.cpp:293:13:void MX_ICACHE_Init()	3
+../Core/Src/main.cpp:325:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:349:6:void Error_Handler()	1
+../Core/Src/main.cpp:358:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:358:1:cpp)	1

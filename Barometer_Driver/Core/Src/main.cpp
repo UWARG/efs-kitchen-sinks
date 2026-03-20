@@ -151,22 +151,8 @@ int main(void)
 	  uint32_t err;
 	  float pressure;
 	  uint8_t trigger = ICP20100_FORCED_MES_TRIGGER;
-	  //write/configure the mode select
-
-	  //then, stand by for conversion
-	  //now, start reading the actual pressure data
-
-
 
 	  // Force reset the I2C peripheral
-	  __HAL_RCC_I2C1_FORCE_RESET();   // replace I2C1 with your instance
-	  HAL_Delay(1);
-	  __HAL_RCC_I2C1_RELEASE_RESET();
-	  HAL_Delay(1);
-
-	  HAL_I2C_DeInit(&hi2c1);   // your handle
-	  HAL_Delay(1);
-	  HAL_I2C_Init(&hi2c1);
 
 	  if (HAL_I2C_IsDeviceReady(&hi2c1, ICP20100_I2C_ADDR, 5, HAL_MAX_DELAY) == HAL_OK)
 	  {
@@ -177,9 +163,20 @@ int main(void)
 	      err = HAL_I2C_GetError(&hi2c1);
 	  }
 
+	  uint8_t rx_buf[3];
+
+	  if(HAL_I2C_Mem_Read(&hi2c1, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_0, I2C_MEMADD_SIZE_8BIT, rx_buf, 3, 100) == HAL_OK){
+		   int32_t raw_pressure = (int32_t) (rx_buf[2] << 16)|(rx_buf[1] << 8)|(rx_buf[0]);
+		   if(raw_pressure & 0x800000) raw_pressure |= 0xFF000000;
+		   float pressure_reading_kpa = ((float) raw_pressure / SCALE) * Alt_max + Alt_min;
+		   float altitude_reading = 44330.0f * (1.0f - powf((pressure_reading_kpa/ 101.325f), 0.190295f));
+	  }
+
 
 	  icp20100.initiateBarometer();
 	  //icp20100.selfTest(pressure);
+
+
 
 
 
