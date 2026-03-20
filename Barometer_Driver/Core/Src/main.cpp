@@ -154,8 +154,9 @@ int main(void)
 
 
     uint8_t dummy_lock_val = 0;
-    // Write to lock register twice
-    err |= HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, 0xBE, I2C_MEMADD_SIZE_8BIT, &dummy_lock_val, 1, HAL_MAX_DELAY);
+    // Write to lock register thrice
+    for (int i = 0; i < 3; i++)
+      err |= HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, 0xBE, I2C_MEMADD_SIZE_8BIT, &dummy_lock_val, 1, HAL_MAX_DELAY);
 
 	  // Force reset the I2C peripheral
 
