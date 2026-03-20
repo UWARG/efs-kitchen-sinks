@@ -678,9 +678,9 @@ void ICP20100::initiateBarometer()
 
 	// STEP 25: Check boot up status to 1, avoid reintialization
 
-	uint8_t boot_config = 1;
+	uint8_t boot_config = ICP20100_OTP_STATUS2_BOOTUP;
 
-	if(HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_STATUS2_BOOTUP, I2C_MEMADD_SIZE_8BIT, &boot_config, 1, HAL_MAX_DELAY) != HAL_OK){ err = HAL_I2C_GetError(hi2c); return; }
+	if(HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_STATUS2, I2C_MEMADD_SIZE_8BIT, &boot_config, 1, HAL_MAX_DELAY) != HAL_OK){ err = HAL_I2C_GetError(hi2c); return; }
 
 }
 
