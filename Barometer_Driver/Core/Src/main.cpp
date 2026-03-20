@@ -152,6 +152,11 @@ int main(void)
 	  float pressure;
 	  uint8_t trigger = ICP20100_FORCED_MES_TRIGGER;
 
+
+    uint8_t dummy_lock_val = 0;
+    // Write to lock register twice
+    err |= HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, 0xBE, I2C_MEMADD_SIZE_8BIT, &dummy_lock_val, 1, HAL_MAX_DELAY);
+
 	  // Force reset the I2C peripheral
 
 	  if (HAL_I2C_IsDeviceReady(&hi2c1, ICP20100_I2C_ADDR, 5, HAL_MAX_DELAY) == HAL_OK)
