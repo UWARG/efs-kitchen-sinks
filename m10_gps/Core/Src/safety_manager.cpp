@@ -19,5 +19,8 @@ SafetyManagerOutput SafetyManager::update(const SafetyManagerInput& input) const
         (input.gpsFixQuality > 0U) &&
         isGpsFresh(input);
 
-    return {safetyEnabled};
+    // alarm when system is unsafe.
+    const bool buzzerOn = !safetyEnabled;
+
+    return {safetyEnabled, buzzerOn};
 }

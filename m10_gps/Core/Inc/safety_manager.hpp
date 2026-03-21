@@ -15,6 +15,7 @@ struct SafetyManagerInput
 struct SafetyManagerOutput
 {
     bool safetyEnabled;
+    bool buzzerOn;
 };
 
 // own safety policy while relying on injected interfaces for hardware state.

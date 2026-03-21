@@ -283,16 +283,13 @@ int main(void)
              gps_fix_quality);
     }
 
-
-    if(safety_enabled == 0)
+    if (safetyOutput.buzzerOn)
     {
-      boardSafetySwitch.buzzerOn();
-      buzzer_PinState = 0;
+      safetySwitch.buzzerOn();
     }
     else
     {
-      boardSafetySwitch.buzzerOff();
-      buzzer_PinState = 1;
+      safetySwitch.buzzerOff();
     }
     /* USER CODE END WHILE */
 
