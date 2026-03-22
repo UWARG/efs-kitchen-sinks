@@ -687,60 +687,92 @@ void ICP20100::initiateBarometer()
 
 float ICP20100::readPressure()
 {
-    uint8_t data[3];
-    uint8_t unlock = ICP20100_MASTER_UNLOCK_KEY;
-    uint8_t otp_enable = ICP20100_OTP_ENABLE_BOTH;
-    uint8_t trigger = ICP20100_TRIGGER_COMMAND_MEAS;
+    uint8_t press_data_1;
+	uint8_t press_data_2;
+	uint8_t press_data_3;
+	uint8_t temp_data_1;
+	uint8_t temp_data_2;
+	uint8_t temp_data_3;
+	// STEP 1: Poll FIFO register in FIFO field
+		// 000000 in register field == empty.
 
-    // unlock device
-    HAL_I2C_Mem_Write(hi2c,
-                      ICP20100_I2C_ADDR,
-                      ICP20100_MASTER_LOCK,
-                      I2C_MEMADD_SIZE_8BIT,
-                      &unlock,
-                      1,
-                      HAL_MAX_DELAY);
+	uint8_t FIFO_REGISTER = 0;
+	uint8_t err = 0;
+	while(FIFO_REGISTER <= 0){
+		if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &FIFO_REGISTER, 1, HAL_MAX_DELAY) != HAL_OK){
+			err = HAL_I2C_GetError(hi2c); return;
+		}
 
-    // enable OTP
-    HAL_I2C_Mem_Write(hi2c,
-                      ICP20100_I2C_ADDR,
-                      ICP20100_OTP_CONFIG_1,
-                      I2C_MEMADD_SIZE_8BIT,
-                      &otp_enable,
-                      1,
-                      HAL_MAX_DELAY);
+		// Mask first 3 bits
+		FIFO_REGISTER &= (0x1F);
+	}
 
-    // trigger measurement
-    HAL_I2C_Mem_Write(hi2c,
-                      ICP20100_I2C_ADDR,
-                      ICP20100_REG_MODE_SELECT,
-                      I2C_MEMADD_SIZE_8BIT,
-                      &trigger,
-                      1,
-                      HAL_MAX_DELAY);
+	// STEP 2: Read out press data individually
+	/*
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_0, I2C_MEMADD_SIZE_8BIT, &press_data_1, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	}
 
-    HAL_Delay(10);   // conversion time
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_1, I2C_MEMADD_SIZE_8BIT, &press_data_2, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	}
 
-    // read pressure (3 bytes)
-    HAL_I2C_Mem_Read(hi2c,
-                     ICP20100_I2C_ADDR,
-                     ICP20100_PRESS_DATA_0,
-                     I2C_MEMADD_SIZE_8BIT,
-                     data,
-                     3,
-                     HAL_MAX_DELAY);
+	//LAST 4 BITS ARE GARBAGE
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_2, I2C_MEMADD_SIZE_8BIT, &press_data_3, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	} 
 
-    uint32_t raw = ((uint32_t)data[0] << 16) |
-                   ((uint32_t)data[1] << 8)  |
-                   data[2];
+	press_data_3 &= (0x0F); // Only care about the first 4 bits. 
+	
+	__uint32_t raw_pressure = ((press_data_3 & 0x0F) << 16) | (press_data_2 << 8) | press_data_1;
+	__uint32_t pressure = (raw/2^17) * 40 + 70;
 
-    raw &= 0x000FFFFF;
+	// xxxx xxxx xxxx AAAAAAAA BBBBBBBB CCCC 
 
-    float pressure = raw / 4.0f;
+	// STEP 3: Read out temp data individually
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TEMP_DATA_0, I2C_MEMADD_SIZE_8BIT, &temp_data_1, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	}
 
-    printf("%02X %02X %02X\r\n", data[0], data[1], data[2]);
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TEMP_DATA_1, I2C_MEMADD_SIZE_8BIT, &temp_data_2, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	}
 
-    return pressure;
+	//LAST 4 BITS ARE GARBAGE
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TEMP_DATA_2, I2C_MEMADD_SIZE_8BIT, &temp_data_3, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	} 
+	
+	temp_data_3 &= (0x0F);
+	__uint32_t raw_temp = ((temp_data_3 & 0x0F) << 16) | (temp_data_2 << 8) | temp_data_1;
+	*/
+
+	uint8_t buffer[6];
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_0,
+						I2C_MEMADD_SIZE_8BIT, buffer, 6, HAL_MAX_DELAY) != HAL_OK) {
+		// error
+	}
+	uint32_t press_raw = ((buffer[2] & 0x0F) << 16) | (buffer[1] << 8) | buffer[0];
+	uint32_t temp_raw  = ((buffer[5] & 0x0F) << 16) | (buffer[4] << 8) | buffer[3];
+
+	// Step 4: Sign extend to 32‑bit signed (since values are two's complement 20‑bit)
+	int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);          // Keep lower 20 bits
+	if (press_signed & 0x80000) {          // If bit 19 is set (negative)
+		press_signed |= 0xFFF00000;        // Sign extend to 32 bits
+	}
+	int32_t temp_signed = (int32_t)(temp_raw & 0xFFFFF);
+	if (temp_signed & 0x80000) {
+		temp_signed |= 0xFFF00000;
+	}
+
+	// Step 5: Convert to physical units
+	// Pressure in kPa (or multiply by 10 for hPa, by 1000 for Pa)
+	float pressure_kPa = ((float)press_signed / (1 << 17)) * 40.0f + 70.0f;
+
+	// Temperature in degrees Celsius
+	float temperature_C = ((float)temp_signed / (1 << 18)) * 65.0f + 25.0f;
+
+	int_32_t hi;
 }
 
 
