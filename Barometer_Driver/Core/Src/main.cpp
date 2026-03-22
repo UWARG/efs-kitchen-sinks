@@ -150,15 +150,18 @@ int main(void)
   uint8_t dummy = 0x00;
 
 // Force reset the I2C peripheral
-  if (HAL_I2C_IsDeviceReady(&hi2c1, ICP20100_I2C_ADDR, 5, HAL_MAX_DELAY) == HAL_OK)
-  {
-      BSP_LED_On(LED_GREEN);
-  }
-  else
-  {
-      err = HAL_I2C_GetError(&hi2c1);
-      while (1);
-  }
+
+  uint8_t unlock = ICP20100_MASTER_UNLOCK_KEY;
+
+  HAL_StatusTypeDef status;
+  int counter = 0;
+  HAL_Delay(5);
+  do{
+	  uint8_t unlock = ICP20100_MASTER_UNLOCK_KEY;
+	  status = HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, ICP20100_MASTER_LOCK, I2C_MEMADD_SIZE_8BIT, &unlock, 1, HAL_MAX_DELAY);
+	  counter++;
+	  HAL_Delay(100);
+  } while(status != HAL_OK);
 
   icp20100.initiateBarometer();
 
