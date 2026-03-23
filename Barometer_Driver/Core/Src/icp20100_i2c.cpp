@@ -4,6 +4,8 @@
 #include "stm32l5xx_hal.h"
 #include "stm32l5xx_hal_i2c.h"
 
+#define ICP20100_FIFO_FILL 0xC4
+
 ICP20100::ICP20100(I2C_HandleTypeDef *hi2c){
 	//empty constructor
 	this->hi2c = hi2c;
@@ -696,11 +698,15 @@ float ICP20100::readPressure()
 	// STEP 1: Poll FIFO register in FIFO field
 		// 000000 in register field == empty.
 
+	uint8_t mode_cfg = 0x0C; // 0b00001100: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=1, POWER_MODE=0
+	HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, 0xC0, I2C_MEMADD_SIZE_8BIT, &mode_cfg, 1, HAL_MAX_DELAY);
+	HAL_Delay(50); // wait for conversion (~50 ms for MODE4)
+
 	uint8_t FIFO_REGISTER = 0;
 	uint8_t err = 0;
 	while(FIFO_REGISTER <= 0){
 		if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &FIFO_REGISTER, 1, HAL_MAX_DELAY) != HAL_OK){
-			err = HAL_I2C_GetError(hi2c); return;
+			err = HAL_I2C_GetError(hi2c); return 0;
 		}
 
 		// Mask first 3 bits
@@ -767,12 +773,12 @@ float ICP20100::readPressure()
 
 	// Step 5: Convert to physical units
 	// Pressure in kPa (or multiply by 10 for hPa, by 1000 for Pa)
-	float pressure_kPa = ((float)press_signed / (1 << 17)) * 40.0f + 70.0f;
+	double pressure_kPa = ((double)press_signed / (1 << 17)) * 40.0f + 70.0f;
 
 	// Temperature in degrees Celsius
-	float temperature_C = ((float)temp_signed / (1 << 18)) * 65.0f + 25.0f;
+	double temperature_C = ((double)temp_signed / (1 << 18)) * 65.0f + 25.0f;
 
-	int_32_t hi;
+	int32_t hi;
 }
 
 

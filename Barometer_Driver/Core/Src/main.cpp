@@ -175,6 +175,7 @@ int main(void)
   while (1)
   {
 	  
+	  icp20100.readPressure();
 	  float pressure;
 	  uint8_t trigger = ICP20100_FORCED_MES_TRIGGER;
     
