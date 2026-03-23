@@ -761,7 +761,7 @@ float ICP20100::readPressure()
 	uint32_t press_raw = ((buffer[2] & 0x0F) << 16) | (buffer[1] << 8) | buffer[0];
 	uint32_t temp_raw  = ((buffer[5] & 0x0F) << 16) | (buffer[4] << 8) | buffer[3];
 
-	// Step 4: Sign extend to 32‑bit signed (since values are two's complement 20‑bit)
+	// Step 4: Sign extend to
 	int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);          // Keep lower 20 bits
 	if (press_signed & 0x80000) {          // If bit 19 is set (negative)
 		press_signed |= 0xFFF00000;        // Sign extend to 32 bits
@@ -773,12 +773,14 @@ float ICP20100::readPressure()
 
 	// Step 5: Convert to physical units
 	// Pressure in kPa (or multiply by 10 for hPa, by 1000 for Pa)
-	double pressure_kPa = ((double)press_signed / (1 << 17)) * 40.0f + 70.0f;
+	double press_kPa_int = ((double)press_signed * 40) / 131072 + 70;
+	int32_t temp_C_int = ((int64_t)temp_signed * 65) / 262144 + 25;
 
-	// Temperature in degrees Celsius
-	double temperature_C = ((double)temp_signed / (1 << 18)) * 65.0f + 25.0f;
-
+	// For fractional results, you can scale by 100 to get 0.01°C resolution
+	int32_t temp_C_100 = ((int64_t)temp_signed * 65 * 100) / 262144 + 2500;
 	int32_t hi;
+
+	return 0.0;
 }
 
 
