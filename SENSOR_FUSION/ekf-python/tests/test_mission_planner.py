@@ -114,6 +114,7 @@ def test_ahrs_with_mission_planner(plots_dir):
 
         grapher.collect(current_time - start_time, gt_quat, ekf.nominal_state.quaternion_new)
 
+        print(f"Gyro Bias Estimate: {ekf.measurements.gyro_bias_accumulated.flatten()} | Accel Bias Estimate: {ekf.measurements.accel_bias_accumulated.flatten()} | Mag Bias Estimate: {ekf.measurements.mag_bias_accumulated.flatten()}")
         print(f"Estimated Quaternion: {ekf.nominal_state.quaternion_new.flatten()} | Ground Truth Quaternion: {gt_quat.flatten()}")
         
         time.sleep(1/rate_hz)
