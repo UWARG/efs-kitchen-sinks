@@ -49,24 +49,84 @@
 class ist8310_i2c
 {
 private: 
+	I2C_HandleTypeDef *_hi2c;
+	uint16_t _addr;
+	bool _initialized;
+
 	//3 axis raw data
 	struct ist8310_raw_data {
 		init16_t x;
 		init16_t y;
 		init16_t z;
-
-		
 	};
 
+	//converted data
+	struct ist8310_converted_data {
+		float heading;
+		float x;
+		float y;
+		float z;
+	};
 
-//
+	volatile struct ist8310_raw_data raw;
+	volatile struct ist8310_converted_data converted;
+	HAL_StatusTypeDef i2c_transceive(uint8_t *tx_data, uint8_t *rx_data, uint16_t tx_size, uint16_t rx_size);
+	HAL_StatusTypeDef i2c_transceive_IT(uint8_t *tx_data, uint8_t *rx_data, uint16_t tx_size, uint16_t rx_size);
+
+	//helper functions
+	int writeReg(uint8_t reg, uint8_t value);
+	int readReg(uint8_t reg, uint8_t *out);
+	int readBytes(uint8_t reg, uint8_t *buf, uint16_t len);
+
 public:
-	ist8310_i2c(/* args */);
+	ist8310_i2c(I2C_HandleTypeDef *hi2c);
 	~ist8310_i2c();
+
+	bool i2c_SM(); //start single measurement
+	bool i2c_RM(); //read raw measurement
+	bool i2c_RT(); //reset
+	bool i2c_WR(uint8_t reg, uint8_t  val); //write register
+	bool i2c_RR(uint8_t reg, uint8_t *out); //read register
+	bool i2c_ST(); //self test
+
+	bool i2c_init();
+	bool i2c_set_averaging(uint8_t avg);
+	bool i2c_set_drdy(bool enable);
+	bool i2c_has_error();
+
+	//status
+	bool i2c_is_data_ready();
+	bool i2c_is_over_field();
+	bool i2c_read_wai();
+
+	//data
+	bool i2c_read_data();
+	void decode();
+	void convert();
+
+	//flags
+	bool get_drdy_flag();
+	void set_update_flag(bool update);
+	bool read_update_flag();
+ 
+	//getters
+	float get_x_data();
+	float get_y_data();
+	float get_z_data();
+	float get_heading();
+	int16_t get_raw_x();
+	int16_t get_raw_y();
+	int16_t get_raw_z();
+	bool is_initialized();
 };
 
-ist8310_i2c::ist8310_i2c(/* args */)
+ist8310_i2c::ist8310_i2c(I2C_HandleTypeDef *hi2c)
 {
+	_hi2c=hi2c;
+	_addr=IST8310_I2C_ADDR;
+	_initialized=false;
+	_data_ready_flag=false;
+	_update_flag=false;
 }
 
 ist8310_i2c::~ist8310_i2c()
