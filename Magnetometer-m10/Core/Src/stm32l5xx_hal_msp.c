@@ -17,7 +17,6 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 /* USER CODE BEGIN Includes */
@@ -169,42 +168,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-  if(huart->Instance==LPUART1)
-  {
-    /* USER CODE BEGIN LPUART1_MspInit 0 */
-
-    /* USER CODE END LPUART1_MspInit 0 */
-
-  /** Initializes the peripherals clock
-  */
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_LPUART1;
-    PeriphClkInit.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
-    /* Peripheral clock enable */
-    __HAL_RCC_LPUART1_CLK_ENABLE();
-
-    __HAL_RCC_GPIOG_CLK_ENABLE();
-    HAL_PWREx_EnableVddIO2();
-    /**LPUART1 GPIO Configuration
-    PG7     ------> LPUART1_TX
-    PG8     ------> LPUART1_RX
-    */
-    GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF8_LPUART1;
-    HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
-
-    /* USER CODE BEGIN LPUART1_MspInit 1 */
-
-    /* USER CODE END LPUART1_MspInit 1 */
-  }
-  else if(huart->Instance==UART4)
+  if(huart->Instance==UART4)
   {
     /* USER CODE BEGIN UART4_MspInit 0 */
 
@@ -234,12 +198,10 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /* UART4 interrupt Init */
-    HAL_NVIC_SetPriority(UART4_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(UART4_IRQn);
     /* USER CODE BEGIN UART4_MspInit 1 */
 
     /* USER CODE END UART4_MspInit 1 */
+
   }
 
 }
@@ -252,25 +214,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
   */
 void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
 {
-  if(huart->Instance==LPUART1)
-  {
-    /* USER CODE BEGIN LPUART1_MspDeInit 0 */
-
-    /* USER CODE END LPUART1_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_LPUART1_CLK_DISABLE();
-
-    /**LPUART1 GPIO Configuration
-    PG7     ------> LPUART1_TX
-    PG8     ------> LPUART1_RX
-    */
-    HAL_GPIO_DeInit(GPIOG, GPIO_PIN_7|GPIO_PIN_8);
-
-    /* USER CODE BEGIN LPUART1_MspDeInit 1 */
-
-    /* USER CODE END LPUART1_MspDeInit 1 */
-  }
-  else if(huart->Instance==UART4)
+  if(huart->Instance==UART4)
   {
     /* USER CODE BEGIN UART4_MspDeInit 0 */
 
@@ -284,8 +228,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     */
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_0|GPIO_PIN_1);
 
-    /* UART4 interrupt DeInit */
-    HAL_NVIC_DisableIRQ(UART4_IRQn);
     /* USER CODE BEGIN UART4_MspDeInit 1 */
 
     /* USER CODE END UART4_MspDeInit 1 */
