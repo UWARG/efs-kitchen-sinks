@@ -2,6 +2,7 @@
 #define INC_ICP20100_I2C_HPP_
 
 #include <stdio.h>
+#include <stdint.h>
 #include "stm32l5xx_hal.h"
 #include "stm32l5xx_hal_i2c.h"
 
@@ -50,14 +51,18 @@
 class ICP20100{
 	public:
 		ICP20100(I2C_HandleTypeDef *hi2c);
-		void toggleBlueLed();
-		void transmit();
 		void initiateBarometer();
+		void I2C_MemRxCallback();
 		float readPressure();
-		bool selfTest(float &pressure_out);
-
 	private:
 		I2C_HandleTypeDef *hi2c;
+		uint8_t FIFO_REGISTER;
+		uint8_t Press_Temp_Data[6];
+		volatile bool dataFilled = 0;
+		volatile uint8_t callbackCount; // Used to keep track for state machine
+		volatile float latestPressurekPa = 0.0f;
+		bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size, I2C_HandleTypeDef *hi2c);
+		bool writeRegister(uint16_t memAddress, uint8_t * pData, uint16_t size, I2C_HandleTypeDef *hi2c);
 
 };
 #endif /* INC_ICP20100_I2C_HPP_ */

@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -21,9 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include <math.h>
-#include "icp20100_i2c.hpp"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,36 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ICP20100_I2C_ADDR (0x64 << 1) // i2c is 7 bit address, left shit by 1 to make 1 byte.
 
-#define ICP20100_REG_MODE_SELECT 0xC0
-#define ICP20100_DEVICE_ID 0x0C
-#define ICP20100_MASTER_LOCK 0xBE
-#define ICP20100_OTP_CONFIG_1 0xAC
-#define ICP20100_OTP_STATUS2 0xBF
-
-#define ICP20100_REG_MODE_SELECT_KEY 0x04
-#define ICP20100_MASTER_UNLOCK_KEY 0x1F
-#define ICP20100_OTP_ENABLE_BOTH 0x03
-#define ICP20100_OTP_STATUS2_BOOTUP 0x01
-
-#define ICP20100_POWER_MODE (1 << 2)
-#define ICP20100_FORCED_MES_TRIGGER (1 << 4)
-
-#define ICP20100_FIFO_FILL 0xC4 
-
-#define ICP20100_TRIGGER_COMMAND_MEAS (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER)
-
-#define ICP20100_PRESS_DATA_0 0xFA
-#define ICP20100_PRESS_DATA_1 0xFB
-#define ICP20100_PRESS_DATA_2 0xFC
-#define ICP20100_TEMP_DATA_0 0xFD
-#define ICP20100_TEMP_DATA_1 0xFE
-#define ICP20100_TEMP_DATA_2 0xFF
-
-#define SCALE 131072.0f
-#define Alt_min 70.0f
-#define Alt_max 40.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -76,7 +45,6 @@ COM_InitTypeDef BspCOMInit;
 I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
-uint8_t dummy2 = 0;
 
 /* USER CODE END PV */
 
@@ -91,13 +59,6 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-ICP20100 icp20100(&hi2c1);
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == &hi2c1) {
-    icp20100.I2C_MemRxCallback();
-  }
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -133,8 +94,6 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
-
-  //icp20100.initiateBarometer();
   /* USER CODE END 2 */
 
   /* Initialize leds */
@@ -158,31 +117,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint32_t err;
-  uint8_t dummy = 0x00;
-
-// Force reset the I2C peripheral
-
-  uint8_t unlock = ICP20100_MASTER_UNLOCK_KEY;
-
-  HAL_StatusTypeDef status;
-  int counter = 0;
-  HAL_Delay(5);
-  do{
-	  uint8_t unlock = ICP20100_MASTER_UNLOCK_KEY;
-	  status = HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, ICP20100_MASTER_LOCK, I2C_MEMADD_SIZE_8BIT, &unlock, 1, HAL_MAX_DELAY);
-	  counter++;
-	  HAL_Delay(100);
-  } while(status != HAL_OK);
-
-  icp20100.initiateBarometer();
-
   while (1)
   {
-    float pressure_reading_kpa = icp20100.readPressure();
-    float altitude_reading = 44330.0f * (1.0f - powf((pressure_reading_kpa / 101.325f), 0.190295f));
-    (void)altitude_reading;
-
 
     /* USER CODE END WHILE */
 
