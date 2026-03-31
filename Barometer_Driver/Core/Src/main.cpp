@@ -92,7 +92,7 @@ static void MX_I2C1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 ICP20100 icp20100(&hi2c1);
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) { // overrides interrupt handler
   if (hi2c == &hi2c1) {
     icp20100.I2C_MemRxCallback();
   }

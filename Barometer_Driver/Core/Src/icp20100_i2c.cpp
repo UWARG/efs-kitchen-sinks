@@ -6,6 +6,8 @@
 #include "stm32l5xx_hal_i2c.h"
 
 #define ICP20100_FIFO_FILL 0xC4
+#define ICP20100_DEVICE_STATUS 0xCD
+#define ICP20100_MODE_SYNC_STATUS_BIT 0x01
 
 ICP20100::ICP20100(I2C_HandleTypeDef *hi2c){
 	//empty constructor
@@ -45,7 +47,7 @@ void ICP20100::initiateBarometer()
 
 	// Step 4: Check boot up status from OTP_Status2 register. Check specifically bit 0.
 	uint8_t boot_status = 0x00;
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_STATUS2_BOOTUP, I2C_MEMADD_SIZE_8BIT, &boot_status, 1, HAL_MAX_DELAY) != HAL_OK){
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_STATUS2, I2C_MEMADD_SIZE_8BIT, &boot_status, 1, HAL_MAX_DELAY) != HAL_OK){
 		err = HAL_I2C_GetError(hi2c);
 		return;
 	}
@@ -419,8 +421,27 @@ float ICP20100::readPressureDMA()
 		return latestPressurekPa;
 	}
 
+	// Datasheet: wait until DEVICE_STATUS.MODE_SYNC_STATUS == 1 before writing MODE_SELECT.
+	uint8_t device_status = 0;
+	uint32_t sync_timeout_ms = 10;
+	while (sync_timeout_ms--) {
+		if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_DEVICE_STATUS, I2C_MEMADD_SIZE_8BIT, &device_status, 1, 10) != HAL_OK) {
+			return latestPressurekPa;
+		}
+
+		if ((device_status & ICP20100_MODE_SYNC_STATUS_BIT) != 0U) {
+			break;
+		}
+
+		HAL_Delay(1);
+	}
+
+	if ((device_status & ICP20100_MODE_SYNC_STATUS_BIT) == 0U) {
+		return latestPressurekPa;
+	}
+
 	// Trigger one forced conversion.
-	uint8_t mode_cfg = 0x0C; // 0b00001100: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=1, POWER_MODE=0
+	uint8_t mode_cfg = 0x90; // 0b10010000: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=0, POWER_MODE=0
 	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_cfg, 1, 10) != HAL_OK) {
 		return latestPressurekPa;
 	}
@@ -526,5 +547,5 @@ float ICP20100::readPressureSequential()
 	int32_t temp_C_100 = ((int64_t)temp_signed * 65 * 100) / 262144 + 2500;
 	int32_t hi;
 
-	return 0.0;
+	return press_kPa_int
 }

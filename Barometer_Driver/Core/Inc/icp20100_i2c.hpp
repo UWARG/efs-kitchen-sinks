@@ -53,7 +53,8 @@ class ICP20100{
 		ICP20100(I2C_HandleTypeDef *hi2c);
 		void initiateBarometer();
 		void I2C_MemRxCallback();
-		float readPressure();
+		float readPressureDMA();
+		float readPressureSequential();
 	private:
 		I2C_HandleTypeDef *hi2c;
 		uint8_t FIFO_REGISTER;
