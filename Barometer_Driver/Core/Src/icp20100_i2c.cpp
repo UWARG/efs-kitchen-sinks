@@ -433,3 +433,98 @@ float ICP20100::readPressureDMA()
 }
 
 
+float ICP20100::readPressureSequential()
+{
+    uint8_t press_data_1;
+	uint8_t press_data_2;
+	uint8_t press_data_3;
+	uint8_t temp_data_1;
+	uint8_t temp_data_2;
+	uint8_t temp_data_3;
+	// STEP 1: Poll FIFO register in FIFO field
+		// 000000 in register field == empty.
+
+	uint8_t mode_cfg = 0x0C; // 0b00001100: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=1, POWER_MODE=0
+	HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, 0xC0, I2C_MEMADD_SIZE_8BIT, &mode_cfg, 1, HAL_MAX_DELAY);
+	HAL_Delay(50); // wait for conversion (~50 ms for MODE4)
+
+	uint8_t FIFO_REGISTER = 0;
+	uint8_t err = 0;
+	while(FIFO_REGISTER <= 0){
+		if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &FIFO_REGISTER, 1, HAL_MAX_DELAY) != HAL_OK){
+			err = HAL_I2C_GetError(hi2c); return 0;
+		}
+
+		// Mask first 3 bits
+		FIFO_REGISTER &= (0x1F);
+	}
+
+	// STEP 2: Read out press data individually
+	/*
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_0, I2C_MEMADD_SIZE_8BIT, &press_data_1, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	}
+
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_1, I2C_MEMADD_SIZE_8BIT, &press_data_2, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	}
+
+	//LAST 4 BITS ARE GARBAGE
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_2, I2C_MEMADD_SIZE_8BIT, &press_data_3, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	} 
+
+	press_data_3 &= (0x0F); // Only care about the first 4 bits. 
+	
+	__uint32_t raw_pressure = ((press_data_3 & 0x0F) << 16) | (press_data_2 << 8) | press_data_1;
+	__uint32_t pressure = (raw/2^17) * 40 + 70;
+
+	// xxxx xxxx xxxx AAAAAAAA BBBBBBBB CCCC 
+
+	// STEP 3: Read out temp data individually
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TEMP_DATA_0, I2C_MEMADD_SIZE_8BIT, &temp_data_1, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	}
+
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TEMP_DATA_1, I2C_MEMADD_SIZE_8BIT, &temp_data_2, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	}
+
+	//LAST 4 BITS ARE GARBAGE
+	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TEMP_DATA_2, I2C_MEMADD_SIZE_8BIT, &temp_data_3, 1, HAL_MAX_DELAY)!= HAL_OK){
+		err = HAL_I2C_GetError(hi2c); return;
+	} 
+	
+	temp_data_3 &= (0x0F);
+	__uint32_t raw_temp = ((temp_data_3 & 0x0F) << 16) | (temp_data_2 << 8) | temp_data_1;
+	*/
+
+	uint8_t buffer[6];
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_0,
+						I2C_MEMADD_SIZE_8BIT, buffer, 6, HAL_MAX_DELAY) != HAL_OK) {
+		// error
+	}
+	uint32_t press_raw = ((buffer[2] & 0x0F) << 16) | (buffer[1] << 8) | buffer[0];
+	uint32_t temp_raw  = ((buffer[5] & 0x0F) << 16) | (buffer[4] << 8) | buffer[3];
+
+	// Step 4: Sign extend to
+	int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);          // Keep lower 20 bits
+	if (press_signed & 0x80000) {          // If bit 19 is set (negative)
+		press_signed |= 0xFFF00000;        // Sign extend to 32 bits
+	}
+	int32_t temp_signed = (int32_t)(temp_raw & 0xFFFFF);
+	if (temp_signed & 0x80000) {
+		temp_signed |= 0xFFF00000;
+	}
+
+	// Step 5: Convert to physical units
+	// Pressure in kPa (or multiply by 10 for hPa, by 1000 for Pa)
+	double press_kPa_int = ((double)press_signed * 40) / 131072 + 70;
+	int32_t temp_C_int = ((int64_t)temp_signed * 65) / 262144 + 25;
+
+	// For fractional results, you can scale by 100 to get 0.01°C resolution
+	int32_t temp_C_100 = ((int64_t)temp_signed * 65 * 100) / 262144 + 2500;
+	int32_t hi;
+
+	return 0.0;
+}
