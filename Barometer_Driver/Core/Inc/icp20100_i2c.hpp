@@ -30,6 +30,8 @@
 #define ICP20100_TRIM1_MSB 			0x05
 #define ICP20100_TRIM2_LSB			0x06
 #define ICP20100_TRIM2_MSB 			0x07
+#define ICP20100_FIFO_CONFIG 		0xC3
+#define ICP20100_INTERRUPT_MASK 	0xC2
 
 
 #define ICP20100_REG_MODE_SELECT_KEY 0x04
@@ -56,6 +58,7 @@ class ICP20100{
 		float readPressureDMA();
 		float readPressureSequential();
 		float readTemperatureDMA();
+		bool firWarmupPoll();
 	private:
 		I2C_HandleTypeDef *hi2c;
 		uint8_t FIFO_REGISTER;

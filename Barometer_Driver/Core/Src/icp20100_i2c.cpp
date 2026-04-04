@@ -343,6 +343,52 @@ void ICP20100::initiateBarometer()
 	if(HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_STATUS2, I2C_MEMADD_SIZE_8BIT, &boot_config, 1, HAL_MAX_DELAY) != HAL_OK){ err = HAL_I2C_GetError(hi2c); return; }
 }
 
+bool ICP20100::firWarmupPoll()
+{
+	uint8_t mode_select = (uint8_t)((4U & 0x07U) << 5) | (1U << 3); // MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
+	uint8_t fifo_fill = 0;
+	uint8_t stop_mode = 0x00;
+	uint8_t flush_fifo = 0x80;
+	uint32_t timeoutMs = 200U;
+
+	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_select, 1, 10) != HAL_OK) {
+		return false;
+	}
+
+	while (timeoutMs-- > 0U) {
+		if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &fifo_fill, 1, 10) != HAL_OK) {
+			return false;
+		}
+
+		fifo_fill &= 0x1F;
+		if (fifo_fill >= 14U) {
+			break;
+		}
+
+		HAL_Delay(1);
+	}
+
+	if (timeoutMs == 0U) {
+		return false;
+	}
+
+	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &stop_mode, 1, 10) != HAL_OK) {
+		return false;
+	}
+
+	HAL_Delay(1);
+
+	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &flush_fifo, 1, 10) != HAL_OK) {
+		return false;
+	}
+
+	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_select, 1, 10) != HAL_OK) {
+		return false;
+	}
+
+	return true;
+}
+
 bool ICP20100::readRegister(
                                 uint16_t memAddress,
                                 uint8_t * pData,
@@ -397,22 +443,7 @@ void ICP20100::I2C_MemRxCallback() {
 			}
 			break;
 
-		case 2: { // Step 3: Burst read complete. Convert and publish latest pressure.
-			uint32_t press_raw = ((Press_Temp_Data[2] & 0x0F) << 16) | (Press_Temp_Data[1] << 8) | Press_Temp_Data[0];
-			uint32_t temp_raw  = ((Press_Temp_Data[5] & 0x0F) << 16) | (Press_Temp_Data[4] << 8) | Press_Temp_Data[3];
-
-			int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);
-			if (press_signed & 0x80000) {
-				press_signed |= 0xFFF00000;
-			}
-
-			int32_t temp_signed = (int32_t)(temp_raw & 0xFFFFF);
-			if (temp_signed & 0x80000) {
-				temp_signed |= 0xFFF00000;
-			}
-
-			latestTemperatureC = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
-			latestPressurekPa = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
+		case 2: { // Step 3: Burst read complete. Signal data ready.
 			dataFilled = 1;
 			callbackCount = 0;
 			initiatedRead = false;
@@ -428,6 +459,25 @@ void ICP20100::I2C_MemRxCallback() {
 
 float ICP20100::readPressureDMA()
 {
+	if (dataFilled) {
+		uint32_t press_raw = ((Press_Temp_Data[2] & 0x0F) << 16) | (Press_Temp_Data[1] << 8) | Press_Temp_Data[0];
+		uint32_t temp_raw  = ((Press_Temp_Data[5] & 0x0F) << 16) | (Press_Temp_Data[4] << 8) | Press_Temp_Data[3];
+
+		int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);
+		if (press_signed & 0x80000) {
+			press_signed |= 0xFFF00000;
+		}
+
+		int32_t temp_signed = (int32_t)(temp_raw & 0xFFFFF);
+		if (temp_signed & 0x80000) {
+			temp_signed |= 0xFFF00000;
+		}
+
+		latestTemperatureC = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
+		latestPressurekPa = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
+		dataFilled = 0;
+	}
+
 	if (callbackCount != 0) {
 		return latestPressurekPa;
 	}

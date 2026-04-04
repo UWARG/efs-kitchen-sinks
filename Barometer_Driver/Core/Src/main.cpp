@@ -196,6 +196,10 @@ int main(void)
 
   icp20100.initiateBarometer();
 
+  if (!icp20100.firWarmupPoll()) {
+    BSP_LED_Toggle(LED_RED);
+  }
+
   // Trigger one forced conversion.
   /*
   	uint8_t mode_cfg = 0x90; // 0b10010000: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=0, POWER_MODE=0
