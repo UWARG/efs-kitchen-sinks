@@ -2,8 +2,12 @@
 #include "main.h"
 
 #include <stdint.h>
+#include <cmath>
 #include "stm32l5xx_hal.h"
 #include "stm32l5xx_hal_i2c.h"
+
+extern volatile uint32_t g_memrx_start_fail;
+extern volatile uint32_t g_i2c_err;
 
 #define ICP20100_FIFO_FILL 0xC4
 #define ICP20100_DEVICE_STATUS 0xCD
@@ -345,7 +349,14 @@ bool ICP20100::readRegister(
                                 uint16_t size,
                                 I2C_HandleTypeDef *hi2c) {
 
-    return HAL_I2C_Mem_Read_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
+	if (HAL_I2C_Mem_Read_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) != HAL_OK) {
+		g_memrx_start_fail++;
+		uint32_t err = HAL_I2C_GetError(hi2c);
+		uint32_t hi;
+		return false;
+	}
+
+	return true;
 }
 
 bool ICP20100::writeRegister(
@@ -360,27 +371,29 @@ bool ICP20100::writeRegister(
 void ICP20100::I2C_MemRxCallback() {
 	switch(callbackCount) {
 		case 0: // Step 1: Start FIFO fill register read via DMA
+			BSP_LED_Toggle(LED_BLUE);
 			dataFilled = 0;
 			if (readRegister(ICP20100_FIFO_FILL, &FIFO_REGISTER, 1, hi2c)) {
 				callbackCount = 1;
 			} else {
 				callbackCount = 0;
+				initiatedRead = false;
 			}
 			break;
 
 		case 1: // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
 			FIFO_REGISTER &= 0x1F;
 			if (FIFO_REGISTER > 0) {
-				if (readRegister(ICP20100_PRESS_DATA_0, Press_Temp_Data, 6, hi2c)) {
+				if (readRegister(ICP20100_PRESS_DATA_0, Press_Temp_Data, 6, hi2c)) { 
 					callbackCount = 2;
 				} else {
 					callbackCount = 0;
+					initiatedRead = false;
 				}
 			} else {
 				// Keep polling FIFO until at least one sample is ready.
-				if (!readRegister(ICP20100_FIFO_FILL, &FIFO_REGISTER, 1, hi2c)) {
-					callbackCount = 0;
-				}
+				callbackCount = 0;
+				initiatedRead = false;
 			}
 			break;
 
@@ -398,15 +411,17 @@ void ICP20100::I2C_MemRxCallback() {
 				temp_signed |= 0xFFF00000;
 			}
 
-			(void)temp_signed;
+			latestTemperatureC = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
 			latestPressurekPa = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
 			dataFilled = 1;
 			callbackCount = 0;
+			initiatedRead = false;
 			break;
 		}
 
 		default:
 			callbackCount = 0;
+			initiatedRead = false;
 			break;
 	}
 }
@@ -421,24 +436,6 @@ float ICP20100::readPressureDMA()
 		return latestPressurekPa;
 	}
 
-	// Datasheet: wait until DEVICE_STATUS.MODE_SYNC_STATUS == 1 before writing MODE_SELECT.
-	uint8_t device_status = 0;
-	uint32_t sync_timeout_ms = 10;
-	while (sync_timeout_ms--) {
-		if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_DEVICE_STATUS, I2C_MEMADD_SIZE_8BIT, &device_status, 1, 10) != HAL_OK) {
-			return latestPressurekPa;
-		}
-
-		if ((device_status & ICP20100_MODE_SYNC_STATUS_BIT) != 0U) {
-			break;
-		}
-
-		HAL_Delay(1);
-	}
-
-	if ((device_status & ICP20100_MODE_SYNC_STATUS_BIT) == 0U) {
-		return latestPressurekPa;
-	}
 
 	// Trigger one forced conversion.
 	uint8_t mode_cfg = 0x90; // 0b10010000: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=0, POWER_MODE=0
@@ -447,21 +444,22 @@ float ICP20100::readPressureDMA()
 	}
 
 	// Kick off DMA state machine. FIFO polling starts in callback step 1.
-	I2C_MemRxCallback();
+	if(!initiatedRead){
+		I2C_MemRxCallback();
+	}
 
 	// Non-blocking: returns last completed DMA-converted pressure.
 	return latestPressurekPa;
 }
 
+float ICP20100::readTemperatureDMA()
+{
+	return latestTemperatureC;
+}
+
 
 float ICP20100::readPressureSequential()
 {
-    uint8_t press_data_1;
-	uint8_t press_data_2;
-	uint8_t press_data_3;
-	uint8_t temp_data_1;
-	uint8_t temp_data_2;
-	uint8_t temp_data_3;
 	// STEP 1: Poll FIFO register in FIFO field
 		// 000000 in register field == empty.
 
@@ -480,8 +478,15 @@ float ICP20100::readPressureSequential()
 		FIFO_REGISTER &= (0x1F);
 	}
 
+	/* Individual register reads, unviable due to timing issues */
 	// STEP 2: Read out press data individually
 	/*
+	 uint8_t press_data_1;
+		uint8_t press_data_2;
+		uint8_t press_data_3;
+				initiatedRead = false; 
+		uint8_t temp_data_2;
+		uint8_t temp_data_3;
 	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_0, I2C_MEMADD_SIZE_8BIT, &press_data_1, 1, HAL_MAX_DELAY)!= HAL_OK){
 		err = HAL_I2C_GetError(hi2c); return;
 	}
@@ -520,6 +525,8 @@ float ICP20100::readPressureSequential()
 	__uint32_t raw_temp = ((temp_data_3 & 0x0F) << 16) | (temp_data_2 << 8) | temp_data_1;
 	*/
 
+	/* Step 2: I2C burst read after manual read trigger at press data register*/
+				initiatedRead = false; 
 	uint8_t buffer[6];
 	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_PRESS_DATA_0,
 						I2C_MEMADD_SIZE_8BIT, buffer, 6, HAL_MAX_DELAY) != HAL_OK) {
@@ -528,7 +535,7 @@ float ICP20100::readPressureSequential()
 	uint32_t press_raw = ((buffer[2] & 0x0F) << 16) | (buffer[1] << 8) | buffer[0];
 	uint32_t temp_raw  = ((buffer[5] & 0x0F) << 16) | (buffer[4] << 8) | buffer[3];
 
-	// Step 4: Sign extend to
+	// Step 3: Sign extend 
 	int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);          // Keep lower 20 bits
 	if (press_signed & 0x80000) {          // If bit 19 is set (negative)
 		press_signed |= 0xFFF00000;        // Sign extend to 32 bits
@@ -538,14 +545,15 @@ float ICP20100::readPressureSequential()
 		temp_signed |= 0xFFF00000;
 	}
 
-	// Step 5: Convert to physical units
+	// Step 4: Convert to physical units
 	// Pressure in kPa (or multiply by 10 for hPa, by 1000 for Pa)
 	double press_kPa_int = ((double)press_signed * 40) / 131072 + 70;
+
+	int32_t temp_C_100 = ((int64_t)temp_signed * 65 * 100) / 262144 + 2500;
 	int32_t temp_C_int = ((int64_t)temp_signed * 65) / 262144 + 25;
 
-	// For fractional results, you can scale by 100 to get 0.01°C resolution
-	int32_t temp_C_100 = ((int64_t)temp_signed * 65 * 100) / 262144 + 2500;
-	int32_t hi;
+	int32_t altitude = (int32_t)(((temp_C_100 / 100.0) + 273.15) / 0.0065 *
+	                            (1.0 - std::pow(press_kPa_int / 101.325, 0.190284)));
 
-	return press_kPa_int
+	return altitude;
 }

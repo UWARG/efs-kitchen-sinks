@@ -74,15 +74,22 @@
 
 COM_InitTypeDef BspCOMInit;
 I2C_HandleTypeDef hi2c1;
+DMA_HandleTypeDef hdma_i2c1_rx;
+DMA_HandleTypeDef hdma_i2c1_tx;
 
 /* USER CODE BEGIN PV */
 uint8_t dummy2 = 0;
+volatile uint32_t g_memrx_count = 0;
+volatile uint32_t g_memrx_start_fail = 0;
+volatile uint32_t g_i2c_err = 0;
+volatile uint32_t g_i2c_err_count = 0;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_ICACHE_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
@@ -94,7 +101,15 @@ static void MX_I2C1_Init(void);
 ICP20100 icp20100(&hi2c1);
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) { // overrides interrupt handler
   if (hi2c == &hi2c1) {
+    g_memrx_count++;
     icp20100.I2C_MemRxCallback();
+  }
+}
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c == &hi2c1) {
+    g_i2c_err = HAL_I2C_GetError(hi2c);
+    g_i2c_err_count++;
   }
 }
 
@@ -129,6 +144,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ICACHE_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
@@ -167,6 +183,9 @@ int main(void)
 
   HAL_StatusTypeDef status;
   int counter = 0;
+  uint32_t last_memrx_count = 0;
+  uint32_t last_memrx_start_fail = 0;
+  uint32_t last_i2c_err_count = 0;
   HAL_Delay(5);
   do{
 	  uint8_t unlock = ICP20100_MASTER_UNLOCK_KEY;
@@ -177,13 +196,31 @@ int main(void)
 
   icp20100.initiateBarometer();
 
+  // Trigger one forced conversion.
+  /*
+  	uint8_t mode_cfg = 0x90; // 0b10010000: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=0, POWER_MODE=0
+  	if (HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_cfg, 1, 10) != HAL_OK) {
+  		BSP_LED_Toggle(LED_GREEN);
+  	}
+  	*/
+
   while (1)
   {
-    float pressure_reading_kpa = icp20100.readPressure();
-    float altitude_reading = 44330.0f * (1.0f - powf((pressure_reading_kpa / 101.325f), 0.190295f));
-    (void)altitude_reading;
+    //float pressure_reading_kpa = icp20100.readPressureSequential();
+    float pressure_reading_DMA = icp20100.readPressureDMA();
+    float temp_reading_DMA = icp20100.readTemperatureDMA();
+    (void)pressure_reading_DMA;
 
+    if (g_memrx_count != last_memrx_count) {
+      last_memrx_count = g_memrx_count;
+      BSP_LED_Toggle(LED_BLUE);
+    }
 
+    if ((g_memrx_start_fail != last_memrx_start_fail) || (g_i2c_err_count != last_i2c_err_count)) {
+      last_memrx_start_fail = g_memrx_start_fail;
+      last_i2c_err_count = g_i2c_err_count;
+      BSP_LED_Toggle(LED_RED);
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -318,6 +355,26 @@ static void MX_ICACHE_Init(void)
   /* USER CODE BEGIN ICACHE_Init 2 */
 
   /* USER CODE END ICACHE_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMAMUX1_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
 }
 

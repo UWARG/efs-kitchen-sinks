@@ -55,6 +55,7 @@ class ICP20100{
 		void I2C_MemRxCallback();
 		float readPressureDMA();
 		float readPressureSequential();
+		float readTemperatureDMA();
 	private:
 		I2C_HandleTypeDef *hi2c;
 		uint8_t FIFO_REGISTER;
@@ -62,6 +63,8 @@ class ICP20100{
 		volatile bool dataFilled = 0;
 		volatile uint8_t callbackCount; // Used to keep track for state machine
 		volatile float latestPressurekPa = 0.0f;
+		volatile float latestTemperatureC = 0.0f;
+		bool initiatedRead = false;
 		bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size, I2C_HandleTypeDef *hi2c);
 		bool writeRegister(uint16_t memAddress, uint8_t * pData, uint16_t size, I2C_HandleTypeDef *hi2c);
 
