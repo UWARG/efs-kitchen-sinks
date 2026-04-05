@@ -142,7 +142,7 @@ int main(void)
 		   (unsigned long)st.next_idx,
 		   (unsigned long)st.next_id,
 		   (int)st.mounted);
-  test_write_and_read_latest();
+  test_update();
 
   printf("Test Complete\r\n");
 
