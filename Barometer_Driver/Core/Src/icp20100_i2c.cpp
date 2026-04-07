@@ -345,16 +345,19 @@ void ICP20100::initiateBarometer()
 
 bool ICP20100::firWarmupPoll()
 {
-	uint8_t mode_select = (uint8_t)((4U & 0x07U) << 5) | (1U << 3); // MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
+	uint8_t mode_select = (uint8_t)(0x28); // MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
 	uint8_t fifo_fill = 0;
 	uint8_t stop_mode = 0x00;
 	uint8_t flush_fifo = 0x80;
 	uint32_t timeoutMs = 200U;
+	
+	// Step 1: Configure mode to be in mode 1 and continuous  and start a measuerment
 
 	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_select, 1, 10) != HAL_OK) {
 		return false;
 	}
 
+	// Step 2: Poll for filling up of FIFO fill
 	while (timeoutMs-- > 0U) {
 		if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &fifo_fill, 1, 10) != HAL_OK) {
 			return false;
@@ -372,19 +375,27 @@ bool ICP20100::firWarmupPoll()
 		return false;
 	}
 
+	// Step 3: Stop measuring data 
+
 	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &stop_mode, 1, 10) != HAL_OK) {
 		return false;
 	}
 
 	HAL_Delay(1);
 
+	// Step 4: Flush FIFO filter
+
 	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &flush_fifo, 1, 10) != HAL_OK) {
 		return false;
 	}
 
+	// Step 5: Start measurement 
+
 	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_select, 1, 10) != HAL_OK) {
 		return false;
 	}
+
+	// Step 6: Pass data reading to ReadPressureDMA
 
 	return true;
 }
@@ -486,13 +497,6 @@ float ICP20100::readPressureDMA()
 		return latestPressurekPa;
 	}
 
-
-	// Trigger one forced conversion.
-	uint8_t mode_cfg = 0x90; // 0b10010000: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=0, POWER_MODE=0
-	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_cfg, 1, 10) != HAL_OK) {
-		return latestPressurekPa;
-	}
-
 	// Kick off DMA state machine. FIFO polling starts in callback step 1.
 	if(!initiatedRead){
 		I2C_MemRxCallback();
@@ -505,6 +509,48 @@ float ICP20100::readPressureDMA()
 float ICP20100::readTemperatureDMA()
 {
 	return latestTemperatureC;
+}
+
+float ICP20100::computeAltitude(float pressureKpa, float tempC)
+{
+	return ((tempC + 273.15f) / 0.0065f) *
+	       (1.0f - powf(pressureKpa / 101.325f, 0.190284f));
+}
+
+void ICP20100::zero()
+{
+	const uint8_t samples = 10;
+	const uint32_t sampleTimeoutMs = 200;
+	float sum = 0.0f;
+	uint8_t collected = 0;
+
+	while (collected < samples) {
+		readPressureDMA();
+
+		uint32_t waitMs = sampleTimeoutMs;
+		while (!dataFilled && (waitMs-- > 0U)) {
+			HAL_Delay(1);
+		}
+
+		if (!dataFilled) {
+			break;
+		}
+
+		readPressureDMA();
+		sum += computeAltitude(latestPressurekPa, latestTemperatureC);
+		collected++;
+	}
+
+	if (collected > 0U) {
+		altitudeZero = sum / (float)collected;
+	}
+}
+
+float ICP20100::readAltitudeDMA()
+{
+	float pressure = readPressureDMA();
+	float temp = readTemperatureDMA();
+	return computeAltitude(pressure, temp) - altitudeZero;
 }
 
 

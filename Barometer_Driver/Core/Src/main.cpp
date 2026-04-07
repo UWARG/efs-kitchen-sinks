@@ -200,31 +200,11 @@ int main(void)
     BSP_LED_Toggle(LED_RED);
   }
 
-  // Trigger one forced conversion.
-  /*
-  	uint8_t mode_cfg = 0x90; // 0b10010000: MEAS_CONFIG=4, FORCED_TRIGGER=1, MEAS_MODE=0, POWER_MODE=0
-  	if (HAL_I2C_Mem_Write(&hi2c1, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_cfg, 1, 10) != HAL_OK) {
-  		BSP_LED_Toggle(LED_GREEN);
-  	}
-  	*/
-
   while (1)
   {
-    //float pressure_reading_kpa = icp20100.readPressureSequential();
     float pressure_reading_DMA = icp20100.readPressureDMA();
     float temp_reading_DMA = icp20100.readTemperatureDMA();
-    (void)pressure_reading_DMA;
-
-    if (g_memrx_count != last_memrx_count) {
-      last_memrx_count = g_memrx_count;
-      BSP_LED_Toggle(LED_BLUE);
-    }
-
-    if ((g_memrx_start_fail != last_memrx_start_fail) || (g_i2c_err_count != last_i2c_err_count)) {
-      last_memrx_start_fail = g_memrx_start_fail;
-      last_i2c_err_count = g_i2c_err_count;
-      BSP_LED_Toggle(LED_RED);
-    }
+    float altitude_m = icp20100.readAltitudeDMA();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
