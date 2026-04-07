@@ -1,6 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (11.3.rel1)
+# Toolchain: GNU Tools for STM32 (13.3.rel1)
 ################################################################################
 
 -include ../makefile.init
@@ -60,8 +60,8 @@ all: main-build
 main-build: dshot_test.elf secondary-outputs
 
 # Tool invocations
-dshot_test.elf dshot_test.map: $(OBJS) $(USER_OBJS) C:\Users\manas\STM32CubeIDE\workspace_1.13.1\dshot_test\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "dshot_test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\manas\STM32CubeIDE\workspace_1.13.1\dshot_test\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="dshot_test.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+dshot_test.elf dshot_test.map: $(OBJS) $(USER_OBJS) C:\Users\junch\Downloads\Projects\efs-kitchen-sinks\dshot_test\STM32L552ZETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "dshot_test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\junch\Downloads\Projects\efs-kitchen-sinks\dshot_test\STM32L552ZETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="dshot_test.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
