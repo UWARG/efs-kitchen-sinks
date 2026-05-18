@@ -5,6 +5,8 @@
   *      Author: aahan
   */
 
+#include <nominal_state_old.hpp>
+#include <utils.hpp>
 #include "arm_math.h"
 #include <cstring>
 #include <cstdio>
@@ -12,8 +14,6 @@
 #include "dsp/matrix_functions.h"
 #include "dsp/matrix_functions_f16.h"
 
-#include "utils.h"
-#include "nominal_state.h"
 
 NominalState::NominalState() {
     // Initialize CMSIS matrix instances (each as column vector)
@@ -51,6 +51,7 @@ void NominalState::Update(){
 		 newVelocity = UpdateVelocity(quaternion_new, accel_measurement, dt);
 		 newDisplacement = UpdateDisplacement(velocity_new, dt);
 
+		 prevGyroMeasuremenr = gyroMeasurement
 		 prevAccelMeasurement = accelMeasurement;
 		 prevQuaternion = newQuaternion;
 		 prevVelocity = newVelocity;
@@ -58,7 +59,7 @@ void NominalState::Update(){
 	    }
 
 
-	void NominalState::UpdateQuaternion(float32_t *gyroMeasurement){
+void NominalState::UpdateQuaternion(float32_t *gyroMeasurement){
 
 		float32_t gyroBarData[3];
 		arm_matrix_instance_f32 gyroBar;
@@ -74,7 +75,7 @@ void NominalState::Update(){
 
 	};
 
-	void NominalState::ExpOmegaMatrix(float32_t *gyroBar, float32_t dt, float32_t *omegaMatrixOut){
+void NominalState::ExpOmegaMatrix(float32_t *gyroBar, float32_t dt, float32_t *omegaMatrixOut){
 
 	   float32_t normGyro;
 	   normalizeVector(gyroBar, normGyro);
@@ -116,7 +117,7 @@ void NominalState::Update(){
 	    arm_add_f32(temp1, temp2, omegaMatrixOut, 16);
 	};
 
-	void NominalState::UpdateVelocity(const float32_t* quaternionNew, const float32_t* accelBodyNew, float32_t dt, float32_t* velocityOut){
+void NominalState::UpdateVelocity(const float32_t* quaternionNew, const float32_t* accelBodyNew, float32_t dt, float32_t* velocityOut){
 
 		float32_t newQuaternionRotData[9];
 		float32_t oldQuaternionRotData[9];
@@ -159,7 +160,7 @@ void NominalState::Update(){
 
 	};
 
-	void NominalState:: UpdateDisplacement(const float32_t* velocityNew, float32_t dt, float32_t* displacementOut){
+void NominalState:: UpdateDisplacement(const float32_t* velocityNew, float32_t dt, float32_t* displacementOut){
 
 		float32_t tempSum[3];
 		float32_t velocityAvg[3];

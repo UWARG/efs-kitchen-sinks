@@ -8,8 +8,8 @@
 #ifndef NOMINAL_STATE_H_
 #define NOMINAL_STATE_H_
 
+#include <utils.hpp>
 #include "arm_math.h"
-#include "utils.h"
 
 class NominalState {
 public:
