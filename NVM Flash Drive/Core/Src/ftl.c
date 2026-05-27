@@ -481,7 +481,7 @@ int ftl_update(uint32_t block_id, const void* data, uint16_t len) {
 
 	uint32_t idx = g_next_idx;      // which block to use
 	uint32_t addr_base = ftl_unit_base_addr(idx);
-	uint32_t id = g_next_id;       // record ID
+	uint32_t id = block_id;       // record ID
 
 	// ======================= Erase the 4 KB block we are going to use
 	st = erase_4k(addr_base);
@@ -547,27 +547,26 @@ ftl_state_view_t ftl_get_state(void)
 
 void test_update(){
 	printf("starting test_update function ... \r\n");
-	ftl_mount();
 	printf("finished formatting and mounting \r\n");
 
 	uint32_t id;
-	const char msg1  = "This message will be updated.";
+	const char msg1 [] = "hello\0";
 	ftl_write(msg1, sizeof(msg1), &id);
 
 	uint8_t data_buf[FTL_MAX_PAYLOAD];
-
-	ftl_read(id, data_buf, NULL);
+	uint16_t len;
+	ftl_read(id, data_buf, &len);
 
 	printf("Block content prior to updating: %s\r\n", data_buf);
 
 
 	printf("Wrote id=%lu\r\n", (unsigned long) id);
 
-	const char msg2 = "This is an updated message.";
+	const char msg2 [] = "1\0";
 	ftl_update(id, msg2, sizeof(msg2));
 	printf("Updated message. \r\n");
 	uint8_t buff[FTL_MAX_PAYLOAD ];
-	ftl_read(id + 1, buff, NULL);
+	ftl_read(id, buff, NULL);
 	printf("Block content after updating: %s\r\n", buff);
 
 }

@@ -128,7 +128,7 @@ int main(void)
 
   HAL_Delay(1000);
 
-  //ftl_format();
+//  ftl_format();
 
   // do this on every power cycle
   if (ftl_mount() != 0){
@@ -142,7 +142,7 @@ int main(void)
 		   (unsigned long)st.next_idx,
 		   (unsigned long)st.next_id,
 		   (int)st.mounted);
-  test_update();
+	test_update();
 
   printf("Test Complete\r\n");
 
