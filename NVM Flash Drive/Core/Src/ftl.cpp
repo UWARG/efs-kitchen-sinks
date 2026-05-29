@@ -1,6 +1,5 @@
 #include "ftl.h"
-
-
+#include "nvm_driver.h"
 
 extern HAL_StatusTypeDef erase_4k(uint32_t addr24);
 extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
@@ -27,11 +26,53 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
  * accessors later once we implement append/read APIs.
  */
 
+template<typename T>
+static T readBE(const uint8_t*& p) {
+	T val = 0;
+	for (size_t i = 0; i < sizeof(T); i++)
+		val = (val << 8) | *p++;
+	return val;
+}
+template<typename T>
+static void writeBE(uint8_t*& p, T val) {
+	for (int i = (sizeof(T) - 1) * 8; i >= 0; i -= 8)
+		*p++ = (val >> i) & 0xFF;
+}
+
+AbstractMessage::AbstractMessage(uint32_t id) : id(id) {}
+
+BatteryLog::BatteryLog(uint32_t id, uint16_t voltage, uint16_t current, uint16_t power)
+	: AbstractMessage(id), voltage(voltage), current(current), power(power) {}
+
+int BatteryLog::unpack(const uint8_t* data, uint16_t len) {
+	if (len < PACKED_SIZE) return -1;
+
+	const uint8_t* p = data;
+	voltage = readBE<uint16_t>(p);
+	current = readBE<uint16_t>(p);
+	power = readBE<uint16_t>(p);
+
+	return 0;
+}
+
+int BatteryLog::pack(uint8_t* data, uint16_t& len) {
+	memset(data, 0xFF, FTL_MAX_PAYLOAD);
+	uint8_t* p = data;
+
+	writeBE(p, voltage);
+	writeBE(p, current);
+	writeBE(p, power);
+
+	len = static_cast<uint16_t>(p - data);
+
+	return 0;
+}
+
 //Define singleton FTL class functions
 
 	FTL::FTL() = default;
 
-	static FTL& FTL::get_instance()
+	FTL& FTL::get_instance()
 	{
 		static FTL instance;
 		return instance;
@@ -114,7 +155,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 
 		// Scan every 4 KB unit in the FTL region
 		for (uint32_t i = 0; i < FTL_NUM_UNITS; i++) {
-			uint32_t base_addr = ftl_unit_base_addr(i);
+			uint32_t base_addr = unit_base_addr(i);
 			uint32_t hdr_addr  = base_addr + FTL_HEADER_OFFSET;
 			uint32_t payload_addr = base_addr + FTL_PAYLOAD_OFFSET;
 
@@ -143,7 +184,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 			uint8_t buffer[hdr.length];
 			read_data(payload_addr, buffer, hdr.length);
 
-			if (hdr.crc != ftl_crc32(buffer, hdr.length)) {
+			if (hdr.crc != crc32(buffer, hdr.length)) {
 				hdr.status = FTL_STATUS_BAD;
 				//TODO: handle corrupted block
 				continue;
@@ -175,7 +216,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 			next_id  = max_id + 1u;   // ID for the next record
 
 			// Next write goes after 'head', wrapping around
-			uint32_t next = g_head_idx + 1u;
+			uint32_t next = head_idx + 1u;
 			if (next >= FTL_NUM_UNITS) {
 				next = 0u;
 			}
@@ -222,7 +263,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		}
 
 		uint32_t idx = next_idx;      // which block to use
-		uint32_t addr_base = ftl_unit_base_addr(idx);
+		uint32_t addr_base = unit_base_addr(idx);
 		uint32_t id = next_id;       // record ID
 
 		// ======================= Erase the 4 KB block we are going to use
@@ -237,7 +278,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		hdr.id = id;
 		hdr.status = FTL_STATUS_VALID;     // TODO: set this as valid but add crc
 		hdr.length = len;
-		hdr.crc = ftl_crc32((const uint8_t *)data, len);
+		hdr.crc = crc32((const uint8_t *)data, len);
 
 		// ============================  actually write to the chip
 
@@ -331,7 +372,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		// Search the chip for the matching ID block using the circular buffer
 		while (true) {
 			memset(&header, 0xFF, sizeof(header));
-			read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
+			read_data(unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, (uint16_t) sizeof(header));
 
 			if (header.status == FTL_STATUS_VALID && header.id == block_id) {
 				// Matching ID block found
@@ -356,7 +397,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		for (int i = 0; i < 8; i++) printf("%02X ", header.reserved[i]);
 		printf("\r\n");
 
-		uint32_t addr_base = ftl_unit_base_addr(idx);
+		uint32_t addr_base = unit_base_addr(idx);
 		// TODO: Add success/error check to read_data
 		read_data(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
 
@@ -388,7 +429,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		// Search the chip for the matching ID block using the circular buffer
 		while (true) {
 			memset(&header, 0xFF, sizeof(header));
-			read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
+			read_data(unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
 
 			if (header.status == FTL_STATUS_VALID && header.id == block_id) {
 				// Matching ID block found
@@ -403,7 +444,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 			idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
 		}
 
-		uint32_t block_address = ftl_unit_base_addr(idx);
+		uint32_t block_address = unit_base_addr(idx);
 
 		//erase the block
 		HAL_StatusTypeDef result = erase_4k(block_address);
@@ -445,7 +486,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 	 * - int len: the length of input data array
 	 * returns LSB-first (reflected) CRC result.
 	 */
-	static uint32_t FTL::crc32(const uint8_t *data, uint32_t len) {
+	uint32_t FTL::crc32(const uint8_t *data, uint32_t len) {
 		//append 8 zero bits by shifting to the left
 		uint32_t crc = 0xFFFFFFFF;
 
@@ -639,7 +680,7 @@ void test_write_and_read_latest(void)
 		printf("Read Error: %d", readSt0);
 	}
 
-	uint32_t crc0 = ftl_crc32(buf, len);
+	uint32_t crc0 = FTL::crc32(buf, len);
 	buf[len] = '\0';
 	printf("%s\r\n", (char*) buf);
 	printf("0x%08lX\r\n", crc0);
@@ -651,7 +692,7 @@ void test_write_and_read_latest(void)
 	if (readSt1) {
 		printf("Read Error: %d", readSt1);
 	}
-	uint32_t crc1 = ftl_crc32(buf, len);
+	uint32_t crc1 = FTL::crc32(buf, len);
 	buf[len] = '\0';
 	printf("%s\r\n", (char*) buf);
 	printf("0x%08lX\r\n", crc1);

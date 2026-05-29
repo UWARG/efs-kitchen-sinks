@@ -17,6 +17,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <ftl.h>
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -27,7 +28,6 @@
 
 
 #include "nvm_driver.h"
-#include "ftl.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,6 +61,8 @@ static void MX_GPIO_Init(void);
 static void MX_ICACHE_Init(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
+
+//extern "C" int main(void);
 
 /* USER CODE END PFP */
 
@@ -128,21 +130,23 @@ int main(void)
 
   HAL_Delay(1000);
 
+	FTL& ftl = FTL::get_instance();
+
 //  ftl_format();
 
   // do this on every power cycle
-  if (ftl_mount() != 0){
+  if (ftl.mount() != 0){
 	  printf("there was an error in the mounting! \r\n");
   }
   else printf("=================== successfully mounted! ================= \r\n");
-  ftl_state_view_t st = ftl_get_state();
+  ftl_state_view_t st = ftl.get_state();
 	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
 		   (unsigned long)st.head_idx,
 		   (unsigned long)st.tail_idx,
 		   (unsigned long)st.next_idx,
 		   (unsigned long)st.next_id,
 		   (int)st.mounted);
-	test_update();
+//	test_update();
 
   printf("Test Complete\r\n");
 

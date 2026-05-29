@@ -113,6 +113,33 @@ extern bool     g_mounted;
 /* basic FTL API prototypes ==== */
 /* 0 = success, <0 = error for now. replace int with an enum later. */
 #ifdef __cplusplus
+enum class MessageType {
+	BATTERY_STATUS = 0,
+};
+
+class AbstractMessage {
+public:
+	uint32_t id;
+
+	AbstractMessage(uint32_t id);
+	virtual ~AbstractMessage() = default;
+
+	virtual int unpack(const uint8_t* data, uint16_t len) = 0;
+	virtual int pack(uint8_t* data, uint16_t& len) = 0;
+};
+
+class BatteryLog : public AbstractMessage {
+public:
+	uint16_t voltage;
+	uint16_t current;
+	uint16_t power;
+
+	BatteryLog(uint32_t id, uint16_t voltage, uint16_t current, uint16_t power);
+
+	int unpack(const uint8_t* data, uint16_t len) override;
+	int pack(uint8_t* data, uint16_t& len) override;
+};
+
 class FTL
 {
 	protected:
@@ -247,6 +274,17 @@ class FTL
 
 		void test_read(void);
 
+		// helper function for debugging
+		ftl_state_view_t get_state(void);
+
+
+		/*
+		 * - uint8_t *data: data array
+		 * - int len: the length of input data array
+		 * returns LSB-first (reflected) CRC result.
+		 */
+		static uint32_t crc32(const uint8_t *data, uint32_t len);
+
 
 	private:
 		uint32_t head_idx  = 0xFFFFFFFFu;
@@ -257,17 +295,6 @@ class FTL
 
 		// Helper function to compute the base address in flash for a given unit index
 		inline uint32_t unit_base_addr(uint32_t unit_index);
-
-
-		/*
-		 * - uint8_t *data: data array
-		 * - int len: the length of input data array
-		 * returns LSB-first (reflected) CRC result.
-		 */
-		static uint32_t crc32(const uint8_t *data, uint32_t len);
-
-		// helper function for debugging
-		ftl_state_view_t get_state(void);
 
 
 };
