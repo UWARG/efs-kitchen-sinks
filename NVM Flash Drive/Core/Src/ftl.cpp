@@ -516,6 +516,12 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 	}
 
 
+	void FTL::test_message(BatteryLog log){
+		printf("Voltage, Current, and Power are %d, %d, %d, respectively", log.voltage, log.current, log.power);
+		uint8_t data[FTL_MAX_PAYLOAD] = {log.voltage, log.current, log.power};
+
+	}
+
 
 
 

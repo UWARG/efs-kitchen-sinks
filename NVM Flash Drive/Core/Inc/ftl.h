@@ -277,6 +277,8 @@ class FTL
 		// helper function for debugging
 		ftl_state_view_t get_state(void);
 
+		void test_message();
+
 
 		/*
 		 * - uint8_t *data: data array
