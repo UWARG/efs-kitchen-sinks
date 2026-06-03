@@ -1,15 +1,12 @@
-../Core/Src/ftl.c:39:24:ftl_unit_base_addr	1
-../Core/Src/ftl.c:50:17:ftl_crc32	4
-../Core/Src/ftl.c:82:5:ftl_format	2
-../Core/Src/ftl.c:135:5:ftl_mount	13
-../Core/Src/ftl.c:239:5:ftl_read	7
-../Core/Src/ftl.c:311:5:ftl_write	14
-../Core/Src/ftl.c:400:5:ftl_erase	10
-../Core/Src/ftl.c:459:5:ftl_update	12
-../Core/Src/ftl.c:537:18:ftl_get_state	1
-../Core/Src/ftl.c:548:6:test_update	1
-../Core/Src/ftl.c:574:6:test_format	1
-../Core/Src/ftl.c:581:6:test_mount	1
-../Core/Src/ftl.c:597:6:test_format_and_mount	1
-../Core/Src/ftl.c:627:6:test_format_and_mount_two_records	1
-../Core/Src/ftl.c:698:6:test_write_and_read_latest	3
+../Core/Src/ftl.cpp:32:2:FTL::FTL()	1
+../Core/Src/ftl.cpp:34:7:static FTL& FTL::get_instance()	3
+../Core/Src/ftl.cpp:56:6:int FTL::format()	2
+../Core/Src/ftl.cpp:108:6:int FTL::mount()	13
+../Core/Src/ftl.cpp:213:6:int FTL::write(const void*, uint16_t, uint32_t*)	14
+../Core/Src/ftl.cpp:322:6:int FTL::read(uint32_t, uint8_t*, uint16_t*)	7
+../Core/Src/ftl.cpp:370:6:int FTL::erase(uint32_t)	10
+../Core/Src/ftl.cpp:437:18:uint32_t FTL::unit_base_addr(uint32_t)	1
+../Core/Src/ftl.cpp:448:11:uint32_t FTL::crc32(const uint8_t*, uint32_t)	4
+../Core/Src/ftl.cpp:466:19:ftl_state_view_t FTL::get_state()	1
+../Core/Src/ftl.cpp:477:6:int FTL::update(uint32_t, const void*, uint16_t)	13
+../Core/Src/ftl.cpp:554:7:void FTL::test_update(FTL)	1

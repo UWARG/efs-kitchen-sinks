@@ -7,11 +7,11 @@
 C_SRCS += \
 ../Drivers/BSP/STM32L5xx_Nucleo/stm32l5xx_nucleo.c 
 
-OBJS += \
-./Drivers/BSP/STM32L5xx_Nucleo/stm32l5xx_nucleo.o 
-
 C_DEPS += \
 ./Drivers/BSP/STM32L5xx_Nucleo/stm32l5xx_nucleo.d 
+
+OBJS += \
+./Drivers/BSP/STM32L5xx_Nucleo/stm32l5xx_nucleo.o 
 
 
 # Each subdirectory must supply rules for building sources it contributes

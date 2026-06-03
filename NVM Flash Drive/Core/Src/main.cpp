@@ -128,22 +128,25 @@ int main(void)
 
   HAL_Delay(1000);
 
-//  ftl_format();
+  //Instantiate FTL instance
+
+  FTL& ftl_obj = FTL::get_instance();
+
+  ftl_obj.format();
 
   // do this on every power cycle
-  if (ftl_mount() != 0){
+  if (ftl_obj.mount() != 0){
 	  printf("there was an error in the mounting! \r\n");
   }
   else printf("=================== successfully mounted! ================= \r\n");
-  ftl_state_view_t st = ftl_get_state();
+  ftl_state_view_t st = ftl_obj.get_state();
 	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
 		   (unsigned long)st.head_idx,
 		   (unsigned long)st.tail_idx,
 		   (unsigned long)st.next_idx,
 		   (unsigned long)st.next_id,
 		   (int)st.mounted);
-	test_update();
-
+	ftl_obj.test_update(ftl_obj);
   printf("Test Complete\r\n");
 
   while (1)

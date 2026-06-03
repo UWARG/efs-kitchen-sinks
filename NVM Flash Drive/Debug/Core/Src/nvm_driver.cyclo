@@ -1,18 +1,18 @@
-../Core/Src/nvm_driver.c:4:20:CS_LOW	1
-../Core/Src/nvm_driver.c:5:20:CS_HIGH	1
-../Core/Src/nvm_driver.c:9:20:spi_tx1	1
-../Core/Src/nvm_driver.c:10:20:spi_tx	1
-../Core/Src/nvm_driver.c:11:13:spi_rx	1
-../Core/Src/nvm_driver.c:14:19:readID	3
-../Core/Src/nvm_driver.c:37:9:read_sr	1
-../Core/Src/nvm_driver.c:51:9:read_fsr	1
-../Core/Src/nvm_driver.c:64:6:clear_fsr	1
-../Core/Src/nvm_driver.c:73:6:write_enable	1
-../Core/Src/nvm_driver.c:84:19:wait_ready	4
-../Core/Src/nvm_driver.c:107:19:erase_4k	2
-../Core/Src/nvm_driver.c:117:19:erase_full	2
-../Core/Src/nvm_driver.c:131:19:page_program	5
-../Core/Src/nvm_driver.c:153:6:read_data	1
-../Core/Src/nvm_driver.c:164:6:ReadTest	3
-../Core/Src/nvm_driver.c:192:6:WriteTest	7
-../Core/Src/nvm_driver.c:237:6:ReceiveTransmitTest	8
+../Core/Src/nvm_driver.cpp:4:20:void CS_LOW()	1
+../Core/Src/nvm_driver.cpp:5:20:void CS_HIGH()	1
+../Core/Src/nvm_driver.cpp:9:20:void spi_tx1(uint8_t)	1
+../Core/Src/nvm_driver.cpp:10:20:void spi_tx(const uint8_t*, uint16_t)	1
+../Core/Src/nvm_driver.cpp:11:13:void spi_rx(uint8_t*, uint16_t)	1
+../Core/Src/nvm_driver.cpp:14:19:HAL_StatusTypeDef readID(uint8_t*)	3
+../Core/Src/nvm_driver.cpp:37:9:uint8_t read_sr()	1
+../Core/Src/nvm_driver.cpp:51:9:uint8_t read_fsr()	1
+../Core/Src/nvm_driver.cpp:64:6:void clear_fsr()	1
+../Core/Src/nvm_driver.cpp:73:6:bool write_enable()	1
+../Core/Src/nvm_driver.cpp:84:19:HAL_StatusTypeDef wait_ready(uint32_t)	4
+../Core/Src/nvm_driver.cpp:107:19:HAL_StatusTypeDef erase_4k(uint32_t)	2
+../Core/Src/nvm_driver.cpp:117:19:HAL_StatusTypeDef erase_full()	2
+../Core/Src/nvm_driver.cpp:131:19:HAL_StatusTypeDef page_program(uint32_t, const uint8_t*, uint16_t)	5
+../Core/Src/nvm_driver.cpp:153:6:void read_data(uint32_t, uint8_t*, uint16_t)	1
+../Core/Src/nvm_driver.cpp:164:6:void ReadTest()	3
+../Core/Src/nvm_driver.cpp:192:6:void WriteTest()	7
+../Core/Src/nvm_driver.cpp:237:6:void ReceiveTransmitTest()	8

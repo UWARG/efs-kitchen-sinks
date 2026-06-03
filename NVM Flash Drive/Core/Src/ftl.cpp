@@ -31,7 +31,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 
 	FTL::FTL() = default;
 
-	static FTL& FTL::get_instance()
+	FTL& FTL::get_instance()
 	{
 		static FTL instance;
 		return instance;
@@ -114,7 +114,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 
 		// Scan every 4 KB unit in the FTL region
 		for (uint32_t i = 0; i < FTL_NUM_UNITS; i++) {
-			uint32_t base_addr = ftl_unit_base_addr(i);
+			uint32_t base_addr = unit_base_addr(i);
 			uint32_t hdr_addr  = base_addr + FTL_HEADER_OFFSET;
 			uint32_t payload_addr = base_addr + FTL_PAYLOAD_OFFSET;
 
@@ -143,7 +143,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 			uint8_t buffer[hdr.length];
 			read_data(payload_addr, buffer, hdr.length);
 
-			if (hdr.crc != ftl_crc32(buffer, hdr.length)) {
+			if (hdr.crc != crc32(buffer, hdr.length)) {
 				hdr.status = FTL_STATUS_BAD;
 				//TODO: handle corrupted block
 				continue;
@@ -175,7 +175,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 			next_id  = max_id + 1u;   // ID for the next record
 
 			// Next write goes after 'head', wrapping around
-			uint32_t next = g_head_idx + 1u;
+			uint32_t next = head_idx + 1u;
 			if (next >= FTL_NUM_UNITS) {
 				next = 0u;
 			}
@@ -222,7 +222,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		}
 
 		uint32_t idx = next_idx;      // which block to use
-		uint32_t addr_base = ftl_unit_base_addr(idx);
+		uint32_t addr_base = unit_base_addr(idx);
 		uint32_t id = next_id;       // record ID
 
 		// ======================= Erase the 4 KB block we are going to use
@@ -237,7 +237,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		hdr.id = id;
 		hdr.status = FTL_STATUS_VALID;     // TODO: set this as valid but add crc
 		hdr.length = len;
-		hdr.crc = ftl_crc32((const uint8_t *)data, len);
+		hdr.crc = crc32((const uint8_t *)data, len);
 
 		// ============================  actually write to the chip
 
@@ -331,7 +331,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		// Search the chip for the matching ID block using the circular buffer
 		while (true) {
 			memset(&header, 0xFF, sizeof(header));
-			read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
+			read_data(unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
 
 			if (header.status == FTL_STATUS_VALID && header.id == block_id) {
 				// Matching ID block found
@@ -356,7 +356,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		for (int i = 0; i < 8; i++) printf("%02X ", header.reserved[i]);
 		printf("\r\n");
 
-		uint32_t addr_base = ftl_unit_base_addr(idx);
+		uint32_t addr_base = unit_base_addr(idx);
 		// TODO: Add success/error check to read_data
 		read_data(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
 
@@ -388,7 +388,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		// Search the chip for the matching ID block using the circular buffer
 		while (true) {
 			memset(&header, 0xFF, sizeof(header));
-			read_data(ftl_unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
+			read_data(unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
 
 			if (header.status == FTL_STATUS_VALID && header.id == block_id) {
 				// Matching ID block found
@@ -403,7 +403,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 			idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
 		}
 
-		uint32_t block_address = ftl_unit_base_addr(idx);
+		uint32_t block_address = unit_base_addr(idx);
 
 		//erase the block
 		HAL_StatusTypeDef result = erase_4k(block_address);
@@ -445,7 +445,7 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 	 * - int len: the length of input data array
 	 * returns LSB-first (reflected) CRC result.
 	 */
-	static uint32_t FTL::crc32(const uint8_t *data, uint32_t len) {
+	uint32_t FTL::crc32(const uint8_t *data, uint32_t len) {
 		//append 8 zero bits by shifting to the left
 		uint32_t crc = 0xFFFFFFFF;
 
@@ -474,187 +474,289 @@ extern void              read_data(uint32_t addr24, uint8_t *out, uint16_t len);
 		return s;
 	}
 
+	int FTL::update(uint32_t block_id, const void* data, uint16_t len) {
+		//check mount
+		if (!mounted) {
+			return -1;
+		}
+
+		//Wait ongoing write
+		HAL_StatusTypeDef st = wait_ready(FTL_MAX_WAIT);
+		if (st != HAL_OK) {
+			return -2;
+		}
+
+		if (len == 0 || len > FTL_MAX_PAYLOAD) {
+			return -3;   // invalid length
+		}
+
+		uint8_t buf[FTL_MAX_PAYLOAD];
+		int func_st = read(block_id, buf, NULL);
+		if (func_st == -2) {
+			return -4; // Invalid id, not updating a previous block
+		}
+
+
+		uint32_t idx = next_idx;      // which block to use
+		uint32_t addr_base = unit_base_addr(idx);
+		uint32_t id = block_id;       // record ID
+
+		// ======================= Erase the 4 KB block we are going to use
+		func_st = erase_4k(addr_base);
+		if (func_st != HAL_OK) {
+			return -5;
+		}
+
+		ftl_record_header_t hdr;
+		memset(&hdr, 0xFF, sizeof(hdr));
+		hdr.id = id;
+		hdr.length = len;
+		hdr.status = FTL_STATUS_VALID;
+		hdr.crc = crc32((const uint8_t*) data, len);
+
+		st = page_program(addr_base + FTL_HEADER_OFFSET, (const uint8_t*) &hdr, (uint16_t) sizeof(hdr));
+		if (st != HAL_OK) {
+			return -6;
+		}
+
+		const uint8_t* src = (const uint8_t*) data;
+		uint32_t remaining = len;
+		uint32_t write_addr = addr_base + FTL_PAYLOAD_OFFSET;
+
+		while (remaining > 0) {
+			uint16_t chunk = remaining > FLASH_PAGE_SIZE_256 ? FLASH_PAGE_SIZE_256 : (uint16_t) remaining;
+
+			st = page_program(write_addr, src, chunk);
+			if (st != HAL_OK) {
+				return -7;
+			}
+
+			src 	   += chunk;
+			write_addr += chunk;
+			remaining  -= chunk;
+		}
+
+		head_idx = idx;
+		if (idx == tail_idx) {
+			tail_idx = (tail_idx + 1u) % FTL_NUM_UNITS;
+		}
+
+		next_id = id + 1u;
+
+		func_st = erase(block_id);
+		if (func_st != 0) {
+			return -8;
+		}
+
+		return 0;
+	}
+
+	void FTL::test_update(FTL ftl){
+		printf("starting test_update function ... \r\n");
+		printf("finished formatting and mounting \r\n");
+
+		uint32_t id;
+		const char msg1 [] = "hello\0";
+		ftl.write(msg1, sizeof(msg1), &id);
+
+		uint8_t data_buf[FTL_MAX_PAYLOAD];
+		uint16_t len;
+		ftl.read(id, data_buf, &len);
+
+		printf("Block content prior to updating: %s\r\n", data_buf);
+
+
+		printf("Wrote id=%lu\r\n", (unsigned long) id);
+
+		const char msg2 [] = "1\0";
+		ftl.update(id, msg2, sizeof(msg2));
+		printf("Updated message. \r\n");
+		uint8_t buff[FTL_MAX_PAYLOAD ];
+		ftl.read(id, buff, NULL);
+		printf("Block content after updating: %s\r\n", buff);
+
+	}
 
 
 
 
 
-void test_format(void){
-	printf("starting function to test formatting \r\n");
-	printf("Formatting...\r\n");
-	int r = ftl_format();
-	printf("ftl_format() = %d\r\n", r);
-}
-
-void test_mount(void){
-	printf("starting function to test mounting...\r\n");
-
-	printf("Mounting...\r\n");
-	int r = ftl_mount();
-	printf("ftl_mount() = %d\r\n", r);
-
-	ftl_state_view_t st = ftl_get_state();
-	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
-	       (unsigned long)st.head_idx,
-	       (unsigned long)st.tail_idx,
-	       (unsigned long)st.next_idx,
-	       (unsigned long)st.next_id,
-	       (int)st.mounted);
-}
-
-void test_format_and_mount(void){
-
-	ftl_format();              // ensure everything is erased first
-
-	ftl_record_header_t h;
-	memset(&h, 0xFF, sizeof(h));
-	h.id     = 2;
-	h.status = FTL_STATUS_VALID;
-	h.length = 100;
-	h.crc    = 0x12345678;
-
-	page_program(0, (uint8_t *)&h, sizeof(h));
-
-	int r = ftl_mount();
-
-	printf("ftl_mount() = %d\r\n", r);
-	ftl_state_view_t st = ftl_get_state();
-	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
-	       (unsigned long)st.head_idx,
-	       (unsigned long)st.tail_idx,
-	       (unsigned long)st.next_idx,
-	       (unsigned long)st.next_id,
-	       (int)st.mounted);
-	/*
-	 * we expect the following output:
-	 * head_idx = 0, tail_idx = 0, next_idx = 1, next_id = 3
-	 */
-}
-
-
-void test_format_and_mount_two_records(void)
-{
-    // 1) Ensure flash is clean
-    ftl_format();
-
-    /*
-     * 2) Create and write FIRST record (index = 0, ID = 2)
-     */
-    ftl_record_header_t h1;
-    memset(&h1, 0xFF, sizeof(h1));
-    h1.id     = 2;
-    h1.status = FTL_STATUS_VALID;
-    h1.length = 50;
-    h1.crc    = 0xAAAA5555;   // dummy CRC for now
-
-    // Write header for record at physical block index 0
-    page_program(0, (uint8_t *)&h1, sizeof(h1));
-
-
-    /*
-     * 3) Create and write SECOND record (index = 5, ID = 7)
-     */
-    ftl_record_header_t h2;
-    memset(&h2, 0xFF, sizeof(h2));
-    h2.id     = 7;
-    h2.status = FTL_STATUS_VALID;
-    h2.length = 120;
-    h2.crc    = 0x1234ABCD;   // dummy CRC again
-
-    // Write header for record at physical block index 5
-    // base address = 5 * 4096 = 0x5000 (decimal 20480)
-    uint32_t block5_addr = 5 * FTL_UNIT_SIZE;
-    page_program(block5_addr, (uint8_t *)&h2, sizeof(h2));
-
-
-    /*
-     * 4) Mount the FTL and examine internal state
-     */
-    int r = ftl_mount();
-    printf("ftl_mount() = %d\r\n", r);
-
-    ftl_state_view_t st = ftl_get_state();
-    printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
-           (unsigned long)st.head_idx,
-           (unsigned long)st.tail_idx,
-           (unsigned long)st.next_idx,
-           (unsigned long)st.next_id,
-           (int)st.mounted);
-
-    /*
-     * EXPECTED OUTPUT:
-     *
-     * Written VALID blocks:
-     *   index 0 → id = 2
-     *   index 5 → id = 7
-     *
-     * → oldest record  = smallest ID = 2 → tail_idx = 0
-     * → newest record  = largest  ID = 7 → head_idx = 5
-     *
-     * next_idx = (head_idx + 1) % FTL_NUM_UNITS = 6
-     * next_id  = max_id + 1 = 8
-     *
-     * So we expect:
-     *   head_idx = 5
-     *   tail_idx = 0
-     *   next_idx = 6
-     *   next_id  = 8
-     *   mounted  = 1
-     */
-}
-
-void test_write_and_read_latest(void)
-{
-	printf("starting test_write_and_read_latest function...\r\n");
+//void test_format(void){
+//	printf("starting function to test formatting \r\n");
+//	printf("Formatting...\r\n");
+//	int r = ftl_format();
+//	printf("ftl_format() = %d\r\n", r);
+//}
+//
+//void test_mount(void){
+//	printf("starting function to test mounting...\r\n");
+//
+//	printf("Mounting...\r\n");
+//	int r = ftl_mount();
+//	printf("ftl_mount() = %d\r\n", r);
+//
+//	ftl_state_view_t st = get_state();
+//	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
+//	       (unsigned long)st.head_idx,
+//	       (unsigned long)st.tail_idx,
+//	       (unsigned long)st.next_idx,
+//	       (unsigned long)st.next_id,
+//	       (int)st.mounted);
+//}
+//
+//void test_format_and_mount(void){
+//
+//	ftl_format();              // ensure everything is erased first
+//
+//	ftl_record_header_t h;
+//	memset(&h, 0xFF, sizeof(h));
+//	h.id     = 2;
+//	h.status = FTL_STATUS_VALID;
+//	h.length = 100;
+//	h.crc    = 0x12345678;
+//
+//	page_program(0, (uint8_t *)&h, sizeof(h));
+//
+//	int r = ftl_mount();
+//
+//	printf("ftl_mount() = %d\r\n", r);
+//	ftl_state_view_t st = get_state();
+//	printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
+//	       (unsigned long)st.head_idx,
+//	       (unsigned long)st.tail_idx,
+//	       (unsigned long)st.next_idx,
+//	       (unsigned long)st.next_id,
+//	       (int)st.mounted);
+//	/*
+//	 * we expect the following output:
+//	 * head_idx = 0, tail_idx = 0, next_idx = 1, next_id = 3
+//	 */
+//}
+//
+//
+//void test_format_and_mount_two_records(void)
+//{
+//    // 1) Ensure flash is clean
 //    ftl_format();
-    ftl_mount();   // sets next_idx=0, next_id=0
-    printf("finished formatting and mounting\r\n");
-
-    const char msg1[] = "hello world!";
-    const char msg2[] = "write and read works!";
-
-    uint32_t id1, id2;
-
-    ftl_write(msg1, sizeof(msg1), &id1);  // writes in block 0
-    ftl_write(msg2, sizeof(msg2), &id2);  // writes in block 1
-
-    printf("id1=%lu id2=%lu\r\n", (unsigned long)id1, (unsigned long)id2);
-
-    ftl_state_view_t st = ftl_get_state();
-    printf("head=%lu tail=%lu next=%lu next_id=%lu\r\n",
-           (unsigned long)st.head_idx,
-           (unsigned long)st.tail_idx,
-           (unsigned long)st.next_idx,
-           (unsigned long)st.next_id);
-
-
-    // ================
-
-    uint8_t buf[FTL_MAX_PAYLOAD + 1];
-	uint16_t len;
-
-	memset(buf, 0, sizeof(buf));
-	int readSt0 = ftl_read(id1, buf, &len);
-	if (readSt0) {
-		printf("Read Error: %d", readSt0);
-	}
-
-	uint32_t crc0 = ftl_crc32(buf, len);
-	buf[len] = '\0';
-	printf("%s\r\n", (char*) buf);
-	printf("0x%08lX\r\n", crc0);
-
-	printf("\r\n");
-
-	memset(buf, 0, sizeof(buf));
-	int readSt1 = ftl_read(id2, buf, &len);
-	if (readSt1) {
-		printf("Read Error: %d", readSt1);
-	}
-	uint32_t crc1 = ftl_crc32(buf, len);
-	buf[len] = '\0';
-	printf("%s\r\n", (char*) buf);
-	printf("0x%08lX\r\n", crc1);
-
-	printf("\r\n\n\nDone reading data \r\n");
-}
+//
+//    /*
+//     * 2) Create and write FIRST record (index = 0, ID = 2)
+//     */
+//    ftl_record_header_t h1;
+//    memset(&h1, 0xFF, sizeof(h1));
+//    h1.id     = 2;
+//    h1.status = FTL_STATUS_VALID;
+//    h1.length = 50;
+//    h1.crc    = 0xAAAA5555;   // dummy CRC for now
+//
+//    // Write header for record at physical block index 0
+//    page_program(0, (uint8_t *)&h1, sizeof(h1));
+//
+//
+//    /*
+//     * 3) Create and write SECOND record (index = 5, ID = 7)
+//     */
+//    ftl_record_header_t h2;
+//    memset(&h2, 0xFF, sizeof(h2));
+//    h2.id     = 7;
+//    h2.status = FTL_STATUS_VALID;
+//    h2.length = 120;
+//    h2.crc    = 0x1234ABCD;   // dummy CRC again
+//
+//    // Write header for record at physical block index 5
+//    // base address = 5 * 4096 = 0x5000 (decimal 20480)
+//    uint32_t block5_addr = 5 * FTL_UNIT_SIZE;
+//    page_program(block5_addr, (uint8_t *)&h2, sizeof(h2));
+//
+//
+//    /*
+//     * 4) Mount the FTL and examine internal state
+//     */
+//    int r = ftl_mount();
+//    printf("ftl_mount() = %d\r\n", r);
+//
+//    ftl_state_view_t st = get_state();
+//    printf("head=%lu tail=%lu next=%lu next_id=%lu mounted=%d\r\n",
+//           (unsigned long)st.head_idx,
+//           (unsigned long)st.tail_idx,
+//           (unsigned long)st.next_idx,
+//           (unsigned long)st.next_id,
+//           (int)st.mounted);
+//
+//    /*
+//     * EXPECTED OUTPUT:
+//     *
+//     * Written VALID blocks:
+//     *   index 0 → id = 2
+//     *   index 5 → id = 7
+//     *
+//     * → oldest record  = smallest ID = 2 → tail_idx = 0
+//     * → newest record  = largest  ID = 7 → head_idx = 5
+//     *
+//     * next_idx = (head_idx + 1) % FTL_NUM_UNITS = 6
+//     * next_id  = max_id + 1 = 8
+//     *
+//     * So we expect:
+//     *   head_idx = 5
+//     *   tail_idx = 0
+//     *   next_idx = 6
+//     *   next_id  = 8
+//     *   mounted  = 1
+//     */
+//}
+//
+////void test_write_and_read_latest(void)
+////{
+////	printf("starting test_write_and_read_latest function...\r\n");
+//////    ftl_format();
+////    ftl_mount();   // sets next_idx=0, next_id=0
+////    printf("finished formatting and mounting\r\n");
+////
+////    const char msg1[] = "hello world!";
+////    const char msg2[] = "write and read works!";
+////
+////    uint32_t id1, id2;
+////
+////    ftl_write(msg1, sizeof(msg1), &id1);  // writes in block 0
+////    ftl_write(msg2, sizeof(msg2), &id2);  // writes in block 1
+////
+////    printf("id1=%lu id2=%lu\r\n", (unsigned long)id1, (unsigned long)id2);
+////
+////    ftl_state_view_t st = ftl_get_state();
+////    printf("head=%lu tail=%lu next=%lu next_id=%lu\r\n",
+////           (unsigned long)st.head_idx,
+////           (unsigned long)st.tail_idx,
+////           (unsigned long)st.next_idx,
+////           (unsigned long)st.next_id);
+////
+////
+////    // ================
+////
+////    uint8_t buf[FTL_MAX_PAYLOAD + 1];
+////	uint16_t len;
+////
+////	memset(buf, 0, sizeof(buf));
+////	int readSt0 = ftl_read(id1, buf, &len);
+////	if (readSt0) {
+////		printf("Read Error: %d", readSt0);
+////	}
+////
+////	uint32_t crc0 = crc32(buf, len);
+////	buf[len] = '\0';
+////	printf("%s\r\n", (char*) buf);
+////	printf("0x%08lX\r\n", crc0);
+////
+////	printf("\r\n");
+////
+////	memset(buf, 0, sizeof(buf));
+////	int readSt1 = ftl_read(id2, buf, &len);
+////	if (readSt1) {
+////		printf("Read Error: %d", readSt1);
+////	}
+////	uint32_t crc1 = crc32(buf, len);
+////	buf[len] = '\0';
+////	printf("%s\r\n", (char*) buf);
+////	printf("0x%08lX\r\n", crc1);
+////
+////	printf("\r\n\n\nDone reading data \r\n");
+////}
