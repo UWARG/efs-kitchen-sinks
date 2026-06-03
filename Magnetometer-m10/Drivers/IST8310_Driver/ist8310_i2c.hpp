@@ -86,23 +86,12 @@ public:
 	float get_y_data();
 	float get_z_data();
 	float get_heading();
+
+	int16_t get_raw_x();
+	int16_t get_raw_y();
+	int16_t get_raw_z();
 };
 
-ist8310_i2c::ist8310_i2c(I2C_HandleTypeDef *hi2c)
-{
-	this -> _hi2c=hi2c;
-	this -> _addr=IST8310_I2C_ADDR;
-	this -> raw.x = 0;
-	this -> raw.y = 0;
-	this -> raw.z = 0;
-	this -> converted.x = 0;
-	this -> converted.y = 0;
-	this -> converted.z = 0;
-	this -> converted.heading = 0;
-}
 
-ist8310_i2c::~ist8310_i2c()
-{
-}
 
-#end if
+#endif

@@ -13,14 +13,33 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-HAL_StatusTypeDef ist8310:: i2c_transceive(uint8_t *tx_data, uint8_t *rx_data, uint16_t tx_size, uint16_t rx_size)
+
+ist8310_i2c::ist8310_i2c(I2C_HandleTypeDef *hi2c)
+{
+	this -> _hi2c=hi2c;
+	this -> _addr=IST8310_I2C_ADDR;
+	this -> raw.x = 0;
+	this -> raw.y = 0;
+	this -> raw.z = 0;
+	this -> converted.x = 0;
+	this -> converted.y = 0;
+	this -> converted.z = 0;
+	this -> converted.heading = 0;
+}
+
+//I have no idea what this is for
+ist8310_i2c::~ist8310_i2c()
+{
+}
+
+HAL_StatusTypeDef ist8310_i2c::i2c_transceive(uint8_t *tx_data, uint8_t *rx_data, uint16_t tx_size, uint16_t rx_size)
 {
     HAL_StatusTypeDef status;
-    status = HAL_I2C_Master_Transmit(hi2c, default_i2c_address, tx_data, tx_size, HAL_MAX_DELAY);
+    status = HAL_I2C_Master_Transmit(this->_hi2c, this->	_addr, tx_data, tx_size, HAL_MAX_DELAY);
     if(status != HAL_OK){
         return status;
     }
-    status = HAL_I2C_Master_Receive(hi2c, default_i2c_address, rx_data, rx_size, HAL_MAX_DELAY)
+    status = HAL_I2C_Master_Receive(this->_hi2c, this->_addr, rx_data, rx_size, HAL_MAX_DELAY);
     return status;
 }
 
@@ -64,7 +83,7 @@ bool ist8310_i2c::init(){
 
 bool ist8310_i2c::read(){
     //single measurement
-    uint8_t tx_sm[2] = {IST8310_REG_CNTL1, IST8310_REG_CNTL1_SINGLE};
+    uint8_t tx_sm[2] = {IST8310_REG_CNTL1, IST8310_CNTL1_SINGLE};
     if(i2c_transceive(tx_sm, nullptr, 2, 0) != HAL_OK){
 		return false;
     }
@@ -100,7 +119,7 @@ bool ist8310_i2c::read(){
     //read 6 bytes raw data
     uint8_t reg_data = IST8310_REG_DATA;
     uint8_t buf[6];
-    if(i2c_transceive(&reg_data, buf, 1, 6))
+    if(i2c_transceive(&reg_data, buf, 1, 6) != HAL_OK)
     {
         return false;
     }
@@ -127,9 +146,9 @@ bool ist8310_i2c::read(){
     return true;
 }
 
-float ist8310_i2c::get_x() {return this -> converted.x;}
-float ist8310_i2c::get_y() {return this -> converted.y;}
-float ist8310_i2c::get_z() {return this -> converted.z;}
+float ist8310_i2c::get_x_data() {return this -> converted.x;}
+float ist8310_i2c::get_y_data() {return this -> converted.y;}
+float ist8310_i2c::get_z_data() {return this -> converted.z;}
 float ist8310_i2c::get_heading() {return this -> converted.heading;}
 int16_t ist8310_i2c::get_raw_x() {return this -> raw.x;}
 int16_t ist8310_i2c::get_raw_y() {return this -> raw.y;}
