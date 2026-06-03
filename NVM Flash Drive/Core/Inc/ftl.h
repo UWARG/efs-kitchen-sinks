@@ -126,6 +126,8 @@ public:
 
 	virtual int unpack(const uint8_t* data, uint16_t len) = 0;
 	virtual int pack(uint8_t* data, uint16_t& len) = 0;
+
+	virtual uint16_t packed_size() const = 0;
 };
 
 class BatteryLog : public AbstractMessage {
@@ -134,10 +136,14 @@ public:
 	uint16_t current;
 	uint16_t power;
 
+	static const uint16_t PACKED_SIZE = sizeof(uint16_t) * 3;
+
 	BatteryLog(uint32_t id, uint16_t voltage, uint16_t current, uint16_t power);
 
 	int unpack(const uint8_t* data, uint16_t len) override;
 	int pack(uint8_t* data, uint16_t& len) override;
+
+	uint16_t packed_size() const override { return PACKED_SIZE; };
 };
 
 class FTL
@@ -226,7 +232,7 @@ class FTL
 		 * Returns 0 on success, <0 on error.
 		 */
 
-		int write(const void *data, uint16_t len, uint32_t *out_id);
+		int write(AbstractMessage* data);
 
 		/**
 		 * ftl_read
@@ -249,10 +255,13 @@ class FTL
 		 *   -1		if FTL is not mounted
 		 *   -2		if no valid record for the specified block ID could be found
 		 */
-		int read(uint32_t block_id, uint8_t* out, uint16_t* len);
+		int read(AbstractMessage* out);
 
 		//erase function
-		int erase(uint32_t block_id);
+		int erase(AbstractMessage* msg);
+
+		int update(AbstractMessage* msg);
+
 		// Erase all FTL units (destroys all data).
 		int ftl_format(void);
 
@@ -277,7 +286,7 @@ class FTL
 		// helper function for debugging
 		ftl_state_view_t get_state(void);
 
-		void test_message();
+		void test_message(BatteryLog log);
 
 
 		/*

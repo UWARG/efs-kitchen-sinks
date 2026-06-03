@@ -251,20 +251,24 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 	 * Returns 0 on success, <0 on error.
 	 */
 
-	int FTL::write(const void *data, uint16_t len, uint32_t *out_id)
+	int FTL::write(AbstractMessage* msg)
 	{
 
 		// ensure that chip is mounted
 		if (!mounted) {
 			return -1;   // not mounted yet
 		}
-		if (len == 0 || len > FTL_MAX_PAYLOAD) {
+		if (msg->packed_size() == 0 || msg->packed_size() > FTL_MAX_PAYLOAD) {
 			return -2;   // invalid length
 		}
 
 		uint32_t idx = next_idx;      // which block to use
 		uint32_t addr_base = unit_base_addr(idx);
 		uint32_t id = next_id;       // record ID
+
+		uint8_t data[FTL_MAX_PAYLOAD];
+		uint16_t len;
+		msg->pack(data, len);
 
 		// ======================= Erase the 4 KB block we are going to use
 		// TODO: make a low priority task erase in background to save time on writes?
@@ -277,7 +281,7 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 		memset(&hdr, 0xFF, sizeof(hdr));   // start with entire header as if erased
 		hdr.id = id;
 		hdr.status = FTL_STATUS_VALID;     // TODO: set this as valid but add crc
-		hdr.length = len;
+		hdr.length = msg->packed_size();
 		hdr.crc = crc32((const uint8_t *)data, len);
 
 		// ============================  actually write to the chip
@@ -334,7 +338,7 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 
 		next_id = id + 1u; // increment id by 1, wraparound happens naturally
 
-		if (out_id) *out_id = id;	// return the out id so user can access data later
+		msg->id = id;
 
 		return 0;
 	}
@@ -360,7 +364,7 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 	 *   -1		if FTL is not mounted
 	 *   -2		if no valid record for the specified block ID could be found
 	 */
-	int FTL::read(uint32_t block_id, uint8_t* out, uint16_t* len) {
+	int FTL::read(AbstractMessage* msg) {
 		if (!mounted) {
 			// Ensures the chip is mounted
 			return -1;
@@ -374,7 +378,7 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 			memset(&header, 0xFF, sizeof(header));
 			read_data(unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, (uint16_t) sizeof(header));
 
-			if (header.status == FTL_STATUS_VALID && header.id == block_id) {
+			if (header.status == FTL_STATUS_VALID && header.id == msg->id) {
 				// Matching ID block found
 				break;
 			}
@@ -398,17 +402,17 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 		printf("\r\n");
 
 		uint32_t addr_base = unit_base_addr(idx);
+		uint8_t out[FTL_MAX_PAYLOAD];
 		// TODO: Add success/error check to read_data
 		read_data(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
 
-		// Returns the length of the data read
-		if (len) *len = header.length;
+		msg->unpack(out, header.length);
 
 		return 0;
 	}
 
 	//erase function
-	int FTL::erase(uint32_t block_id)
+	int FTL::erase(AbstractMessage* msg)
 	{
 		//wait for write to finish
 		HAL_StatusTypeDef wait_result = wait_ready(FTL_MAX_WAIT);
@@ -419,19 +423,19 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 		}
 
 		if (!mounted) {
-				// Ensures the chip is mounted
-				return -2;
-			}
+			// Ensures the chip is mounted
+			return -2;
+		}
 
-			uint32_t idx = tail_idx;
-			ftl_record_header_t header;
+		uint32_t idx = tail_idx;
+		ftl_record_header_t header;
 
 		// Search the chip for the matching ID block using the circular buffer
 		while (true) {
 			memset(&header, 0xFF, sizeof(header));
 			read_data(unit_base_addr(idx) + FTL_HEADER_OFFSET, (uint8_t*) &header, sizeof(header));
 
-			if (header.status == FTL_STATUS_VALID && header.id == block_id) {
+			if (header.status == FTL_STATUS_VALID && header.id == msg->id) {
 				// Matching ID block found
 				break;
 			}
@@ -467,13 +471,6 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 
 	}
 
-
-	uint32_t head_idx  = 0xFFFFFFFFu;
-	uint32_t tail_idx  = 0xFFFFFFFFu;
-	uint32_t next_idx  = 0u;
-	uint32_t next_id   = 0u;
-	bool     mounted   = false;
-
 	// Helper function to compute the base address in flash for a given unit index
 	inline uint32_t FTL::unit_base_addr(uint32_t unit_index)
 	{
@@ -490,7 +487,7 @@ int BatteryLog::pack(uint8_t* data, uint16_t& len) {
 		//append 8 zero bits by shifting to the left
 		uint32_t crc = 0xFFFFFFFF;
 
-		for (int i = 0; i < len; i++) {
+		for (uint32_t i = 0; i < len; i++) {
 			crc ^= data[i];
 			for (int j = 0; j < 8; j++) {
 				if (crc & 1)
