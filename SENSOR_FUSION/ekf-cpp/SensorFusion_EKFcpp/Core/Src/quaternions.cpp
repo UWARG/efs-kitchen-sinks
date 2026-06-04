@@ -43,7 +43,7 @@
 
 
 
-void NormalizeQuaternion(const float32_t* q_in, float32_t* q_out) {
+void NormalizeQuaternion(float32_t* q_in, float32_t* q_out) {
     float32_t norm_sq = 0.0f;
     arm_dot_prod_f32(q_in, q_in, 4, &norm_sq);
 

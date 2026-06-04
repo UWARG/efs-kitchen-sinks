@@ -15,7 +15,7 @@ void MultiplyQuaternions(const float32_t* q1, const float32_t* q2, float32_t* q_
 
 void InverseQuaternion(const float32_t* q_in, float32_t* q_out);
 
-void NormalizeQuaternion(const float32_t* q_in, float32_t* q_out);
+void NormalizeQuaternion(float32_t* q_in, float32_t* q_out);
 
 void AverageQuaternions(const float32_t* q1, const float32_t* q2, float32_t* q_out);
 
