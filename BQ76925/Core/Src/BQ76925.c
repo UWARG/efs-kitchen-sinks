@@ -40,20 +40,36 @@ static void write_byte(I2C_HandleTypeDef *hi2c1, uint8_t reg, uint8_t *data) {
 }
 
 void get_cal_vals(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
-	int i;
-	uint8_t cal_MSB = 128;
-	uint8_t cal_MSB_reg = VC_CAL_EXT_1;
-	for(i = 1; i < 7; i++) {
-		uint8_t cal_reg = 0;
-		read_byte(hi2c1, VC1_CAL, &cal_reg);
-		uint8_t cal_sign = 0;
-		read_byte(hi2c1, cal_MSB_reg, &cal_sign);
+	uint8_t calibration_register = VC1_CAL;
+	int cal_MSB_bit = 0;
+	uint8_t cal_MSB =  1 << 7;
 
+	int8_t offset = 0;
+	int8_t gain = 0;
+
+	uint8_t sign_reg_1 = 0;
+	uint8_t sign_reg_2 = 0;
+	read_byte(hi2c1, VC_CAL_EXT_1, &sign_reg_1);
+	read_byte(hi2c1, VC_CAL_EXT_2, &sign_reg_2);
+	uint8_t sign_reg = sign_reg_1;
+	for(int i = 1; i < 7; i++) {
+		uint8_t cal_reg = 0;
+		read_byte(hi2c1, calibration_register + i - 1, &cal_reg);
+		offset = cal_reg >> 4;
+		offset = (sign_reg & cal_MSB >> cal_MSB_bit) ? offset*-1 : offset;
+		gain = cal_reg & 0xF;
+		gain = (sign_reg & cal_MSB >> cal_MSB_bit + 1) ? gain*-1 : gain;
+
+		cal_MSB_bit += 2;
+		calibration_register++;
+		if(i == 2) {
+			sign_reg = sign_reg_2;
+			cal_MSB_bit = 0;
+		}
 	}
 }
 
 void init_BQ76925(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
-	// Init
 
 	// 2ms wait for I2C bootup
 	HAL_Delay(2);
