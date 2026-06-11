@@ -36,10 +36,11 @@ static void read_byte(I2C_HandleTypeDef *hi2c1, uint8_t reg, uint8_t *data) {
 
 static void write_byte(I2C_HandleTypeDef *hi2c1, uint8_t reg, uint8_t *data) {
 	uint8_t full_addr = (I2C_ADDR << 3 | reg) << 1;
-	HAL_I2C_Mem_Write(hi2c1, full_addr, 0, 0, data, 1, 100);
+	HAL_I2C_Master_Transmit(hi2c1, full_addr, data, 1, 100);
+
 }
 
-void get_cal_vals(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
+static void get_cal_vals(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
 	uint8_t vref_cal_reg = 0;
 	uint8_t vref_cal_ext_reg = 0;
 
@@ -84,6 +85,11 @@ void get_cal_vals(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
 	}
 }
 
+static void enable_power() {
+	uint8_t power_reg = 0b110;
+	write_byte(hi2c1, POWER_CTL, &power_reg);
+}
+
 void init_BQ76925(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
 
 	// 2ms wait for I2C bootup
@@ -101,13 +107,17 @@ void init_BQ76925(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
 
 	// Get ADC Calibration values
 	get_cal_vals(hi2c1, cal_vals);
-//	uint8_t vref_cal = 0;
-//	uint8_t *ptr_data = &vref_cal;
-//	read_byte(hi2c1, VREF_CAL, ptr_data);
 
 
-	// Set Vref voltage for 0.6 cell voltage gain
+	// Set Vref voltage for 0.6 cell voltage gain in CONFIG_2 register
+	uint8_t vref_reg_read = 0;						// Just to verify write function works
+	read_byte(hi2c1, CONFIG_2, &vref_reg_read);		// Just to verify write function works
+	uint8_t vref_selection = 1;
+	write_byte(hi2c1, CONFIG_2, &vref_selection);
+	read_byte(hi2c1, CONFIG_2, &vref_reg_read);		// Just to verify write function works
 
+	// Enable power to cell amplifier and thermistor
+	enable_power();
 }
 
 /* Test function for I2C, get rid of later
