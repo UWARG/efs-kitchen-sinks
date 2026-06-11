@@ -14,6 +14,7 @@ typedef struct {
 } ADC_calibration_values;
 
 uint8_t test_read_reg(I2C_HandleTypeDef *hi2c1);
+void init_BQ76925(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]);
 
 
 #endif /* INC_BQ76925_H_ */

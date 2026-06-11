@@ -98,9 +98,9 @@ int main(void)
   MX_CAN1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  init_BQ76925(&hi2c1, cal_vals);
+  init_BQ76925(&hi2c1, calibration_vals);
 
-  uint8_t reg = test_read_reg(&hi2c1);	// Just to test I2C with IC
+//  uint8_t reg = test_read_reg(&hi2c1);	// Just to test I2C with IC
   /* USER CODE END 2 */
 
   /* Infinite loop */

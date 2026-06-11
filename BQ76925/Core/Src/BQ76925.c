@@ -5,7 +5,7 @@
  *      Author: danie
  */
 #include "main.h"
-
+#include "BQ76925.h"
 
 #define I2C_ADDR		0b0100		// Address from datasheet but weird since only 2 MSBs sent
 
@@ -31,7 +31,7 @@
 
 static void read_byte(I2C_HandleTypeDef *hi2c1, uint8_t reg, uint8_t *data) {
 	uint8_t full_addr = (I2C_ADDR << 3 | reg) << 1;
-	HAL_I2C_Mem_Read(hi2c1, full_addr, 0, 0, data, 1, 100);
+	HAL_I2C_Master_Receive(hi2c1, full_addr, data, 1, 100);
 }
 
 static void write_byte(I2C_HandleTypeDef *hi2c1, uint8_t reg, uint8_t *data) {
@@ -40,8 +40,22 @@ static void write_byte(I2C_HandleTypeDef *hi2c1, uint8_t reg, uint8_t *data) {
 }
 
 void get_cal_vals(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
+	uint8_t vref_cal_reg = 0;
+	uint8_t vref_cal_ext_reg = 0;
+
+	read_byte(hi2c1, VREF_CAL, &vref_cal_reg);
+	read_byte(hi2c1, VREF_CAL_EXT, &vref_cal_ext_reg);
+	uint8_t extra = vref_cal_ext_reg & 0b10;
+	int8_t vref_offset = vref_cal_reg >> 4 | extra << 3;
+	vref_offset = (vref_cal_ext_reg & 0x100) ? vref_offset*-1 : vref_offset;
+	int8_t gain_offset = vref_cal_reg & 0xF;
+	gain_offset = (vref_cal_ext_reg & 1) ? gain_offset*-1 : gain_offset;
+
+	cal_vals[0].offset_corr = vref_offset;
+	cal_vals[0].gain_corr = gain_offset;
+
 	uint8_t calibration_register = VC1_CAL;
-	int cal_MSB_bit = 0;
+	int cal_iteration = 0;
 	uint8_t cal_MSB =  1 << 7;
 
 	int8_t offset = 0;
@@ -56,15 +70,16 @@ void get_cal_vals(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
 		uint8_t cal_reg = 0;
 		read_byte(hi2c1, calibration_register + i - 1, &cal_reg);
 		offset = cal_reg >> 4;
-		offset = (sign_reg & cal_MSB >> cal_MSB_bit) ? offset*-1 : offset;
+		offset = (sign_reg & (cal_MSB >> cal_iteration)) ? offset*-1 : offset;
 		gain = cal_reg & 0xF;
-		gain = (sign_reg & cal_MSB >> cal_MSB_bit + 1) ? gain*-1 : gain;
-
-		cal_MSB_bit += 2;
+		gain = (sign_reg & (cal_MSB >> (cal_iteration + 1))) ? gain*-1 : gain;
+		cal_vals[i].offset_corr = offset;
+		cal_vals[i].gain_corr = gain;
+		cal_iteration += 2;
 		calibration_register++;
 		if(i == 2) {
 			sign_reg = sign_reg_2;
-			cal_MSB_bit = 0;
+			cal_iteration = 0;
 		}
 	}
 }
@@ -85,10 +100,10 @@ void init_BQ76925(I2C_HandleTypeDef *hi2c1, ADC_calibration_values cal_vals[]) {
 	// Additional note: Read automatically uses CRC byte, but can ignore
 
 	// Get ADC Calibration values
-	get_cal_vals(hi2c1, val_vals);
-	uint8_t vref_cal = 0;
-	uint8_t *ptr_data = &vref_cal;
-	read_byte(hi2c1, VREF_CAL, ptr_data);
+	get_cal_vals(hi2c1, cal_vals);
+//	uint8_t vref_cal = 0;
+//	uint8_t *ptr_data = &vref_cal;
+//	read_byte(hi2c1, VREF_CAL, ptr_data);
 
 
 	// Set Vref voltage for 0.6 cell voltage gain
