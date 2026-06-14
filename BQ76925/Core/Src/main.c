@@ -48,6 +48,7 @@ I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
 ADC_calibration_values calibration_vals[7];
+uint16_t cell_voltage[6];			// Cell voltages in milivolts
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,7 +63,23 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+uint16_t convert_to_voltage(uint32_t adc_val) {
+	// Temporarily rough just to test
+	uint16_t raw_voltage = (3300.0/4096.0)*adc_val;
+	return raw_voltage/0.6;
+}
 
+void get_cell_voltages() {
+	for(int cell = 0; cell < 6; cell++) {
+		HAL_Delay(100);
+    	HAL_ADC_Start(&hadc1);
+		vcout(&hi2c1, CELL, C1+cell);
+    	HAL_ADC_PollForConversion(&hadc1, 1);
+    	uint32_t adc_val = HAL_ADC_GetValue(&hadc1);
+    	cell_voltage[cell] = convert_to_voltage(adc_val);
+	}
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -100,6 +117,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   init_BQ76925(&hi2c1, calibration_vals);
 
+  vcout(&hi2c1, CELL, C1);
 //  uint8_t reg = test_read_reg(&hi2c1);	// Just to test I2C with IC
   /* USER CODE END 2 */
 
