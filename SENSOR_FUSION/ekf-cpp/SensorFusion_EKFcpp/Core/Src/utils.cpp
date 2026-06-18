@@ -1,10 +1,3 @@
-/*
- * utils.cpp
- *
- *  Created on: Sep 30, 2025
- *      Author: aahan
- */
-
 #include "utils.hpp"
 
 #include "arm_math.h"
@@ -14,56 +7,58 @@ const float32_t IDENTITY_QUATERNION[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 const float32_t GRAVITY_INERTIAL[3] = {0.0f, 0.0f, 9.81f};
 const float32_t MAGNETOMETER_INERTIAL[3] = {1.0f, 0.0f, 0.0f};
 
-bool NormalizeVector(const float32_t* v_in, float32_t* v_out, uint32_t length) {
-    float32_t norm_sq = 0.0f;
-    arm_dot_prod_f32(v_in, v_in, length, &norm_sq);
+bool normalizeVector(const float32_t *vIn, float32_t *vOut, uint32_t length) {
+    float32_t normSq = 0.0f;
+    arm_dot_prod_f32(vIn, vIn, length, &normSq);
 
-    if (norm_sq <= 0.0f) {
+    if (normSq <= 0.0f) {
         for (uint32_t i = 0; i < length; ++i) {
-            v_out[i] = 0.0f;
+            vOut[i] = 0.0f;
         }
+
         return false;
     }
 
     float32_t norm = 0.0f;
-    if (arm_sqrt_f32(norm_sq, &norm) != ARM_MATH_SUCCESS || norm < 1.0e-12f) {
+    if (arm_sqrt_f32(normSq, &norm) != ARM_MATH_SUCCESS || norm < 1.0e-12f) {
         for (uint32_t i = 0; i < length; ++i) {
-            v_out[i] = 0.0f;
+            vOut[i] = 0.0f;
         }
+
         return false;
     }
 
-    const float32_t inv_norm = 1.0f / norm;
+    const float32_t INV_NORM = 1.0f / norm;
 
     for (uint32_t i = 0; i < length; ++i) {
-        v_out[i] = v_in[i] * inv_norm;
+        vOut[i] = vIn[i] * INV_NORM;
     }
 
     return true;
 }
 
-void SkewSymmetric(const float32_t* v_in, float32_t* S_out) {
+void skewSymmetric(const float32_t *vIn, float32_t *sOut) {
     /*
      * S(v) = [  0, -vz,  vy
      *           vz,  0, -vx
      *          -vy, vx,   0 ]
      *
-     * S_out is row-major 3x3.
+     * sOut is row-major 3x3.
      */
-    S_out[0] = 0.0f;
-    S_out[1] = -v_in[2];
-    S_out[2] = v_in[1];
+    sOut[0] = 0.0f;
+    sOut[1] = -vIn[2];
+    sOut[2] = vIn[1];
 
-    S_out[3] = v_in[2];
-    S_out[4] = 0.0f;
-    S_out[5] = -v_in[0];
+    sOut[3] = vIn[2];
+    sOut[4] = 0.0f;
+    sOut[5] = -vIn[0];
 
-    S_out[6] = -v_in[1];
-    S_out[7] = v_in[0];
-    S_out[8] = 0.0f;
+    sOut[6] = -vIn[1];
+    sOut[7] = vIn[0];
+    sOut[8] = 0.0f;
 }
 
-void EnsureSymmetricMatrix(const float32_t* A_in, float32_t* A_out, uint32_t rows, uint32_t cols) {
+void ensureSymmetricMatrix(const float32_t *aIn, float32_t *aOut, uint32_t rows, uint32_t cols) {
     /*
      * Equivalent to Python:
      * A_sym = 0.5 * (A + A.T)
@@ -76,40 +71,37 @@ void EnsureSymmetricMatrix(const float32_t* A_in, float32_t* A_out, uint32_t row
 
     for (uint32_t r = 0; r < rows; ++r) {
         for (uint32_t c = 0; c < cols; ++c) {
-            const uint32_t index_rc = r * cols + c;
-            const uint32_t index_cr = c * cols + r;
+            const uint32_t INDEX_RC = r * cols + c;
+            const uint32_t INDEX_CR = c * cols + r;
 
-            A_out[index_rc] = 0.5f * (A_in[index_rc] + A_in[index_cr]);
+            aOut[INDEX_RC] = 0.5f * (aIn[INDEX_RC] + aIn[INDEX_CR]);
         }
     }
 }
 
-void CopyVector(const float32_t* v_in, float32_t* v_out, uint32_t length) {
+void copyVector(const float32_t *vIn, float32_t *vOut, uint32_t length) {
     for (uint32_t i = 0; i < length; ++i) {
-        v_out[i] = v_in[i];
+        vOut[i] = vIn[i];
     }
 }
 
-void BToIFrameRotMatrix(const float32_t* q_in, float32_t* C_out) {
-
+void bToIFrameRotMatrix(const float32_t *qIn, float32_t *cOut) {
     float32_t q[4];
-    normalizeQuaternion(q_in, q);
+    normalizeQuaternion(qIn, q);
 
     float32_t w = q[0];
     float32_t x = q[1];
     float32_t y = q[2];
     float32_t z = q[3];
 
-    C_out[0] = 1 - 2*y*y - 2*z*z;
-    C_out[1] = 2*x*y - 2*z*w;
-    C_out[2] = 2*x*z + 2*y*w;
-    C_out[3] = 2*x*y + 2*z*w;
-    C_out[4] = 1 - 2*x*x - 2*z*z;
-    C_out[5] = 2*y*z - 2*x*w;
-    C_out[6] = 2*x*z - 2*y*w;
-    C_out[7] = 2*y*z + 2*x*w;
-    C_out[8] = 1 - 2*x*x - 2*y*y;
+    cOut[0] = 1.0f - 2.0f * y * y - 2.0f * z * z;
+    cOut[1] = 2.0f * x * y - 2.0f * z * w;
+    cOut[2] = 2.0f * x * z + 2.0f * y * w;
+    cOut[3] = 2.0f * x * y + 2.0f * z * w;
+    cOut[4] = 1.0f - 2.0f * x * x - 2.0f * z * z;
+    cOut[5] = 2.0f * y * z - 2.0f * x * w;
+    cOut[6] = 2.0f * x * z - 2.0f * y * w;
+    cOut[7] = 2.0f * y * z + 2.0f * x * w;
+    cOut[8] = 1.0f - 2.0f * x * x - 2.0f * y * y;
 }
-
-
 

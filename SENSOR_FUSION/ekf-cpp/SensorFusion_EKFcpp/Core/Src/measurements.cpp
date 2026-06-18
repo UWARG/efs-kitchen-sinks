@@ -1,148 +1,135 @@
-/*
- * measurements.cpp
- *
- *  Created on: May 18, 2026
- *      Author: aahan
- */
-
 #include "measurements.hpp"
 
 #include "arm_math.h"
 
 Measurements::Measurements(
-    const float32_t* gyro_initial,
-    const float32_t* accel_initial,
-    const float32_t* mag_initial
+    const float32_t *gyroInitial,
+    const float32_t *accelInitial,
+    const float32_t *magInitial
 ) {
-	//Populate measurements
-    if (gyro_initial != nullptr) {
-        arm_copy_f32(gyro_initial, gyro_prev, VECTOR_SIZE);
-        arm_copy_f32(gyro_initial, gyro_new, VECTOR_SIZE);
+    // Populate measurements.
+    if (gyroInitial != nullptr) {
+        arm_copy_f32(gyroInitial, gyroPrev, VECTOR_SIZE);
+        arm_copy_f32(gyroInitial, gyroNew, VECTOR_SIZE);
     } else {
-        arm_fill_f32(0.0f, gyro_prev, VECTOR_SIZE);
-        arm_fill_f32(0.0f, gyro_new, VECTOR_SIZE);
+        arm_fill_f32(0.0f, gyroPrev, VECTOR_SIZE);
+        arm_fill_f32(0.0f, gyroNew, VECTOR_SIZE);
     }
 
-    if (accel_initial != nullptr) {
-        arm_copy_f32(accel_initial, accel_prev, VECTOR_SIZE);
-        arm_copy_f32(accel_initial, accel_new, VECTOR_SIZE);
+    if (accelInitial != nullptr) {
+        arm_copy_f32(accelInitial, accelPrev, VECTOR_SIZE);
+        arm_copy_f32(accelInitial, accelNew, VECTOR_SIZE);
     } else {
-        arm_fill_f32(0.0f, accel_prev, VECTOR_SIZE);
-        arm_fill_f32(0.0f, accel_new, VECTOR_SIZE);
+        arm_fill_f32(0.0f, accelPrev, VECTOR_SIZE);
+        arm_fill_f32(0.0f, accelNew, VECTOR_SIZE);
     }
 
-    if (mag_initial != nullptr) {
-        arm_copy_f32(mag_initial, mag_prev, VECTOR_SIZE);
-        arm_copy_f32(mag_initial, mag_new, VECTOR_SIZE);
+    if (magInitial != nullptr) {
+        arm_copy_f32(magInitial, magPrev, VECTOR_SIZE);
+        arm_copy_f32(magInitial, magNew, VECTOR_SIZE);
     } else {
-        arm_fill_f32(0.0f, mag_prev, VECTOR_SIZE);
-        arm_fill_f32(0.0f, mag_new, VECTOR_SIZE);
+        arm_fill_f32(0.0f, magPrev, VECTOR_SIZE);
+        arm_fill_f32(0.0f, magNew, VECTOR_SIZE);
     }
 
-    arm_fill_f32(0.0f, gyro_bias_accumulated, VECTOR_SIZE);
-    arm_fill_f32(0.0f, accel_bias_accumulated, VECTOR_SIZE);
-    arm_fill_f32(0.0f, mag_bias_accumulated, VECTOR_SIZE);
+    arm_fill_f32(0.0f, gyroBiasAccumulated, VECTOR_SIZE);
+    arm_fill_f32(0.0f, accelBiasAccumulated, VECTOR_SIZE);
+    arm_fill_f32(0.0f, magBiasAccumulated, VECTOR_SIZE);
 
-    UpdateAllBars();
+    updateAllBars();
 }
 
-void Measurements::UpdateGyro(const float32_t* gyro_new_in) {
-    if (gyro_new_in == nullptr) {
+void Measurements::updateGyro(const float32_t *gyroNewIn) {
+    if (gyroNewIn == nullptr) {
         return;
     }
 
+    arm_copy_f32(gyroNew, gyroPrev, VECTOR_SIZE);
+    arm_sub_f32(gyroNewIn, gyroBiasAccumulated, gyroNew, VECTOR_SIZE);
 
-    arm_copy_f32(gyro_new, gyro_prev, VECTOR_SIZE);
-    arm_sub_f32(gyro_new_in, gyro_bias_accumulated, gyro_new, VECTOR_SIZE);
-
-    UpdateGyroBar();
+    updateGyroBar();
 }
 
-void Measurements::UpdateAccel(const float32_t* accel_new_in) {
-    if (accel_new_in == nullptr) {
+void Measurements::updateAccel(const float32_t *accelNewIn) {
+    if (accelNewIn == nullptr) {
         return;
     }
 
+    arm_copy_f32(accelNew, accelPrev, VECTOR_SIZE);
+    arm_sub_f32(accelNewIn, accelBiasAccumulated, accelNew, VECTOR_SIZE);
 
-    arm_copy_f32(accel_new, accel_prev, VECTOR_SIZE);
-    arm_sub_f32(accel_new_in, accel_bias_accumulated, accel_new, VECTOR_SIZE);
-
-    UpdateAccelBar();
+    updateAccelBar();
 }
 
-void Measurements::UpdateMag(const float32_t* mag_new_in) {
-    if (mag_new_in == nullptr) {
+void Measurements::updateMag(const float32_t *magNewIn) {
+    if (magNewIn == nullptr) {
         return;
     }
 
-    arm_copy_f32(mag_new, mag_prev, VECTOR_SIZE);
-    arm_sub_f32(mag_new_in, mag_bias_accumulated, mag_new, VECTOR_SIZE);
+    arm_copy_f32(magNew, magPrev, VECTOR_SIZE);
+    arm_sub_f32(magNewIn, magBiasAccumulated, magNew, VECTOR_SIZE);
 
-    UpdateMagBar();
+    updateMagBar();
 }
 
-void Measurements::UpdateBiases(
-    const float32_t* gyro_bias_new,
-    const float32_t* accel_bias_new,
-    const float32_t* mag_bias_new
+void Measurements::updateBiases(
+    const float32_t *gyroBiasNew,
+    const float32_t *accelBiasNew,
+    const float32_t *magBiasNew
 ) {
-
-
-    if (gyro_bias_new != nullptr) {
+    if (gyroBiasNew != nullptr) {
         arm_add_f32(
-            gyro_bias_accumulated,
-            gyro_bias_new,
-            gyro_bias_accumulated,
+            gyroBiasAccumulated,
+            gyroBiasNew,
+            gyroBiasAccumulated,
             VECTOR_SIZE
         );
     }
 
-    if (accel_bias_new != nullptr) {
+    if (accelBiasNew != nullptr) {
         arm_add_f32(
-            accel_bias_accumulated,
-            accel_bias_new,
-            accel_bias_accumulated,
+            accelBiasAccumulated,
+            accelBiasNew,
+            accelBiasAccumulated,
             VECTOR_SIZE
         );
     }
 
-    if (mag_bias_new != nullptr) {
+    if (magBiasNew != nullptr) {
         arm_add_f32(
-            mag_bias_accumulated,
-            mag_bias_new,
-            mag_bias_accumulated,
+            magBiasAccumulated,
+            magBiasNew,
+            magBiasAccumulated,
             VECTOR_SIZE
         );
     }
 }
 
-void Measurements::UpdateGyroBar() {
-    AverageVector3(gyro_prev, gyro_new, gyro_bar);
+void Measurements::updateGyroBar() {
+    averageVector3(gyroPrev, gyroNew, gyroBar);
 }
 
-void Measurements::UpdateAccelBar() {
-    AverageVector3(accel_prev, accel_new, accel_bar);
+void Measurements::updateAccelBar() {
+    averageVector3(accelPrev, accelNew, accelBar);
 }
 
-void Measurements::UpdateMagBar() {
-    AverageVector3(mag_prev, mag_new, mag_bar);
+void Measurements::updateMagBar() {
+    averageVector3(magPrev, magNew, magBar);
 }
 
-void Measurements::UpdateAllBars() {
-    UpdateGyroBar();
-    UpdateAccelBar();
-    UpdateMagBar();
+void Measurements::updateAllBars() {
+    updateGyroBar();
+    updateAccelBar();
+    updateMagBar();
 }
 
-void Measurements::AverageVector3(
-    const float32_t* a,
-    const float32_t* b,
-    float32_t* out
+void Measurements::averageVector3(
+    const float32_t *a,
+    const float32_t *b,
+    float32_t *out
 ) {
     float32_t temp[VECTOR_SIZE];
 
     arm_add_f32(a, b, temp, VECTOR_SIZE);
     arm_scale_f32(temp, 0.5f, out, VECTOR_SIZE);
 }
-
-

@@ -1,286 +1,272 @@
-/*
- * quaternions.cpp
- *
- *  Created on: Oct 8, 2025
- *      Author: aahan
- */
-
-#include "quaternions.hpp"
-
+#include <quaternions.hpp>
 #include "arm_math.h"
-#include "dsp/quaternion_math_functions.h"
-#include "dsp/matrix_functions.h"
 #include "dsp/fast_math_functions.h"
+#include "dsp/matrix_functions.h"
+#include "dsp/quaternion_math_functions.h"
 
 #include <cmath>
 
 namespace {
 
-constexpr float32_t kEpsilonNorm = 1.0e-9f;
-constexpr float32_t kEpsilonSmallAngle = 1.0e-12f;
-constexpr float32_t kPi = 3.14159265358979323846f;
-constexpr float32_t kRadToDeg = 180.0f / kPi;
+constexpr float32_t EPSILON_NORM = 1.0e-9f;
+constexpr float32_t EPSILON_SMALL_ANGLE = 1.0e-12f;
+constexpr float32_t PI = 3.14159265358979323846f;
+constexpr float32_t RAD_TO_DEG = 180.0f / PI;
 
-void SetIdentityQuaternion(float32_t* q_out) {
-    q_out[0] = 1.0f;
-    q_out[1] = 0.0f;
-    q_out[2] = 0.0f;
-    q_out[3] = 0.0f;
+void setIdentityQuaternion(float32_t *qOut) {
+    qOut[0] = 1.0f;
+    qOut[1] = 0.0f;
+    qOut[2] = 0.0f;
+    qOut[3] = 0.0f;
 }
 
-float32_t AbsFloat32(float32_t value) {
+float32_t absFloat32(float32_t value) {
     return value < 0.0f ? -value : value;
 }
 
-float32_t ClampFloat32(float32_t value, float32_t min_value, float32_t max_value) {
-    if (value < min_value) {
-        return min_value;
+float32_t clampFloat32(float32_t value, float32_t minValue, float32_t maxValue) {
+    if (value < minValue) {
+        return minValue;
     }
 
-    if (value > max_value) {
-        return max_value;
+    if (value > maxValue) {
+        return maxValue;
     }
 
     return value;
 }
 
-void CopyQuaternion(const float32_t* q_in, float32_t* q_out) {
-    arm_copy_f32(q_in, q_out, 4);
+void copyQuaternion(const float32_t *qIn, float32_t *qOut) {
+    arm_copy_f32(qIn, qOut, 4);
 }
 
 }
 
-void MultiplyQuaternions(const float32_t* q1, const float32_t* q2, float32_t* q_out) {
-    arm_quaternion_product_single_f32(q1, q2, q_out);
+void multiplyQuaternions(const float32_t *q1, const float32_t *q2, float32_t *qOut) {
+    arm_quaternion_product_single_f32(q1, q2, qOut);
 }
 
-void InverseQuaternion(const float32_t* q_in, float32_t* q_out) {
-    float32_t norm_sq = 0.0f;
-    arm_dot_prod_f32(q_in, q_in, 4, &norm_sq);
+void inverseQuaternion(const float32_t *qIn, float32_t *qOut) {
+    float32_t normSq = 0.0f;
+    arm_dot_prod_f32(qIn, qIn, 4, &normSq);
 
-    if (norm_sq < kEpsilonNorm) {
-        SetIdentityQuaternion(q_out);
+    if (normSq < EPSILON_NORM) {
+        setIdentityQuaternion(qOut);
         return;
     }
 
-    arm_quaternion_inverse_f32(q_in, q_out, 1);
+    arm_quaternion_inverse_f32(qIn, qOut, 1);
 }
 
-void NormalizeQuaternion(const float32_t* q_in, float32_t* q_out) {
-    float32_t norm_sq = 0.0f;
-    arm_dot_prod_f32(q_in, q_in, 4, &norm_sq);
+void normalizeQuaternion(const float32_t *qIn, float32_t *qOut) {
+    float32_t normSq = 0.0f;
+    arm_dot_prod_f32(qIn, qIn, 4, &normSq);
 
-    if (norm_sq < kEpsilonNorm) {
-        SetIdentityQuaternion(q_out);
+    if (normSq < EPSILON_NORM) {
+        setIdentityQuaternion(qOut);
         return;
     }
 
-    arm_quaternion_normalize_f32(q_in, q_out, 1);
+    arm_quaternion_normalize_f32(qIn, qOut, 1);
 }
 
-void AverageQuaternions(const float32_t* q1, const float32_t* q2, float32_t* q_out) {
-    float32_t q1_norm[4];
-    float32_t q2_norm[4];
+void averageQuaternions(const float32_t *q1, const float32_t *q2, float32_t *qOut) {
+    float32_t q1Norm[4];
+    float32_t q2Norm[4];
 
-    NormalizeQuaternion(q1, q1_norm);
-    NormalizeQuaternion(q2, q2_norm);
+    normalizeQuaternion(q1, q1Norm);
+    normalizeQuaternion(q2, q2Norm);
 
     /*
      * Relative rotation:
      * r = q1^-1 * q2
      */
-    float32_t q1_inv[4];
-    float32_t r[4];
+    float32_t q1Inv[4];
+    float32_t relativeRotation[4];
 
-    InverseQuaternion(q1_norm, q1_inv);
-    MultiplyQuaternions(q1_inv, q2_norm, r);
+    inverseQuaternion(q1Norm, q1Inv);
+    multiplyQuaternions(q1Inv, q2Norm, relativeRotation);
 
     /*
      * Ensure shortest path.
      */
-    if (r[0] < 0.0f) {
-        arm_negate_f32(r, r, 4);
+    if (relativeRotation[0] < 0.0f) {
+        arm_negate_f32(relativeRotation, relativeRotation, 4);
     }
 
-    const float32_t r0 = ClampFloat32(r[0], -1.0f, 1.0f);
+    const float32_t RELATIVE_ROTATION_W = clampFloat32(relativeRotation[0], -1.0f, 1.0f);
+    const float32_t MU_NORM = 2.0f * static_cast<float32_t>(std::acos(RELATIVE_ROTATION_W));
 
-    const float32_t mu_norm = 2.0f * static_cast<float32_t>(std::acos(r0));
-
-    if (mu_norm < kEpsilonSmallAngle) {
-        CopyQuaternion(q1_norm, q_out);
+    if (MU_NORM < EPSILON_SMALL_ANGLE) {
+        copyQuaternion(q1Norm, qOut);
         return;
     }
 
-    const float32_t sin_half = arm_sin_f32(mu_norm * 0.5f);
+    const float32_t SIN_HALF = arm_sin_f32(MU_NORM * 0.5f);
 
-    if (AbsFloat32(sin_half) < kEpsilonSmallAngle) {
-        CopyQuaternion(q1_norm, q_out);
+    if (absFloat32(SIN_HALF) < EPSILON_SMALL_ANGLE) {
+        copyQuaternion(q1Norm, qOut);
         return;
     }
 
-    const float32_t mu_scale = mu_norm / sin_half;
+    const float32_t MU_SCALE = MU_NORM / SIN_HALF;
 
     float32_t mu[3] = {
-        r[1] * mu_scale,
-        r[2] * mu_scale,
-        r[3] * mu_scale
+        relativeRotation[1] * MU_SCALE,
+        relativeRotation[2] * MU_SCALE,
+        relativeRotation[3] * MU_SCALE
     };
 
     float32_t axis[3];
-    arm_scale_f32(mu, 1.0f / mu_norm, axis, 3);
+    arm_scale_f32(mu, 1.0f / MU_NORM, axis, 3);
 
-    const float32_t quarter_norm = mu_norm * 0.25f;
+    const float32_t QUARTER_NORM = MU_NORM * 0.25f;
 
-    float32_t r_n[4];
-    r_n[0] = arm_cos_f32(quarter_norm);
+    float32_t relativeHalfStep[4];
+    relativeHalfStep[0] = arm_cos_f32(QUARTER_NORM);
 
-    const float32_t sin_quarter = arm_sin_f32(quarter_norm);
+    const float32_t SIN_QUARTER = arm_sin_f32(QUARTER_NORM);
 
-    r_n[1] = axis[0] * sin_quarter;
-    r_n[2] = axis[1] * sin_quarter;
-    r_n[3] = axis[2] * sin_quarter;
+    relativeHalfStep[1] = axis[0] * SIN_QUARTER;
+    relativeHalfStep[2] = axis[1] * SIN_QUARTER;
+    relativeHalfStep[3] = axis[2] * SIN_QUARTER;
 
-    float32_t q_avg[4];
-    MultiplyQuaternions(q1_norm, r_n, q_avg);
+    float32_t qAvg[4];
+    multiplyQuaternions(q1Norm, relativeHalfStep, qAvg);
 
-    NormalizeQuaternion(q_avg, q_out);
+    normalizeQuaternion(qAvg, qOut);
 }
 
-void BToIFrameRotMatrix(const float32_t* q_in, float32_t* C_out) {
+void bToIFrameRotMatrix(const float32_t *qIn, float32_t *cOut) {
     float32_t q[4];
-    NormalizeQuaternion(q_in, q);
+    normalizeQuaternion(qIn, q);
 
-    const float32_t w = q[0];
-    const float32_t x = q[1];
-    const float32_t y = q[2];
-    const float32_t z = q[3];
+    const float32_t W = q[0];
+    const float32_t X = q[1];
+    const float32_t Y = q[2];
+    const float32_t Z = q[3];
 
-    C_out[0] = 1.0f - 2.0f * y * y - 2.0f * z * z;
-    C_out[1] = 2.0f * x * y - 2.0f * z * w;
-    C_out[2] = 2.0f * x * z + 2.0f * y * w;
+    cOut[0] = 1.0f - 2.0f * Y * Y - 2.0f * Z * Z;
+    cOut[1] = 2.0f * X * Y - 2.0f * Z * W;
+    cOut[2] = 2.0f * X * Z + 2.0f * Y * W;
 
-    C_out[3] = 2.0f * x * y + 2.0f * z * w;
-    C_out[4] = 1.0f - 2.0f * x * x - 2.0f * z * z;
-    C_out[5] = 2.0f * y * z - 2.0f * x * w;
+    cOut[3] = 2.0f * X * Y + 2.0f * Z * W;
+    cOut[4] = 1.0f - 2.0f * X * X - 2.0f * Z * Z;
+    cOut[5] = 2.0f * Y * Z - 2.0f * X * W;
 
-    C_out[6] = 2.0f * x * z - 2.0f * y * w;
-    C_out[7] = 2.0f * y * z + 2.0f * x * w;
-    C_out[8] = 1.0f - 2.0f * x * x - 2.0f * y * y;
+    cOut[6] = 2.0f * X * Z - 2.0f * Y * W;
+    cOut[7] = 2.0f * Y * Z + 2.0f * X * W;
+    cOut[8] = 1.0f - 2.0f * X * X - 2.0f * Y * Y;
 }
 
-void IToBFrameRotMatrix(const float32_t* q_in, float32_t* C_out) {
-    float32_t q_inv[4];
-    InverseQuaternion(q_in, q_inv);
+void iToBFrameRotMatrix(const float32_t *qIn, float32_t *cOut) {
+    float32_t qInv[4];
+    inverseQuaternion(qIn, qInv);
 
-    BToIFrameRotMatrix(q_inv, C_out);
+    bToIFrameRotMatrix(qInv, cOut);
 }
 
-void QuaternionExponential(const float32_t* rotation_vector, float32_t* q_out) {
-    float32_t theta_sq = 0.0f;
-    arm_dot_prod_f32(rotation_vector, rotation_vector, 3, &theta_sq);
+void quaternionExponential(const float32_t *rotationVector, float32_t *qOut) {
+    float32_t thetaSq = 0.0f;
+    arm_dot_prod_f32(rotationVector, rotationVector, 3, &thetaSq);
 
     float32_t theta = 0.0f;
 
-    if (arm_sqrt_f32(theta_sq, &theta) != ARM_MATH_SUCCESS || theta < kEpsilonSmallAngle) {
-        SetIdentityQuaternion(q_out);
+    if (arm_sqrt_f32(thetaSq, &theta) != ARM_MATH_SUCCESS || theta < EPSILON_SMALL_ANGLE) {
+        setIdentityQuaternion(qOut);
         return;
     }
 
-    const float32_t inv_theta = 1.0f / theta;
+    const float32_t INV_THETA = 1.0f / theta;
 
-    float32_t unit_axis[3];
-    arm_scale_f32(rotation_vector, inv_theta, unit_axis, 3);
+    float32_t unitAxis[3];
+    arm_scale_f32(rotationVector, INV_THETA, unitAxis, 3);
 
-    const float32_t half_theta = theta * 0.5f;
+    const float32_t HALF_THETA = theta * 0.5f;
+    const float32_t SIN_HALF_THETA = arm_sin_f32(HALF_THETA);
+    const float32_t COS_HALF_THETA = arm_cos_f32(HALF_THETA);
 
-    const float32_t sin_half_theta = arm_sin_f32(half_theta);
-    const float32_t cos_half_theta = arm_cos_f32(half_theta);
+    qOut[0] = COS_HALF_THETA;
+    qOut[1] = unitAxis[0] * SIN_HALF_THETA;
+    qOut[2] = unitAxis[1] * SIN_HALF_THETA;
+    qOut[3] = unitAxis[2] * SIN_HALF_THETA;
 
-    q_out[0] = cos_half_theta;
-    q_out[1] = unit_axis[0] * sin_half_theta;
-    q_out[2] = unit_axis[1] * sin_half_theta;
-    q_out[3] = unit_axis[2] * sin_half_theta;
-
-    NormalizeQuaternion(q_out, q_out);
+    normalizeQuaternion(qOut, qOut);
 }
 
-void RotateVector(const float32_t* v_in, const float32_t* q_in, float32_t* v_out) {
-    float32_t R_data[9];
-    BToIFrameRotMatrix(q_in, R_data);
+void rotateVector(const float32_t *vIn, const float32_t *qIn, float32_t *vOut) {
+    float32_t rotationMatrixData[9];
+    bToIFrameRotMatrix(qIn, rotationMatrixData);
 
-    arm_matrix_instance_f32 R;
-    arm_matrix_instance_f32 v;
+    arm_matrix_instance_f32 rotationMatrix;
+    arm_matrix_instance_f32 vector;
     arm_matrix_instance_f32 result;
 
-    arm_mat_init_f32(&R, 3, 3, R_data);
-    arm_mat_init_f32(&v, 3, 1, const_cast<float32_t*>(v_in));
-    arm_mat_init_f32(&result, 3, 1, v_out);
+    arm_mat_init_f32(&rotationMatrix, 3, 3, rotationMatrixData);
+    arm_mat_init_f32(&vector, 3, 1, const_cast<float32_t *>(vIn));
+    arm_mat_init_f32(&result, 3, 1, vOut);
 
-    arm_mat_mult_f32(&R, &v, &result);
+    arm_mat_mult_f32(&rotationMatrix, &vector, &result);
 }
 
-float32_t AngularDistanceDegrees(const float32_t* q_true, const float32_t* q_est) {
+float32_t angularDistanceDegrees(const float32_t *qTrue, const float32_t *qEst) {
+    float32_t qEstInv[4];
+    float32_t qErr[4];
 
-    float32_t q_est_inv[4];
-    float32_t q_err[4];
-
-    InverseQuaternion(q_est, q_est_inv);
-    MultiplyQuaternions(q_est_inv, q_true, q_err);
-    NormalizeQuaternion(q_err, q_err);
+    inverseQuaternion(qEst, qEstInv);
+    multiplyQuaternions(qEstInv, qTrue, qErr);
+    normalizeQuaternion(qErr, qErr);
 
     /*
      * Enforce shortest rotation.
      */
-    if (q_err[0] < 0.0f) {
-        arm_negate_f32(q_err, q_err, 4);
+    if (qErr[0] < 0.0f) {
+        arm_negate_f32(qErr, qErr, 4);
     }
 
-    const float32_t w = ClampFloat32(q_err[0], -1.0f, 1.0f);
+    const float32_t W = clampFloat32(qErr[0], -1.0f, 1.0f);
+    const float32_t ANGLE_RAD = 2.0f * static_cast<float32_t>(std::acos(W));
 
-    const float32_t angle_rad = 2.0f * static_cast<float32_t>(std::acos(w));
-
-    return angle_rad * kRadToDeg;
+    return ANGLE_RAD * RAD_TO_DEG;
 }
 
-void QuatToEuler(const float32_t* q_in, float32_t* euler_out) {
+void quatToEuler(const float32_t *qIn, float32_t *eulerOut) {
     float32_t q[4];
-    NormalizeQuaternion(q_in, q);
+    normalizeQuaternion(qIn, q);
 
-    const float32_t w = q[0];
-    const float32_t x = q[1];
-    const float32_t y = q[2];
-    const float32_t z = q[3];
+    const float32_t W = q[0];
+    const float32_t X = q[1];
+    const float32_t Y = q[2];
+    const float32_t Z = q[3];
 
     /*
      * Roll: x-axis rotation.
      */
-    const float32_t sinr_cosp = 2.0f * (w * x + y * z);
-    const float32_t cosr_cosp = 1.0f - 2.0f * (x * x + y * y);
-
-    const float32_t roll = static_cast<float32_t>(std::atan2(sinr_cosp, cosr_cosp));
+    const float32_t SINR_COSP = 2.0f * (W * X + Y * Z);
+    const float32_t COSR_COSP = 1.0f - 2.0f * (X * X + Y * Y);
+    const float32_t ROLL = static_cast<float32_t>(std::atan2(SINR_COSP, COSR_COSP));
 
     /*
      * Pitch: y-axis rotation.
      */
-    const float32_t sinp = 2.0f * (w * y - z * x);
+    const float32_t SINP = 2.0f * (W * Y - Z * X);
 
     float32_t pitch = 0.0f;
 
-    if (AbsFloat32(sinp) >= 1.0f) {
-        pitch = sinp >= 0.0f ? (kPi * 0.5f) : (-kPi * 0.5f);
+    if (absFloat32(SINP) >= 1.0f) {
+        pitch = SINP >= 0.0f ? (PI * 0.5f) : (-PI * 0.5f);
     } else {
-        pitch = static_cast<float32_t>(std::asin(sinp));
+        pitch = static_cast<float32_t>(std::asin(SINP));
     }
 
     /*
      * Yaw: z-axis rotation.
      */
-    const float32_t siny_cosp = 2.0f * (w * z + x * y);
-    const float32_t cosy_cosp = 1.0f - 2.0f * (y * y + z * z);
+    const float32_t SINY_COSP = 2.0f * (W * Z + X * Y);
+    const float32_t COSY_COSP = 1.0f - 2.0f * (Y * Y + Z * Z);
+    const float32_t YAW = static_cast<float32_t>(std::atan2(SINY_COSP, COSY_COSP));
 
-    const float32_t yaw = static_cast<float32_t>(std::atan2(siny_cosp, cosy_cosp));
-
-    euler_out[0] = roll;
-    euler_out[1] = pitch;
-    euler_out[2] = yaw;
+    eulerOut[0] = ROLL;
+    eulerOut[1] = pitch;
+    eulerOut[2] = YAW;
 }

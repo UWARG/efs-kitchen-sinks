@@ -1,10 +1,3 @@
-/*
- * utils.hpp
- *
- *  Created on: Oct 8, 2025
- *      Author: aahan
- */
-
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
@@ -15,12 +8,15 @@ extern const float32_t IDENTITY_QUATERNION[4];
 extern const float32_t GRAVITY_INERTIAL[3];
 extern const float32_t MAGNETOMETER_INERTIAL[3];
 
-bool NormalizeVector(const float32_t* v_in, float32_t* v_out, uint32_t length);
+bool normalizeVector(const float32_t *vIn, float32_t *vOut, uint32_t length);
 
-void SkewSymmetric(const float32_t* v_in, float32_t* S_out);
+void skewSymmetric(const float32_t *vIn, float32_t *sOut);
 
-void EnsureSymmetricMatrix(const float32_t* A_in, float32_t* A_out, uint32_t rows, uint32_t cols);
+void ensureSymmetricMatrix(const float32_t *aIn, float32_t *aOut, uint32_t rows, uint32_t cols);
 
-void CopyVector(const float32_t* v_in, float32_t* v_out, uint32_t length);
+void copyVector(const float32_t *vIn, float32_t *vOut, uint32_t length);
+
+void bToIFrameRotMatrix(const float32_t *qIn, float32_t *cOut);
 
 #endif  // UTILS_HPP_
+

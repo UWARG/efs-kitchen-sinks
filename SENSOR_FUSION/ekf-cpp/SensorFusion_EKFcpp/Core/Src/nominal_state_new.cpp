@@ -1,151 +1,151 @@
-/*
- * nominal_state_new.cpp
- *
- *  Created on: May 18, 2026
- *      Author: aahan
- */
-
-
 #include "nominal_state_new.hpp"
 
-#include "quaternions.hpp"
 #include "arm_math.h"
+#include "dsp/fast_math_functions.h"
 #include "dsp/matrix_functions.h"
-
-#include <cmath>
+#include "quaternions.hpp"
 
 namespace {
-constexpr float32_t kSmallGyroNorm = 1.0e-9f;
+
+constexpr float32_t SMALL_GYRO_NORM = 1.0e-9f;
+
 }
 
 NominalState::NominalState() {
-    SetIdentityQuaternion(quaternion_prev);
-    SetIdentityQuaternion(quaternion_new);
+    setIdentityQuaternion(quaternionPrev);
+    setIdentityQuaternion(quaternionNew);
 }
 
-NominalState::NominalState(const float32_t* quaternion_initial) {
-    if (quaternion_initial == nullptr) {
-        SetIdentityQuaternion(quaternion_prev);
+NominalState::NominalState(const float32_t *quaternionInitial) {
+    if (quaternionInitial == nullptr) {
+        setIdentityQuaternion(quaternionPrev);
     } else {
-        NormalizeQuaternion(quaternion_initial, quaternion_prev);
+        normalizeQuaternion(quaternionInitial, quaternionPrev);
     }
 
-    CopyQuaternion(quaternion_prev, quaternion_new);
+    copyQuaternion(quaternionPrev, quaternionNew);
 }
 
-void NominalState::StateExtrapolation(const float32_t* gyro_new, const float32_t* gyro_prev, float32_t dt) {
+void NominalState::stateExtrapolation(
+    const float32_t *gyroNew,
+    const float32_t *gyroPrev,
+    float32_t dt
+) {
+    copyQuaternion(quaternionPrev, quaternionNew);
 
-	CopyQuaternion(quaternion_prev, quaternion_new);
+    extrapolateQuaternion(
+        gyroNew,
+        gyroPrev,
+        dt,
+        quaternionNew
+    );
+}
 
-	ExtrapolateQuaternion(
-			gyro_new,
-			gyro_prev,
-			dt,
-			quaternion_new);
+void NominalState::extrapolateQuaternion(
+    const float32_t *gyroNew,
+    const float32_t *gyroPrev,
+    float32_t dt,
+    float32_t *quaternionOut
+) {
+    float32_t gyroBar[VECTOR_SIZE];
 
-};
+    arm_add_f32(gyroNew, gyroPrev, gyroBar, VECTOR_SIZE);
+    arm_scale_f32(gyroBar, 0.5f, gyroBar, VECTOR_SIZE);
 
-void NominalState::ExtrapolateQauternion(const float32_t* gyro_new,
-		const float32_t* gyro_prev,
-        float32_t dt,
-        float32_t* quaternion_out) {
-
-    float32_t gyro_bar[3];
-
-    arm_add_f32(gyro_new, gyro_prev, gyro_bar, 3);
-    arm_scale_f32(gyro_bar, 0.5f, gyro_bar, 3);
-
-    float32_t omegaMatrixData [16];
-    ExpOmegaMatrix(gyro_bar, dt, omegaMatrixData);
-
-    //must instantiate to use arm dot pro
+    float32_t omegaMatrixData[QUATERNION_SIZE * QUATERNION_SIZE];
+    expOmegaMatrix(gyroBar, dt, omegaMatrixData);
 
     arm_matrix_instance_f32 omegaMatrix;
     arm_matrix_instance_f32 qPrev;
     arm_matrix_instance_f32 qNew;
 
-    arm_mat_init_f32(&omegaMatrix, 4, 4, omegaMatrixData);
-    arm_mat_init_f32(&qPrev, 4, 1, quaternion_prev);
-    arm_mat_init_f32(&qNew, 4, 1, quaternion_new);
+    arm_mat_init_f32(&omegaMatrix, QUATERNION_SIZE, QUATERNION_SIZE, omegaMatrixData);
+    arm_mat_init_f32(&qPrev, QUATERNION_SIZE, 1, quaternionPrev);
+    arm_mat_init_f32(&qNew, QUATERNION_SIZE, 1, quaternionOut);
 
     arm_mat_mult_f32(&omegaMatrix, &qPrev, &qNew);
 
-    NormalizeQuaternion(quaternion_out, quaternion_out);
-};
+    normalizeQuaternion(quaternionOut, quaternionOut);
+}
 
-void NominalState::ExpOmegaMatrix(float32_t *gyroBar, float32_t dt, float32_t *omegaMatrixOut) {
+void NominalState::expOmegaMatrix(
+    const float32_t *gyroBar,
+    float32_t dt,
+    float32_t *omegaMatrixOut
+) {
+    float32_t gyroNormSq = 0.0f;
+    arm_dot_prod_f32(gyroBar, gyroBar, VECTOR_SIZE, &gyroNormSq);
 
-	   float32_t normGyro;
-	   normalizeVector(gyroBar, normGyro);
-	   float32_t normSigma = 0.5 * dt * normGyro;
+    float32_t gyroNorm = 0.0f;
 
-	   int gx = gyroBar[0];
-	   int gy = gyroBar[1];
-	   int gz = gyroBar[2];
+    if (arm_sqrt_f32(gyroNormSq, &gyroNorm) != ARM_MATH_SUCCESS || gyroNorm < SMALL_GYRO_NORM) {
+        setIdentityQuaternion(omegaMatrixOut);
+        return;
+    }
 
-	   float32_t gyroMultMatrix[16] = {
-			0.0f, -gx, -gy, -gz,
-			gx, 0.0f, gz, -gy,
-			gy, -gz, 0.0f, gx,
-			gz, gy, -gx, 0.0f
-	   };
+    const float32_t SIGMA = 0.5f * dt * gyroNorm;
 
-	   const float32_t iMatrix[16] = {
-	       1,0,0,0,
-	       0,1,0,0,
-	       0,0,1,0,
-	       0,0,0,1
-	   };
+    const float32_t GX = gyroBar[0];
+    const float32_t GY = gyroBar[1];
+    const float32_t GZ = gyroBar[2];
 
-	    // Compute cosine and sine terms
-	    float32_t cosTerm = arm_cos_f32(sigma);
-	    float32_t sinTerm = arm_sin_f32(sigma);
+    const float32_t GYRO_MULT_MATRIX[QUATERNION_SIZE * QUATERNION_SIZE] = {
+        0.0f, -GX, -GY, -GZ,
+        GX, 0.0f, GZ, -GY,
+        GY, -GZ, 0.0f, GX,
+        GZ, GY, -GX, 0.0f
+    };
 
-	    // Scale and combine
-	    float32_t temp1[16];
-	    float32_t temp2[16];
+    const float32_t IDENTITY_MATRIX[QUATERNION_SIZE * QUATERNION_SIZE] = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
 
-	    // temp1 = cos(σ)*I
-	    arm_scale_f32(I4, cosTerm, temp1, 16);
+    const float32_t COS_TERM = arm_cos_f32(SIGMA);
+    const float32_t SIN_TERM = arm_sin_f32(SIGMA);
 
-	    // temp2 = (sin(σ)/|ω|)*Ω
-	    arm_scale_f32(gyroMultMatrix, sinTerm / gyroNorm, temp2, 16);
+    float32_t temp1[QUATERNION_SIZE * QUATERNION_SIZE];
+    float32_t temp2[QUATERNION_SIZE * QUATERNION_SIZE];
 
-	    // omegaMatrixOut = temp1 + temp2
-	    arm_add_f32(temp1, temp2, omegaMatrixOut, 16);
-	};
+    arm_scale_f32(IDENTITY_MATRIX, COS_TERM, temp1, QUATERNION_SIZE * QUATERNION_SIZE);
+    arm_scale_f32(
+        GYRO_MULT_MATRIX,
+        SIN_TERM / gyroNorm,
+        temp2,
+        QUATERNION_SIZE * QUATERNION_SIZE
+    );
 
-void NominalState::CorrectState(const float32_t* small_angle_error) {
+    arm_add_f32(temp1, temp2, omegaMatrixOut, QUATERNION_SIZE * QUATERNION_SIZE);
+}
 
-	float32_t quaternion_error[4];
+void NominalState::correctState(const float32_t *smallAngleError) {
+    float32_t quaternionError[QUATERNION_SIZE];
 
-	quaternion_error[0] = 1.0f;
-	quaternion_error[1] = 0.5f * small_angle_error[0];
-	quaternion_error[2] = 0.5f * small_angle_error[1];
-	quaternion_error[3] = 0.5f * small_angle_error[2];
+    quaternionError[0] = 1.0f;
+    quaternionError[1] = 0.5f * smallAngleError[0];
+    quaternionError[2] = 0.5f * smallAngleError[1];
+    quaternionError[3] = 0.5f * smallAngleError[2];
 
-	float32_t quaternion_corrected[4];
+    float32_t quaternionCorrected[QUATERNION_SIZE];
 
-	MultiplyQuaternions(quaternion_new, quaternion_error, quaternion_corrected);
-	NormalizeQuaternion(quaternion_new, quaternion_corrected);
+    multiplyQuaternions(quaternionNew, quaternionError, quaternionCorrected);
+    normalizeQuaternion(quaternionCorrected, quaternionCorrected);
 
-	CopyQuaternion(quaternion_corrected, quaternion_new);
-	CopyQuaternion(quaternion_corrected, quaternion_prev);
-	};
+    copyQuaternion(quaternionCorrected, quaternionNew);
+    copyQuaternion(quaternionCorrected, quaternionPrev);
+}
 
+void NominalState::copyQuaternion(const float32_t *qIn, float32_t *qOut) {
+    for (uint32_t i = 0; i < QUATERNION_SIZE; ++i) {
+        qOut[i] = qIn[i];
+    }
+}
 
-void NominalState::CopyQuaternion(const float32_t *q_in, float32_t *q_out) {
-	for (uint32_t i = 0; i < QUATERNION_SIZE; ++i) {
-		q_out[i] = q_in[i];
-	};
-
-void NominalState::SetIdentityQuaternion(float32_t *q_out); {
-	q_out[0] = 1.0f;
-	q_out[1] = 0.0f;
-	q_out[2] = 0.0f;
-	q_out[3] = 0.0f;
-	}
-
-};
-
-
+void NominalState::setIdentityQuaternion(float32_t *qOut) {
+    qOut[0] = 1.0f;
+    qOut[1] = 0.0f;
+    qOut[2] = 0.0f;
+    qOut[3] = 0.0f;
+}

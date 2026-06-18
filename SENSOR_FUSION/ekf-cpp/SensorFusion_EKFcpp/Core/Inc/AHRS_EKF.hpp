@@ -1,98 +1,91 @@
-/*
- * ahrs_esmekf.hpp
- *
- *  Created on: May 18, 2026
- *      Author: aahan
- */
-
 #ifndef AHRS_ESMEKF_HPP_
 #define AHRS_ESMEKF_HPP_
 
 #include "arm_math.h"
-#include <cstdint>
-
 #include "measurements.hpp"
 #include "nominal_state_new.hpp"
 
-class AHRS_ESMEKF {
+#include <cstdint>
+
+class AhrsEsmekf {
 public:
     static constexpr uint32_t ERROR_STATE_SIZE = 9;
     static constexpr uint32_t VECTOR_SIZE = 3;
     static constexpr uint32_t MEASUREMENT_SIZE = 3;
 
-    AHRS_ESMEKF(
-        const float32_t* gyro_initial = nullptr,
-        const float32_t* accel_initial = nullptr,
-        const float32_t* mag_initial = nullptr,
-        const float32_t* quaternion_initial = nullptr,
+    AhrsEsmekf(
+        const float32_t *gyroInitial = nullptr,
+        const float32_t *accelInitial = nullptr,
+        const float32_t *magInitial = nullptr,
+        const float32_t *quaternionInitial = nullptr,
 
-        float32_t gyro_cov = 0.0f,
-        float32_t accel_cov = 0.0f,
-        float32_t magnetometer_cov = 0.0f,
-        float32_t gyro_bias_cov = 0.0f,
-        float32_t accel_bias_cov = 0.0f,
+        float32_t gyroCov = 0.0f,
+        float32_t accelCov = 0.0f,
+        float32_t magnetometerCov = 0.0f,
+        float32_t gyroBiasCov = 0.0f,
+        float32_t accelBiasCov = 0.0f,
 
-        float32_t accel_gate_threshold = 7.80f,
-        float32_t magnetometer_gate_threshold = 16.3f,
+        float32_t accelGateThreshold = 7.80f,
+        float32_t magnetometerGateThreshold = 16.3f,
 
-        float32_t p_init_att = 0.1f,
-        float32_t p_init_bias = 0.01f,
+        float32_t pInitAtt = 0.1f,
+        float32_t pInitBias = 0.01f,
 
-        const float32_t* gravity_inertial_in = nullptr,
-        const float32_t* magnetometer_inertial_in = nullptr
+        const float32_t *gravityInertialIn = nullptr,
+        const float32_t *magnetometerInertialIn = nullptr
     );
 
-    void StateExtrapolation(const float32_t* gyro_new, float32_t dt);
+    void stateExtrapolation(const float32_t *gyroNew, float32_t dt);
 
-    bool CorrectionAccelerometer(const float32_t* accelerometer_new);
+    bool correctionAccelerometer(const float32_t *accelerometerNew);
 
-    bool CorrectionMagnetometer(const float32_t* magnetometer_new);
+    bool correctionMagnetometer(const float32_t *magnetometerNew);
 
     Measurements measurements;
-    NominalState nominal_state;
+    NominalState nominalState;
 
-    float32_t error_state[ERROR_STATE_SIZE];
-    float32_t kalman_gain[ERROR_STATE_SIZE * MEASUREMENT_SIZE];
+    float32_t errorState[ERROR_STATE_SIZE];
+    float32_t kalmanGain[ERROR_STATE_SIZE * MEASUREMENT_SIZE];
 
-    float32_t P[ERROR_STATE_SIZE * ERROR_STATE_SIZE];
+    float32_t covariance[ERROR_STATE_SIZE * ERROR_STATE_SIZE];
 
-    float32_t gravity_inertial[VECTOR_SIZE];
-    float32_t magnetometer_inertial[VECTOR_SIZE];
+    float32_t gravityInertial[VECTOR_SIZE];
+    float32_t magnetometerInertial[VECTOR_SIZE];
 
 private:
-    float32_t gyro_cov_mat[VECTOR_SIZE * VECTOR_SIZE];
-    float32_t accel_cov_mat[VECTOR_SIZE * VECTOR_SIZE];
-    float32_t magnetometer_cov_mat[VECTOR_SIZE * VECTOR_SIZE];
-    float32_t gyro_bias_cov_mat[VECTOR_SIZE * VECTOR_SIZE];
-    float32_t accel_bias_cov_mat[VECTOR_SIZE * VECTOR_SIZE];
+    float32_t gyroCovMat[VECTOR_SIZE * VECTOR_SIZE];
+    float32_t accelCovMat[VECTOR_SIZE * VECTOR_SIZE];
+    float32_t magnetometerCovMat[VECTOR_SIZE * VECTOR_SIZE];
+    float32_t gyroBiasCovMat[VECTOR_SIZE * VECTOR_SIZE];
+    float32_t accelBiasCovMat[VECTOR_SIZE * VECTOR_SIZE];
 
-    float32_t accel_gate_threshold_;
-    float32_t magnetometer_gate_threshold_;
+    float32_t accelGateThreshold;
+    float32_t magnetometerGateThreshold;
 
-    void StateTransitionMatrix(float32_t dt, float32_t* Phi_out);
+    void stateTransitionMatrix(float32_t dt, float32_t *phiOut);
 
-    void ErrorStateGradientMatrixF(float32_t* F_out);
+    void errorStateGradientMatrixF(float32_t *fOut);
 
-    void ProcessNoiseCovMatrix(float32_t dt, float32_t* Q_out);
+    void processNoiseCovMatrix(float32_t dt, float32_t *qOut);
 
-    bool ApplyUpdate(
-        const float32_t* y,
-        const float32_t* H,
-        const float32_t* R,
-        float32_t gate_threshold
+    bool applyUpdate(
+        const float32_t *y,
+        const float32_t *h,
+        const float32_t *r,
+        float32_t gateThreshold
     );
 
-    void SetZero(float32_t* data, uint32_t length);
+    void setZero(float32_t *data, uint32_t length);
 
-    void SetIdentity(float32_t* data, uint32_t size);
+    void setIdentity(float32_t *data, uint32_t size);
 
-    void SetDiagonal3(float32_t* matrix_out, float32_t value);
+    void setDiagonal3(float32_t *matrixOut, float32_t value);
 
-    void CopyVector3(const float32_t* in, float32_t* out);
+    void copyVector3(const float32_t *in, float32_t *out);
 
-    void CopyMatrix(const float32_t* in, float32_t* out, uint32_t length);
+    void copyMatrix(const float32_t *in, float32_t *out, uint32_t length);
 
-    void SymmetrizeSquareMatrixInPlace(float32_t* matrix, uint32_t size);
+    void symmetrizeSquareMatrixInPlace(float32_t *matrix, uint32_t size);
 };
 
 #endif  // AHRS_ESMEKF_HPP_

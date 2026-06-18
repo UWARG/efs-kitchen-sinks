@@ -1,14 +1,8 @@
-/*
- * Measurements.hpp
- *
- *  Created on: May 18, 2026
- *      Author: aahan
- */
-
 #ifndef MEASUREMENTS_HPP_
 #define MEASUREMENTS_HPP_
 
 #include "arm_math.h"
+
 #include <cstdint>
 
 class Measurements {
@@ -16,46 +10,46 @@ public:
     static constexpr uint32_t VECTOR_SIZE = 3;
 
     Measurements(
-        const float32_t* gyro_initial = nullptr,
-        const float32_t* accel_initial = nullptr,
-        const float32_t* mag_initial = nullptr
+        const float32_t *gyroInitial = nullptr,
+        const float32_t *accelInitial = nullptr,
+        const float32_t *magInitial = nullptr
     );
 
-    void UpdateGyro(const float32_t* gyro_new_in);
-    void UpdateAccel(const float32_t* accel_new_in);
-    void UpdateMag(const float32_t* mag_new_in);
+    void updateGyro(const float32_t *gyroNewIn);
+    void updateAccel(const float32_t *accelNewIn);
+    void updateMag(const float32_t *magNewIn);
 
-    void UpdateBiases(
-        const float32_t* gyro_bias_new,
-        const float32_t* accel_bias_new,
-        const float32_t* mag_bias_new
+    void updateBiases(
+        const float32_t *gyroBiasNew,
+        const float32_t *accelBiasNew,
+        const float32_t *magBiasNew
     );
 
-    void UpdateGyroBar();
-    void UpdateAccelBar();
-    void UpdateMagBar();
-    void UpdateAllBars();
+    void updateGyroBar();
+    void updateAccelBar();
+    void updateMagBar();
+    void updateAllBars();
 
-    float32_t gyro_prev[VECTOR_SIZE];
-    float32_t gyro_new[VECTOR_SIZE];
-    float32_t gyro_bar[VECTOR_SIZE];
+    float32_t gyroPrev[VECTOR_SIZE];
+    float32_t gyroNew[VECTOR_SIZE];
+    float32_t gyroBar[VECTOR_SIZE];
 
-    float32_t accel_prev[VECTOR_SIZE];
-    float32_t accel_new[VECTOR_SIZE];
-    float32_t accel_bar[VECTOR_SIZE];
+    float32_t accelPrev[VECTOR_SIZE];
+    float32_t accelNew[VECTOR_SIZE];
+    float32_t accelBar[VECTOR_SIZE];
 
-    float32_t mag_prev[VECTOR_SIZE];
-    float32_t mag_new[VECTOR_SIZE];
-    float32_t mag_bar[VECTOR_SIZE];
+    float32_t magPrev[VECTOR_SIZE];
+    float32_t magNew[VECTOR_SIZE];
+    float32_t magBar[VECTOR_SIZE];
 
-    float32_t gyro_bias_accumulated[VECTOR_SIZE];
-    float32_t accel_bias_accumulated[VECTOR_SIZE];
-    float32_t mag_bias_accumulated[VECTOR_SIZE];
+    float32_t gyroBiasAccumulated[VECTOR_SIZE];
+    float32_t accelBiasAccumulated[VECTOR_SIZE];
+    float32_t magBiasAccumulated[VECTOR_SIZE];
 
 private:
-    void CopyVector3(const float32_t* v_in, float32_t* v_out);
-    void ZeroVector3(float32_t* v_out);
-    void AverageVector3(const float32_t* a, const float32_t* b, float32_t* out);
+    void copyVector3(const float32_t *vIn, float32_t *vOut);
+    void zeroVector3(float32_t *vOut);
+    void averageVector3(const float32_t *a, const float32_t *b, float32_t *out);
 };
 
 #endif  // MEASUREMENTS_HPP_
