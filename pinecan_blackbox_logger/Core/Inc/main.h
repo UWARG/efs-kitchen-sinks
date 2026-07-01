@@ -27,7 +27,10 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdint.h>
+
 #include "stm32l4xx_hal.h"
+#include "stm32l433xx.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -73,8 +76,8 @@ void Error_Handler(void);
 #define SMPS_PG_GPIO_Port GPIOA
 #define SMPS_SW_Pin GPIO_PIN_7
 #define SMPS_SW_GPIO_Port GPIOA
-#define LD4_Pin GPIO_PIN_13
-#define LD4_GPIO_Port GPIOB
+#define SPI2_CS_PIN_Pin GPIO_PIN_11
+#define SPI2_CS_PIN_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
