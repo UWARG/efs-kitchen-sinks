@@ -146,6 +146,9 @@ class MLX90393{
 		float get_x_data();
 		float get_y_data();
 		float get_z_data();
+		float get_x_calibrated();  // FIX: corrected readings = (raw - hard_iron) * axis_scale
+        float get_y_calibrated();
+        float get_z_calibrated();
 		bool calibrate_4element(uint32_t duration_ms = 15000); // FIX: 1 s window was too short
 		struct CorrectionFactors {
 			float soft_iron[3][3]; // FIX: was uint8_t - cannot hold fractional scale factors

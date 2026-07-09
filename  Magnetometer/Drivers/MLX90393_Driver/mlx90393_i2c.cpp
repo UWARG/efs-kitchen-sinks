@@ -452,3 +452,12 @@ float MLX90393::get_z_data(){
 	return this->converted.z;
 }
 
+float MLX90393::get_x_calibrated(){
+	return (this->converted.x - this->correction_factors.hard_iron[0]) * this->correction_factors.soft_iron[0][0];
+}
+float MLX90393::get_y_calibrated(){
+	return (this->converted.y - this->correction_factors.hard_iron[1]) * this->correction_factors.soft_iron[1][1];
+}
+float MLX90393::get_z_calibrated(){
+	return (this->converted.z - this->correction_factors.hard_iron[2]) * this->correction_factors.soft_iron[2][2];
+}
