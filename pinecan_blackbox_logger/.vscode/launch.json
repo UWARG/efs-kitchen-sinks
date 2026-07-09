@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "STM32: Debug pinecan_blackbox_logger",
+            "type": "stlinkgdbtarget",
+            "request": "launch",
+            "origin": "workspace",
+            "cwd": "${workspaceFolder}",
+            "preBuild": "${command:st-stm32-ide-debug-launch.build}",
+            "program": "${workspaceFolder}/build/Debug/pinecan_blackbox_logger.elf",
+            "imagesAndSymbols": [
+                {
+                    "imageFileName": "${workspaceFolder}/build/Debug/pinecan_blackbox_logger.elf",
+                    "symbolFileName": "${workspaceFolder}/build/Debug/pinecan_blackbox_logger.elf"
+                }
+            ],
+            "serverInterface": "SWD",
+            "serverInterfaceFrequency": "Auto",
+            "serverVerify": true,
+            "automaticallyKillServer": true
+        }
+    ]
+}

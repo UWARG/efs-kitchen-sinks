@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "fatfs.h"
-#include "sd_spi.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -98,6 +97,24 @@ int main(void)
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
+// Viewable File Test
+  FATFS fs;
+  FIL file;
+  FRESULT res;
+  UINT bytes_written;
+
+  res = f_mount(&fs, "", 1);
+
+  if (res == FR_OK) {
+    res = f_open(&file, "test.txt", FA_CREATE_ALWAYS | FA_WRITE);
+    if (res == FR_OK) {
+      char msg[] = "Hello from STM32 FatFS write test!\r\n";
+
+      res = f_write(&file, msg, sizeof(msg), &bytes_written);
+
+      f_close(&file);
+    }
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */

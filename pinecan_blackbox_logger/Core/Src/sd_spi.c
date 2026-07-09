@@ -1,6 +1,7 @@
 #include "sd_spi.h"
 #include "main.h"
 #include "stm32l4xx_hal.h"
+#include "stm32l4xx_hal_def.h"
 #include <stdint.h>
 
 extern SPI_HandleTypeDef hspi2;
@@ -35,7 +36,8 @@ static void SD_Deselect(void) {
 
 static uint8_t SD_TxRx(uint8_t data) {
     uint8_t rx = 0;
-    if(HAL_SPI_TransmitReceive(&hspi2, &data, &rx, 1, HAL_MAX_DELAY) != HAL_OK) {
+    HAL_StatusTypeDef test = HAL_SPI_TransmitReceive(&hspi2, &data, &rx, 1, HAL_MAX_DELAY);
+    if(test != HAL_OK) {
         return 0xFF;
     }    
     return rx;

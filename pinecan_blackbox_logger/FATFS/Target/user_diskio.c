@@ -17,8 +17,6 @@
   */
  /* USER CODE END Header */
 
-#include "diskio.h"
-#include "integer.h"
 #ifdef USE_OBSOLETE_USER_CODE_SECTION_0
 /*
  * Warning: the user section 0 is no more in use (starting from CubeMx version 4.16.0)
@@ -80,8 +78,9 @@ Diskio_drvTypeDef  USER_Driver =
   * @retval DSTATUS: Operation status
   */
 DSTATUS USER_initialize (
-  BYTE pdrv        /* Physical drive nmuber to identify the drive */
-) {
+	BYTE pdrv           /* Physical drive nmuber to identify the drive */
+)
+{
   /* USER CODE BEGIN INIT */
     if(pdrv != 0) {
       return STA_NOINIT;
