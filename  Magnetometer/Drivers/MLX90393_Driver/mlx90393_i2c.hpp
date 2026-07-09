@@ -146,13 +146,21 @@ class MLX90393{
 		float get_x_data();
 		float get_y_data();
 		float get_z_data();
-		bool calibrate_4element();
+		bool calibrate_4element(uint32_t duration_ms = 15000); // FIX: 1 s window was too short
 		struct CorrectionFactors {
-			uint8_t soft_iron[3][3];
+			float soft_iron[3][3]; // FIX: was uint8_t - cannot hold fractional scale factors
 			float hard_iron[3];
+			float field_strength;
 		};
 
 		CorrectionFactors correction_factors;
+		struct CalDiagnostics {
+			uint32_t samples;
+			float radius[3];
+			int status;
+		};
+
+		CalDiagnostics cal_diag;
 
 	private:
 		struct RawData{

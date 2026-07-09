@@ -271,74 +271,90 @@ bool MLX90393::i2c_read_data(){
 	return true;
 }
 
-bool MLX90393::calibrate_4element(){
+bool MLX90393::calibrate_4element(uint32_t duration_ms){
 	uint32_t current_time = HAL_GetTick();
 	const uint8_t matrix_size = 4;
+
 	float32_t matrix_x[matrix_size][matrix_size] = {0};
-	float32_t matrix_y[4] = {0};
-	float32_t matrix_result[4] = {0};
-	arm_matrix_instance_f32 arm_matrix_x;
-	arm_matrix_instance_f32 arm_matrix_y;
-	arm_matrix_instance_f32 arm_matrix_result;
+	float32_t matrix_y[matrix_size] = {0};                   // FIX: size 4 (was indexed [4])
+	float32_t matrix_result[matrix_size] = {0};
+	float32_t matrix_x_inv[matrix_size][matrix_size] = {0};  // FIX: inverse needs a separate dst
 
-	while(HAL_GetTick() < current_time + 1000) {
-		// 1. Trigger measurement
+	arm_matrix_instance_f32 arm_matrix_x, arm_matrix_x_inv, arm_matrix_y, arm_matrix_result;
+
+	float min_v[3] = { 1e9f,  1e9f,  1e9f};
+	float max_v[3] = {-1e9f, -1e9f, -1e9f};
+	uint32_t samples = 0;
+
+	while(HAL_GetTick() < current_time + duration_ms) {      
 		this->i2c_SM();
-
-		// 2. Wait for conversion (2–3 ms is enough for your settings)
 		HAL_Delay(3);
-
-		// 3. Read the measurement from the sensor
 		this->i2c_RM();
-
-		// 4. Convert raw data → real magnetic field values
 		this->decode();
 		this->convert();
 
-		matrix_x[0][0] += pow(this->converted.x, 2);
-		matrix_x[0][1] += this->converted.x * this->converted.y;
-		matrix_x[0][2] += this->converted.x * this->converted.z;
-		matrix_x[0][3] += this->converted.x;
+		float x = this->converted.x, y = this->converted.y, z = this->converted.z;
+		float s = x*x + y*y + z*z;
 
-		matrix_x[1][0] += this->converted.x * this->converted.y;
-		matrix_x[1][1] += pow(this->converted.y, 2);
-		matrix_x[1][2] += this->converted.y * this->converted.z;
-		matrix_x[1][3] += this->converted.y;
+		matrix_x[0][0] += x*x; matrix_x[0][1] += x*y; matrix_x[0][2] += x*z; matrix_x[0][3] += x;
+		matrix_x[1][0] += x*y; matrix_x[1][1] += y*y; matrix_x[1][2] += y*z; matrix_x[1][3] += y;
+		matrix_x[2][0] += x*z; matrix_x[2][1] += y*z; matrix_x[2][2] += z*z; matrix_x[2][3] += z;
+		matrix_x[3][0] += x;   matrix_x[3][1] += y;   matrix_x[3][2] += z;   matrix_x[3][3] += 1;
 
-		matrix_x[2][0] += this->converted.x * this->converted.z;
-		matrix_x[2][1] += this->converted.y * this->converted.z;
-		matrix_x[2][2] += pow(this->converted.z, 2);
-		matrix_x[2][3] += this->converted.z;
+		matrix_y[0] += x*s;
+		matrix_y[1] += y*s;
+		matrix_y[2] += z*s;
+		matrix_y[3] += s;                            
 
-		matrix_x[3][0] += this->converted.x;
-		matrix_x[3][1] += this->converted.y;
-		matrix_x[3][2] += this->converted.z;
-		matrix_x[3][3] += 1;
-
-		matrix_y[0] += this->converted.x * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
-		matrix_y[1] += this->converted.y * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
-		matrix_y[2] += this->converted.z * (pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2));
-		matrix_y[4] += pow(this->converted.x, 2) + pow(this->converted.y, 2)  + pow(this->converted.z, 2);
-
-	}
-	arm_mat_init_f32(&arm_matrix_x, matrix_size, matrix_size, (float32_t *)matrix_x);
-	arm_mat_init_f32(&arm_matrix_y, matrix_size, matrix_size, (float32_t *)matrix_y);
-	arm_mat_init_f32(&arm_matrix_result, matrix_size, matrix_size, (float32_t *)matrix_result);
-
-	if(arm_mat_inverse_f32(&arm_matrix_x, &arm_matrix_x) != ARM_MATH_SUCCESS) {
-		return false;
+		if(x < min_v[0]) min_v[0] = x; if(x > max_v[0]) max_v[0] = x;
+		if(y < min_v[1]) min_v[1] = y; if(y > max_v[1]) max_v[1] = y;
+		if(z < min_v[2]) min_v[2] = z; if(z > max_v[2]) max_v[2] = z;
+		samples++;
 	}
 
-	if (arm_mat_mult_f32(&arm_matrix_x, &arm_matrix_y, &arm_matrix_result) != ARM_MATH_SUCCESS) {
-		return false;
+	this->cal_diag.samples = samples;
+
+	arm_mat_init_f32(&arm_matrix_x,      matrix_size, matrix_size, (float32_t *)matrix_x);
+	arm_mat_init_f32(&arm_matrix_x_inv,  matrix_size, matrix_size, (float32_t *)matrix_x_inv);
+	arm_mat_init_f32(&arm_matrix_y,      matrix_size, 1,           (float32_t *)matrix_y);       // FIX: 4x1
+	arm_mat_init_f32(&arm_matrix_result, matrix_size, 1,           (float32_t *)matrix_result);  // FIX: 4x1
+
+	if(samples < 100){ this->cal_diag.status = 1; return false; }
+
+	if(arm_mat_inverse_f32(&arm_matrix_x, &arm_matrix_x_inv) != ARM_MATH_SUCCESS){
+		this->cal_diag.status = 3; return false;             // singular
+	}
+	if(arm_mat_mult_f32(&arm_matrix_x_inv, &arm_matrix_y, &arm_matrix_result) != ARM_MATH_SUCCESS){
+		this->cal_diag.status = 3; return false;
 	}
 
-	this->correction_factors.hard_iron[0] = 0.5 * matrix_result[0];
-	this->correction_factors.hard_iron[1] = 0.5 * matrix_result[1];
-	this->correction_factors.hard_iron[2] = 0.5 * matrix_result[2];
+	float cx = 0.5f * matrix_result[0];
+	float cy = 0.5f * matrix_result[1];
+	float cz = 0.5f * matrix_result[2];
+	this->correction_factors.hard_iron[0] = cx;
+	this->correction_factors.hard_iron[1] = cy;
+	this->correction_factors.hard_iron[2] = cz;
 
+	float field = sqrtf(matrix_result[3] + cx*cx + cy*cy + cz*cz);
+	this->correction_factors.field_strength = field;
+
+	this->cal_diag.radius[0] = 0.5f * (max_v[0] - min_v[0]);
+	this->cal_diag.radius[1] = 0.5f * (max_v[1] - min_v[1]);
+	this->cal_diag.radius[2] = 0.5f * (max_v[2] - min_v[2]);
+
+	if(this->cal_diag.radius[0] < 10.0f || this->cal_diag.radius[1] < 10.0f || this->cal_diag.radius[2] < 10.0f){
+		this->cal_diag.status = 2; return false;             // poor rotation coverage
+	}
+	if(!(field > 20.0f && field < 90.0f)){
+		this->cal_diag.status = 4; return false;             // non-physical field
+	}
+
+	this->correction_factors.soft_iron[0][0] = field / this->cal_diag.radius[0];
+	this->correction_factors.soft_iron[1][1] = field / this->cal_diag.radius[1];
+	this->correction_factors.soft_iron[2][2] = field / this->cal_diag.radius[2];
+
+	this->cal_diag.status = 0;
 	return true;
-
 }
 
 int MLX90393::zyxt_set_bits(){
