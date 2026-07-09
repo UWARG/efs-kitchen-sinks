@@ -64,9 +64,41 @@ static void MX_LPUART1_UART_Init(void);
 float mag_x = -1;
 float mag_y = -1;
 float mag_z = -1;
+float mag_norm = 0;  // calibrated |B| should be ~52-56 and stay there while rotating
+float mag_raw_norm = 0;  // uncalibrated |B| for comparison
+
 float hard_iron[3] = {0};
-bool status;
+float axis_scale[3] = {0}; // soft-iron diagonal applied per axis
+
+float cal_field_strength = 0;
+float cal_radius[3] = {0}; // span each axis sees during rotation (~40-55)
+
+uint32_t cal_samples = 0;
+int cal_status = -1;  // -1 not run, 0 OK, 1 too few samples, 
+                       // 2 poor rotation coverage, 3 singular fit, 4 bad fit
+bool status = false;
+
+volatile uint8_t recalibrate = 0; // set this to 1 in Live Expressions to re-run calibration
+
 bool sensor_ok = false;
+
+static void run_calibration(void)
+{
+	status = mlx90393.calibrate_4element(15000);
+
+	hard_iron[0] = mlx90393.correction_factors.hard_iron[0];
+	hard_iron[1] = mlx90393.correction_factors.hard_iron[1];
+	hard_iron[2] = mlx90393.correction_factors.hard_iron[2];
+	axis_scale[0] = mlx90393.correction_factors.soft_iron[0][0];
+	axis_scale[1] = mlx90393.correction_factors.soft_iron[1][1];
+	axis_scale[2] = mlx90393.correction_factors.soft_iron[2][2];
+	cal_field_strength = mlx90393.correction_factors.field_strength;
+	cal_radius[0] = mlx90393.cal_diag.radius[0];
+	cal_radius[1] = mlx90393.cal_diag.radius[1];
+	cal_radius[2] = mlx90393.cal_diag.radius[2];
+	cal_samples = mlx90393.cal_diag.samples;
+	cal_status = mlx90393.cal_diag.status;
+}
 
 int __io_putchar(int ch)
 {
@@ -154,22 +186,37 @@ int main(void)
   /* USER CODE BEGIN 2 */
   MLX90393 mlx90393(&hi2c3);
   sensor_ok = mlx90393.begin();
+
+  if(sensor_ok)
+  {
+	  run_calibration();
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(recalibrate)
+	  {
+		  recalibrate = 0;
+		  run_calibration();
+	  }
 
-	      status = mlx90393.calibrate_4element();
+	  if(sensor_ok && mlx90393.i2c_read_data())
+	  {
+		  mag_x = mlx90393.get_x_calibrated();
+		  mag_y = mlx90393.get_y_calibrated();
+		  mag_z = mlx90393.get_z_calibrated();
+		  mag_norm = sqrtf(mag_x*mag_x + mag_y*mag_y + mag_z*mag_z);
 
-	      hard_iron[0] = mlx90393.correction_factors.hard_iron[0];
-	      hard_iron[1] = mlx90393.correction_factors.hard_iron[1];
-	      hard_iron[2] = mlx90393.correction_factors.hard_iron[2];
+		  float rx = mlx90393.get_x_data();
+		  float ry = mlx90393.get_y_data();
+		  float rz = mlx90393.get_z_data();
+		  mag_raw_norm = sqrtf(rx*rx + ry*ry + rz*rz);
+	  }
 
-	      // Small delay to avoid overloading debugger
-	      HAL_Delay(10);
-
+	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
