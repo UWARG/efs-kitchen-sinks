@@ -118,8 +118,9 @@ const float mlx90393_tconv[8][4] = {
 
 class MLX90393{
 	public:
-		MLX90393(I2C_HandleTypeDef *hi2c);
-		bool i2c_SM(); //Start single measurement mode cmd
+		MLX90393(I2C_HandleTypeDef *hi2c); 
+		bool begin(); 
+    bool i2c_SM(); //Start single measurement mode cmd
 		bool i2c_RM(); //Read measurement cmd
 		bool i2c_EX(); //Exit mode cmd
 		bool i2c_RT(); //Reset cmd

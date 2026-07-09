@@ -13,12 +13,6 @@
 
 MLX90393::MLX90393(I2C_HandleTypeDef *hi2c){
 	this->hi2c = hi2c;
-	HAL_GPIO_WritePin(GPIOB, CS, GPIO_PIN_SET);
-	i2c_EX();
-	i2c_RT();
-	i2c_set_resolution(MLX90393_RES_16, MLX90393_RES_16, MLX90393_RES_15);
-	i2c_set_oversampling(0x03);
-	i2c_set_filter(0x05);
 	this->reg.gain = MLX90393_GAIN_1X;
 	this->reg.x_res = MLX90393_RES_16;
 	this->reg.y_res = MLX90393_RES_16;
@@ -42,9 +36,20 @@ MLX90393::MLX90393(I2C_HandleTypeDef *hi2c){
 	this->correction_factors.soft_iron[0][0] = 1;
 	this->correction_factors.soft_iron[1][1] = 1;
 	this->correction_factors.soft_iron[2][2] = 1;
-	this->correction_factors.hard_iron[0] = 1;
-	this->correction_factors.hard_iron[1] = 1;
-	this->correction_factors.hard_iron[2] = 1;
+	this->correction_factors.hard_iron[0] = 0;
+	this->correction_factors.hard_iron[1] = 0;
+	this->correction_factors.hard_iron[2] = 0;
+}
+
+bool MLX90393::begin(){
+	HAL_GPIO_WritePin(GPIOB, CS, GPIO_PIN_SET);
+	if(!i2c_EX()) return false;
+	if(!i2c_RT()) return false;
+	HAL_Delay(2); // settle after reset
+	if(!i2c_set_resolution(MLX90393_RES_16, MLX90393_RES_16, MLX90393_RES_15)) return false;
+	if(!i2c_set_oversampling(0x03)) return false;
+	if(!i2c_set_filter(0x05)) return false;
+	return true;
 }
 
 HAL_StatusTypeDef MLX90393::i2c_transceive(uint8_t *tx_data, uint8_t *rx_data, uint16_t tx_size, uint16_t rx_size)
@@ -375,8 +380,9 @@ int16_t MLX90393::decode_helper(uint8_t *data){
 }
 
 void MLX90393::convert(){
-	// RES 2/3 are unsigned: reinterpret the raw word as unsigned and subtract
-    // the zero-field offset to recover a signed value. RES 0/1 are already signed.
+	// RES 2/3 are unsigned -> reinterpret the raw word as unsigned and subtract 
+	// 							the zero-field offset to recover a signed value
+	// RES 0/1 are already signed
     int32_t x = (this->reg.x_res == MLX90393_RES_17) ? (int32_t)(uint16_t)this->raw.x - MLX90393_RES17_ZERO_OFFSET :
                 (this->reg.x_res == MLX90393_RES_18) ? (int32_t)(uint16_t)this->raw.x - MLX90393_RES18_ZERO_OFFSET :
                                                        (int32_t)this->raw.x;
@@ -387,7 +393,7 @@ void MLX90393::convert(){
                 (this->reg.z_res == MLX90393_RES_18) ? (int32_t)(uint16_t)this->raw.z - MLX90393_RES18_ZERO_OFFSET :
                                                        (int32_t)this->raw.z;
 
-    // FIX: Z now uses column [0] to match hallconf 0x0C (was [1]).
+    // Z uses column [0] to match hallconf 0x0C (was [1])
     this->converted.x = (float)x * sens_lookup_0xC[this->reg.gain][this->reg.x_res][0];
     this->converted.y = (float)y * sens_lookup_0xC[this->reg.gain][this->reg.y_res][0];
     this->converted.z = (float)z * sens_lookup_0xC[this->reg.gain][this->reg.z_res][0];

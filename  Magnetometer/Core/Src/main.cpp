@@ -61,13 +61,12 @@ static void MX_LPUART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-MLX90393 mlx90393(&hi2c3);
-
 float mag_x = -1;
 float mag_y = -1;
 float mag_z = -1;
 float hard_iron[3] = {0};
 bool status;
+bool sensor_ok = false;
 
 int __io_putchar(int ch)
 {
@@ -153,7 +152,8 @@ int main(void)
   MX_I2C3_Init();
   MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  MLX90393 mlx90393(&hi2c3);
+  sensor_ok = mlx90393.begin();
   /* USER CODE END 2 */
 
   /* Infinite loop */
