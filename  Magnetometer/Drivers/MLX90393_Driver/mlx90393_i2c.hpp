@@ -12,7 +12,7 @@
 #include "stm32l5xx_hal_i2c.h"
 #include <cstdint>
 
-#define DEFAULT_I2C_ADDRESS 0x18 << 1 //Set I2C address
+#define DEFAULT_I2C_ADDRESS (0x18 << 1) //Set I2C address
 #define CS GPIO_PIN_5 //Set CS pin
 // Flags to use with "zyxt" variables.
 #define MLX90393_T  0x01  // Temperature
@@ -56,7 +56,7 @@
 #define WAKE_ON_CHANGE_BIT 0x40
 #define POLLING_MODE_BIT 0x20
 #define ERROR_BIT 0x10
-#define EEC_BIT 0x08,
+#define EEC_BIT 0x08
 #define RESET_BIT 0x04
 #define D1_BIT 0x02
 #define D0_BIT 0x01
