@@ -37,8 +37,8 @@
 #define MLX90393_RES_18_MASK 0x4000		// Mask to remove sign bit for res = 3 (MSB = bit 18)
 #define MLX90393_FILTER_MASK 0x001C
 #define MLX90393_FILTER_SHIFT 2
-#define MLX90393_OSR_MASK 0x1800
-#define MLX90393_OSR_SHIFT 11
+#define MLX90393_OSR_MASK 0x0003 // OSR in bits 0-1 of CONF3
+#define MLX90393_OSR_SHIFT 0
 //Commands
 #define CMD_NOP 0x00
 #define	CMD_EXIT 0x80

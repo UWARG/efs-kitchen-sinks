@@ -238,7 +238,7 @@ bool MLX90393::i2c_set_oversampling(uint8_t osr){
 	}
 	this->reg.osr = osr;
 	uint16_t data = this->reg.val;
-	data = (data & ~MLX90393_OSR_MASK) | (this->reg.filter << MLX90393_OSR_SHIFT);
+  data = (data & ~MLX90393_OSR_MASK) | (this->reg.osr << MLX90393_OSR_SHIFT);
 	return(i2c_WR(MLX90393_CONF3, data));
 }
 
