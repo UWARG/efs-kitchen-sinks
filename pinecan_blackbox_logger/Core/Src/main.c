@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "fatfs.h"
+#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -110,7 +111,7 @@ int main(void)
     if (res == FR_OK) {
       char msg[] = "Hello from STM32 FatFS write test!\r\n";
 
-      res = f_write(&file, msg, sizeof(msg), &bytes_written);
+      res = f_write(&file, msg, strlen(msg), &bytes_written);
 
       f_close(&file);
     }
@@ -293,7 +294,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(SMPS_PG_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
-
+  HAL_GPIO_WritePin(SPI2_CS_PIN_GPIO_Port, SPI2_CS_PIN_Pin, GPIO_PIN_SET);
   /* USER CODE END MX_GPIO_Init_2 */
 }
 

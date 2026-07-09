@@ -196,6 +196,14 @@ DRESULT USER_ioctl (
 )
 {
   /* USER CODE BEGIN IOCTL */
+  if (pdrv != 0) {
+    return RES_PARERR;
+  }
+
+  if (buff == 0 && cmd != CTRL_SYNC) {
+    return RES_PARERR;
+  }
+
   if(Stat & STA_NOINIT) {
     return RES_NOTRDY;
   }
@@ -205,9 +213,6 @@ DRESULT USER_ioctl (
       return (SD_SPI_Sync() == SD_SPI_OK) ? RES_OK : RES_ERROR;
 
     case GET_SECTOR_COUNT:
-      if(buff == 0) {
-          return RES_PARERR;
-      }
       *(DWORD *)buff = SD_SPI_GetSectorCount();
       return (*(DWORD *)buff != 0) ? RES_OK : RES_ERROR;
     

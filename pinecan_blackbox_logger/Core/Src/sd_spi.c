@@ -175,6 +175,12 @@ uint8_t SD_SPI_Init() {
             SD_TxRx(SD_DUMMY_BYTE);
             return SD_SPI_ERROR;
         }
+    } else if (response & 0x04) {
+        sd_type_v2 = 0;
+    } else {
+        SD_Deselect();
+        SD_TxRx(SD_DUMMY_BYTE);
+        return SD_SPI_ERROR;
     }
 
     SD_Deselect();
@@ -208,15 +214,19 @@ uint8_t SD_SPI_Init() {
     SD_Select();
     response = SD_SendCommand(CMD58, 0, 0xFF);
 
-    if(response == 0x00) {
-        ocr[0] = SD_TxRx(SD_DUMMY_BYTE);
-        ocr[1] = SD_TxRx(SD_DUMMY_BYTE);
-        ocr[2] = SD_TxRx(SD_DUMMY_BYTE);
-        ocr[3] = SD_TxRx(SD_DUMMY_BYTE);
+    if (response != 0x00) {
+        SD_Deselect();
+        SD_TxRx(SD_DUMMY_BYTE);
+        return SD_SPI_ERROR;
+    }
 
-        if(ocr[0] & 0x40){
-            sd_type_block_addressing = 1;
-        }
+    ocr[0] = SD_TxRx(SD_DUMMY_BYTE);
+    ocr[1] = SD_TxRx(SD_DUMMY_BYTE);
+    ocr[2] = SD_TxRx(SD_DUMMY_BYTE);
+    ocr[3] = SD_TxRx(SD_DUMMY_BYTE);
+
+    if (ocr[0] & 0x40) {
+        sd_type_block_addressing = 1;
     }
 
     SD_Deselect();
