@@ -375,32 +375,22 @@ int16_t MLX90393::decode_helper(uint8_t *data){
 }
 
 void MLX90393::convert(){
-	//Only when tcmp_en = 0
-	//Remove sign bit for unsigned res settings
-	if(this->reg.x_res == 2){
-		this->raw.x &= ~MLX90393_RES_17;
-	}
-	if(this->reg.x_res == 3){
-		this->raw.x &= ~MLX90393_RES_18;
-	}
-	if(this->reg.y_res == 2){
-		this->raw.y &= ~MLX90393_RES_17;
-	}
-	if(this->reg.y_res == 3){
-		this->raw.y &= ~MLX90393_RES_18;
-	}
-	if(this->reg.z_res == 2){
-		this->raw.z &= ~MLX90393_RES_17;
-	}
-	if(this->reg.x_res == 2){
-		this->raw.z &= ~MLX90393_RES_18;
-	}
+	// RES 2/3 are unsigned: reinterpret the raw word as unsigned and subtract
+    // the zero-field offset to recover a signed value. RES 0/1 are already signed.
+    int32_t x = (this->reg.x_res == MLX90393_RES_17) ? (int32_t)(uint16_t)this->raw.x - MLX90393_RES17_ZERO_OFFSET :
+                (this->reg.x_res == MLX90393_RES_18) ? (int32_t)(uint16_t)this->raw.x - MLX90393_RES18_ZERO_OFFSET :
+                                                       (int32_t)this->raw.x;
+    int32_t y = (this->reg.y_res == MLX90393_RES_17) ? (int32_t)(uint16_t)this->raw.y - MLX90393_RES17_ZERO_OFFSET :
+                (this->reg.y_res == MLX90393_RES_18) ? (int32_t)(uint16_t)this->raw.y - MLX90393_RES18_ZERO_OFFSET :
+                                                       (int32_t)this->raw.y;
+    int32_t z = (this->reg.z_res == MLX90393_RES_17) ? (int32_t)(uint16_t)this->raw.z - MLX90393_RES17_ZERO_OFFSET :
+                (this->reg.z_res == MLX90393_RES_18) ? (int32_t)(uint16_t)this->raw.z - MLX90393_RES18_ZERO_OFFSET :
+                                                       (int32_t)this->raw.z;
 
-	//Check if temperature compensation is enabled. See 16.2.10
-	//Convert raw data base on sensitivity
-	this->converted.x = (float)this->raw.x * sens_lookup_0xC[this->reg.gain][this->reg.x_res][0];
-	this->converted.y = (float)this->raw.y * sens_lookup_0xC[this->reg.gain][this->reg.y_res][0];
-	this->converted.z = (float)this->raw.z * sens_lookup_0xC[this->reg.gain][this->reg.z_res][1];
+    // FIX: Z now uses column [0] to match hallconf 0x0C (was [1]).
+    this->converted.x = (float)x * sens_lookup_0xC[this->reg.gain][this->reg.x_res][0];
+    this->converted.y = (float)y * sens_lookup_0xC[this->reg.gain][this->reg.y_res][0];
+    this->converted.z = (float)z * sens_lookup_0xC[this->reg.gain][this->reg.z_res][0];
 
 }
 

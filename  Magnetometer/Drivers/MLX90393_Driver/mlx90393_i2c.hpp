@@ -33,8 +33,10 @@
 #define MLX90393_X_RES_SHIFT 5       // Left-shift for x_res bits
 #define MLX90393_Y_RES_SHIFT 7       // Left-shift for y_res bits
 #define MLX90393_Z_RES_SHIFT 9       // Left-shift for z_res bits
-#define MLX90393_RES_17_MASK 0x8000		// Mask to remove sign bit for res = 2 (MSB = bit 17)
-#define MLX90393_RES_18_MASK 0x4000		// Mask to remove sign bit for res = 3 (MSB = bit 18)
+// #define MLX90393_RES_17_MASK 0x8000		// Mask to remove sign bit for res = 2 (MSB = bit 17)
+// #define MLX90393_RES_18_MASK 0x4000		// Mask to remove sign bit for res = 3 (MSB = bit 18)
+#define MLX90393_RES17_ZERO_OFFSET 0x8000
+#define MLX90393_RES18_ZERO_OFFSET 0x4000
 #define MLX90393_FILTER_MASK 0x001C
 #define MLX90393_FILTER_SHIFT 2
 #define MLX90393_OSR_MASK 0x0003 // OSR in bits 0-1 of CONF3
