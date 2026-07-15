@@ -15,7 +15,7 @@
 #define DEFAULT_I2C_ADDRESS (0x18 << 1) 
 #define CS GPIO_PIN_5 //Set CS pin
 // Flags to use with "zyxt" variables.
-#define MLX90393_T  0x01  // Temperature
+#define MLX90393_T  0x01  // temp
 #define MLX90393_X  0x02  // X-axis
 #define MLX90393_Y  0x04  // Y-axis
 #define MLX90393_Z  0x08  // Z-axis
@@ -156,7 +156,6 @@ class MLX90393{
 
 		CorrectionFactors correction_factors;
 
-		
 		struct CalDiagnostics {
 			uint32_t samples;
 			float radius[3];
