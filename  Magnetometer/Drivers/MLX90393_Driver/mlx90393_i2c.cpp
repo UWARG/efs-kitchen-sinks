@@ -33,22 +33,42 @@ MLX90393::MLX90393(I2C_HandleTypeDef *hi2c){
 	this->rm_flag = false;
 	this->mes_updated = true;
 	this->wait_flag = false;
-	this->correction_factors.soft_iron[0][0] = 1;
-	this->correction_factors.soft_iron[1][1] = 1;
-	this->correction_factors.soft_iron[2][2] = 1;
-	this->correction_factors.hard_iron[0] = 0;
-	this->correction_factors.hard_iron[1] = 0;
-	this->correction_factors.hard_iron[2] = 0;
+	for(int i = 0; i < 3; i++){
+		this->correction_factors.hard_iron[i] = 0.0f;
+		for(int j = 0; j < 3; j++){
+			this->correction_factors.soft_iron[i][j] = (i == j) ? 1.0f : 0.0f;
+		}
+	}
+	this->correction_factors.field_strength = 0.0f;
+	this->cal_diag.samples = 0;
+	this->cal_diag.radius[0] = 0.0f;
+	this->cal_diag.radius[1] = 0.0f;
+	this->cal_diag.radius[2] = 0.0f;
+	this->cal_diag.status = -1; // -1 = calibration has not run yet
 }
 
 bool MLX90393::begin(){
 	HAL_GPIO_WritePin(GPIOB, CS, GPIO_PIN_SET);
-	if(!i2c_EX()) return false;
-	if(!i2c_RT()) return false;
-	HAL_Delay(2); // settle after reset
-	if(!i2c_set_resolution(MLX90393_RES_16, MLX90393_RES_16, MLX90393_RES_15)) return false;
-	if(!i2c_set_oversampling(0x03)) return false;
-	if(!i2c_set_filter(0x05)) return false;
+	HAL_Delay(2);
+	i2c_EX();
+	HAL_Delay(1);
+	if(!i2c_RT()){
+		return false;
+	}
+	HAL_Delay(2);
+	if(!i2c_set_filter(0x05)){
+		return false;
+	}
+	if(!i2c_set_oversampling(0x03)){
+		return false;
+	}
+	if(!i2c_set_resolution(MLX90393_RES_16, MLX90393_RES_16, MLX90393_RES_15)){
+		return false;
+	}
+	if(!i2c_get_gain())         return false;
+	if(!i2c_get_resolution())   return false;
+	if(!i2c_get_filter())       return false;
+	if(!i2c_get_oversampling()) return false;
 	return true;
 }
 
@@ -90,9 +110,12 @@ bool MLX90393::i2c_RM(){
 	this->mes_updated = false;
 	this->wait_flag = true;
 	uint8_t tx_data = (uint8_t)CMD_READ_MEASUREMENT | this->zyxt;
-	if(i2c_transceive_IT(&tx_data, this->rx_data, 1, 7) != HAL_OK){
+	if(i2c_transceive(&tx_data, this->rx_data, 1, 7) != HAL_OK){
 		return false;
 	}
+	this->reg.stat = this->rx_data[0];
+	this->mes_updated = true;
+	this->wait_flag = false;
 	return true;
 }
 
@@ -117,7 +140,7 @@ bool MLX90393::i2c_RT(){
 }
 
 bool MLX90393::i2c_WR(uint8_t regNum, uint16_t tx_data){
-	uint8_t tx[4] = {CMD_WRITE_REGISTER, (uint8_t)(tx_data >> 8), (uint8_t)(tx_data & 0xFF), (uint8_t)regNum << 2};
+	uint8_t tx[4] = {CMD_WRITE_REGISTER, (uint8_t)(tx_data >> 8), (uint8_t)(tx_data & 0xFF), (uint8_t)(regNum << 2)};
 	uint8_t buf = 0x00;
 	if(i2c_transceive(tx, &buf, 4, 1) != HAL_OK){
 		return false;
@@ -126,7 +149,7 @@ bool MLX90393::i2c_WR(uint8_t regNum, uint16_t tx_data){
 	return true;
 }
 bool MLX90393::i2c_RR(uint8_t regNum){
-	uint8_t tx_data[2] = {CMD_READ_REGISTER, (uint8_t)regNum << 2};
+	uint8_t tx_data[2] = {CMD_READ_REGISTER, (uint8_t)(regNum << 2)};
 	uint8_t rx_data[3];
 	if(i2c_transceive(tx_data, rx_data, 2, 3) != HAL_OK){
 		return false;
@@ -169,21 +192,15 @@ bool MLX90393::i2c_set_resolution(uint8_t x_res, uint8_t y_res, uint8_t z_res){
 	this->reg.y_res = y_res;
 	this->reg.z_res = z_res;
 	uint16_t data = this->reg.val;
-	if(x_res != 0){
-		data = (data & ~MLX90393_X_RES_MASK) | (x_res << MLX90393_X_RES_SHIFT);
-	}
-	if(y_res != 0){
-		data = (data & ~MLX90393_Y_RES_MASK) | (y_res << MLX90393_Y_RES_SHIFT);
-	}
-	if(z_res != 0){
-		data = (data & ~MLX90393_Z_RES_MASK) | (z_res << MLX90393_Z_RES_SHIFT);
-	}
+	data = (data & ~MLX90393_X_RES_MASK) | (x_res << MLX90393_X_RES_SHIFT);
+	data = (data & ~MLX90393_Y_RES_MASK) | (y_res << MLX90393_Y_RES_SHIFT);
+	data = (data & ~MLX90393_Z_RES_MASK) | (z_res << MLX90393_Z_RES_SHIFT);
 	return(i2c_WR(MLX90393_CONF3, data));
 }
 
 
 bool MLX90393::i2c_get_resolution(){
-	if(i2c_RR(MLX90393_CONF3)){
+	if(!i2c_RR(MLX90393_CONF3)){ 
 		return false;
 	}
 	uint16_t data = this->reg.val;
@@ -205,7 +222,7 @@ bool MLX90393::i2c_set_filter(uint8_t filter){
 			}
 		}
 		if(this->reg.osr == 0x01){
-			if(filter == 1){
+			if(filter == 0){ 
 				return false;
 			}
 		}
@@ -235,15 +252,15 @@ bool MLX90393::i2c_set_oversampling(uint8_t osr){
 				return false;
 			}
 		}
-		if(this->reg.hallconf == 0x01){
-			if(osr == 1){
+		if(this->reg.filter == 0x01){
+			if(osr == 0){             
 				return false;
 			}
 		}
 	}
 	this->reg.osr = osr;
 	uint16_t data = this->reg.val;
-  data = (data & ~MLX90393_OSR_MASK) | (this->reg.osr << MLX90393_OSR_SHIFT);
+	data = (data & ~MLX90393_OSR_MASK) | (osr << MLX90393_OSR_SHIFT);
 	return(i2c_WR(MLX90393_CONF3, data));
 }
 
@@ -268,93 +285,132 @@ bool MLX90393::i2c_read_data(){
 	if(!i2c_RM()){
 		return false;
 	}
+	decode();
+	convert();
 	return true;
 }
 
 bool MLX90393::calibrate_4element(uint32_t duration_ms){
 	uint32_t current_time = HAL_GetTick();
 	const uint8_t matrix_size = 4;
-
 	float32_t matrix_x[matrix_size][matrix_size] = {0};
-	float32_t matrix_y[matrix_size] = {0};                   // FIX: size 4 (was indexed [4])
-	float32_t matrix_result[matrix_size] = {0};
-	float32_t matrix_x_inv[matrix_size][matrix_size] = {0};  // FIX: inverse needs a separate dst
-
-	arm_matrix_instance_f32 arm_matrix_x, arm_matrix_x_inv, arm_matrix_y, arm_matrix_result;
-
-	float min_v[3] = { 1e9f,  1e9f,  1e9f};
-	float max_v[3] = {-1e9f, -1e9f, -1e9f};
+	float32_t matrix_x_inv[matrix_size][matrix_size] = {0}; // FIX: inverse needs its own buffer
+	float32_t matrix_y[4] = {0};
+	float32_t matrix_result[4] = {0};
 	uint32_t samples = 0;
+	// Track per-axis extremes for the diagonal scale correction (7-element
+	// step from the team wiki) - fixes an axis that reads consistently weak.
+	float x_min = 1e9f, y_min = 1e9f, z_min = 1e9f;
+	float x_max = -1e9f, y_max = -1e9f, z_max = -1e9f;
+	arm_matrix_instance_f32 arm_matrix_x;
+	arm_matrix_instance_f32 arm_matrix_x_inv;
+	arm_matrix_instance_f32 arm_matrix_y;
+	arm_matrix_instance_f32 arm_matrix_result;
 
-	while(HAL_GetTick() < current_time + duration_ms) {      
-		this->i2c_SM();
-		HAL_Delay(3);
-		this->i2c_RM();
-		this->decode();
-		this->convert();
+	while(HAL_GetTick() - current_time < duration_ms) {
+		if(!this->i2c_read_data()){
+			continue;
+		}
 
-		float x = this->converted.x, y = this->converted.y, z = this->converted.z;
-		float s = x*x + y*y + z*z;
+		float x = this->converted.x;
+		float y = this->converted.y;
+		float z = this->converted.z;
+		float r2 = x*x + y*y + z*z; 
 
-		matrix_x[0][0] += x*x; matrix_x[0][1] += x*y; matrix_x[0][2] += x*z; matrix_x[0][3] += x;
-		matrix_x[1][0] += x*y; matrix_x[1][1] += y*y; matrix_x[1][2] += y*z; matrix_x[1][3] += y;
-		matrix_x[2][0] += x*z; matrix_x[2][1] += y*z; matrix_x[2][2] += z*z; matrix_x[2][3] += z;
-		matrix_x[3][0] += x;   matrix_x[3][1] += y;   matrix_x[3][2] += z;   matrix_x[3][3] += 1;
+		matrix_x[0][0] += x*x;
+		matrix_x[0][1] += x*y;
+		matrix_x[0][2] += x*z;
+		matrix_x[0][3] += x;
 
-		matrix_y[0] += x*s;
-		matrix_y[1] += y*s;
-		matrix_y[2] += z*s;
-		matrix_y[3] += s;                            
+		matrix_x[1][0] += x*y;
+		matrix_x[1][1] += y*y;
+		matrix_x[1][2] += y*z;
+		matrix_x[1][3] += y;
 
-		if(x < min_v[0]) min_v[0] = x; if(x > max_v[0]) max_v[0] = x;
-		if(y < min_v[1]) min_v[1] = y; if(y > max_v[1]) max_v[1] = y;
-		if(z < min_v[2]) min_v[2] = z; if(z > max_v[2]) max_v[2] = z;
+		matrix_x[2][0] += x*z;
+		matrix_x[2][1] += y*z;
+		matrix_x[2][2] += z*z;
+		matrix_x[2][3] += z;
+
+		matrix_x[3][0] += x;
+		matrix_x[3][1] += y;
+		matrix_x[3][2] += z;
+		matrix_x[3][3] += 1;
+
+		matrix_y[0] += x * r2;
+		matrix_y[1] += y * r2;
+		matrix_y[2] += z * r2;
+		matrix_y[3] += r2; // FIX: was matrix_y[4] - out-of-bounds write corrupting the stack
+
+		if(x < x_min) x_min = x;
+		if(x > x_max) x_max = x;
+		if(y < y_min) y_min = y;
+		if(y > y_max) y_max = y;
+		if(z < z_min) z_min = z;
+		if(z > z_max) z_max = z;
 		samples++;
 	}
 
+	float rx = (samples > 0) ? 0.5f * (x_max - x_min) : 0.0f;
+	float ry = (samples > 0) ? 0.5f * (y_max - y_min) : 0.0f;
+	float rz = (samples > 0) ? 0.5f * (z_max - z_min) : 0.0f;
 	this->cal_diag.samples = samples;
+	this->cal_diag.radius[0] = rx;
+	this->cal_diag.radius[1] = ry;
+	this->cal_diag.radius[2] = rz;
 
-	arm_mat_init_f32(&arm_matrix_x,      matrix_size, matrix_size, (float32_t *)matrix_x);
-	arm_mat_init_f32(&arm_matrix_x_inv,  matrix_size, matrix_size, (float32_t *)matrix_x_inv);
-	arm_mat_init_f32(&arm_matrix_y,      matrix_size, 1,           (float32_t *)matrix_y);       // FIX: 4x1
-	arm_mat_init_f32(&arm_matrix_result, matrix_size, 1,           (float32_t *)matrix_result);  // FIX: 4x1
-
-	if(samples < 100){ this->cal_diag.status = 1; return false; }
-
-	if(arm_mat_inverse_f32(&arm_matrix_x, &arm_matrix_x_inv) != ARM_MATH_SUCCESS){
-		this->cal_diag.status = 3; return false;             // singular
-	}
-	if(arm_mat_mult_f32(&arm_matrix_x_inv, &arm_matrix_y, &arm_matrix_result) != ARM_MATH_SUCCESS){
-		this->cal_diag.status = 3; return false;
+	if(samples < 60){
+		this->cal_diag.status = 1;
+		return false;
 	}
 
-	float cx = 0.5f * matrix_result[0];
-	float cy = 0.5f * matrix_result[1];
-	float cz = 0.5f * matrix_result[2];
-	this->correction_factors.hard_iron[0] = cx;
-	this->correction_factors.hard_iron[1] = cy;
-	this->correction_factors.hard_iron[2] = cz;
-
-	float field = sqrtf(matrix_result[3] + cx*cx + cy*cy + cz*cz);
-	this->correction_factors.field_strength = field;
-
-	this->cal_diag.radius[0] = 0.5f * (max_v[0] - min_v[0]);
-	this->cal_diag.radius[1] = 0.5f * (max_v[1] - min_v[1]);
-	this->cal_diag.radius[2] = 0.5f * (max_v[2] - min_v[2]);
-
-	if(this->cal_diag.radius[0] < 10.0f || this->cal_diag.radius[1] < 10.0f || this->cal_diag.radius[2] < 10.0f){
-		this->cal_diag.status = 2; return false;             // poor rotation coverage
-	}
-	if(!(field > 20.0f && field < 90.0f)){
-		this->cal_diag.status = 4; return false;             // non-physical field
+	float r_max = rx;
+	if(ry > r_max) r_max = ry;
+	if(rz > r_max) r_max = rz;
+	if(r_max < 10.0f || rx < 0.5f * r_max || ry < 0.5f * r_max || rz < 0.5f * r_max){
+		this->cal_diag.status = 2;
+		return false;
 	}
 
-	this->correction_factors.soft_iron[0][0] = field / this->cal_diag.radius[0];
-	this->correction_factors.soft_iron[1][1] = field / this->cal_diag.radius[1];
-	this->correction_factors.soft_iron[2][2] = field / this->cal_diag.radius[2];
+	arm_mat_init_f32(&arm_matrix_x, matrix_size, matrix_size, (float32_t *)matrix_x);
+	arm_mat_init_f32(&arm_matrix_x_inv, matrix_size, matrix_size, (float32_t *)matrix_x_inv);
+	arm_mat_init_f32(&arm_matrix_y, matrix_size, 1, matrix_y);           // FIX: 4x1 vector, was 4x4
+	arm_mat_init_f32(&arm_matrix_result, matrix_size, 1, matrix_result); // FIX: 4x1 vector, was 4x4
+
+	if(arm_mat_inverse_f32(&arm_matrix_x, &arm_matrix_x_inv) != ARM_MATH_SUCCESS) {
+		this->cal_diag.status = 3; // singular: not rotated through enough orientations
+		return false;
+	}
+
+	if (arm_mat_mult_f32(&arm_matrix_x_inv, &arm_matrix_y, &arm_matrix_result) != ARM_MATH_SUCCESS) {
+		this->cal_diag.status = 3;
+		return false;
+	}
+
+	// beta = [2*bHx, 2*bHy, 2*bHz, B^2 - |bH|^2]  (NXP AN4246)
+	float bx = 0.5 * matrix_result[0];
+	float by = 0.5 * matrix_result[1];
+	float bz = 0.5 * matrix_result[2];
+
+	float B2 = matrix_result[3] + bx*bx + by*by + bz*bz;
+	if(B2 <= 0.0f || sqrtf(B2) < 5.0f || sqrtf(B2) > 200.0f){
+		this->cal_diag.status = 4;
+		return false;
+	}
+
+	this->correction_factors.hard_iron[0] = bx;
+	this->correction_factors.hard_iron[1] = by;
+	this->correction_factors.hard_iron[2] = bz;
+	this->correction_factors.field_strength = sqrtf(B2);
+
+	float r_avg = (rx + ry + rz) / 3.0f;
+	this->correction_factors.soft_iron[0][0] = r_avg / rx;
+	this->correction_factors.soft_iron[1][1] = r_avg / ry;
+	this->correction_factors.soft_iron[2][2] = r_avg / rz;
 
 	this->cal_diag.status = 0;
 	return true;
+
 }
 
 int MLX90393::zyxt_set_bits(){
@@ -392,27 +448,39 @@ void MLX90393::decode(){
 }
 
 int16_t MLX90393::decode_helper(uint8_t *data){
-	return (data[0] << 8 | data[1]);
+	return (int16_t)((data[0] << 8) | data[1]);
 }
 
 void MLX90393::convert(){
-	// RES 2/3 are unsigned -> reinterpret the raw word as unsigned and subtract 
-	// 							the zero-field offset to recover a signed value
-	// RES 0/1 are already signed
-    int32_t x = (this->reg.x_res == MLX90393_RES_17) ? (int32_t)(uint16_t)this->raw.x - MLX90393_RES17_ZERO_OFFSET :
-                (this->reg.x_res == MLX90393_RES_18) ? (int32_t)(uint16_t)this->raw.x - MLX90393_RES18_ZERO_OFFSET :
-                                                       (int32_t)this->raw.x;
-    int32_t y = (this->reg.y_res == MLX90393_RES_17) ? (int32_t)(uint16_t)this->raw.y - MLX90393_RES17_ZERO_OFFSET :
-                (this->reg.y_res == MLX90393_RES_18) ? (int32_t)(uint16_t)this->raw.y - MLX90393_RES18_ZERO_OFFSET :
-                                                       (int32_t)this->raw.y;
-    int32_t z = (this->reg.z_res == MLX90393_RES_17) ? (int32_t)(uint16_t)this->raw.z - MLX90393_RES17_ZERO_OFFSET :
-                (this->reg.z_res == MLX90393_RES_18) ? (int32_t)(uint16_t)this->raw.z - MLX90393_RES18_ZERO_OFFSET :
-                                                       (int32_t)this->raw.z;
+	//Only when tcmp_en = 0
+	int32_t x = this->raw.x;
+	int32_t y = this->raw.y;
+	int32_t z = this->raw.z;
+	if(this->reg.tcmp_en == 0){
+		if(this->reg.x_res == MLX90393_RES_17){
+			x = (int32_t)((uint16_t)this->raw.x) - MLX90393_RES17_ZERO_OFFSET;
+		}
+		if(this->reg.x_res == MLX90393_RES_18){
+			x = (int32_t)((uint16_t)this->raw.x) - MLX90393_RES18_ZERO_OFFSET;
+		}
+		if(this->reg.y_res == MLX90393_RES_17){
+			y = (int32_t)((uint16_t)this->raw.y) - MLX90393_RES17_ZERO_OFFSET;
+		}
+		if(this->reg.y_res == MLX90393_RES_18){
+			y = (int32_t)((uint16_t)this->raw.y) - MLX90393_RES18_ZERO_OFFSET;
+		}
+		if(this->reg.z_res == MLX90393_RES_17){
+			z = (int32_t)((uint16_t)this->raw.z) - MLX90393_RES17_ZERO_OFFSET;
+		}
+		if(this->reg.z_res == MLX90393_RES_18){
+			z = (int32_t)((uint16_t)this->raw.z) - MLX90393_RES18_ZERO_OFFSET;
+		}
+	}
 
-    // Z uses column [0] to match hallconf 0x0C (was [1])
-    this->converted.x = (float)x * sens_lookup_0xC[this->reg.gain][this->reg.x_res][0];
-    this->converted.y = (float)y * sens_lookup_0xC[this->reg.gain][this->reg.y_res][0];
-    this->converted.z = (float)z * sens_lookup_0xC[this->reg.gain][this->reg.z_res][0];
+	//Convert raw data base on sensitivity
+	this->converted.x = (float)x * sens_lookup_0xC[this->reg.gain][this->reg.x_res][0];
+	this->converted.y = (float)y * sens_lookup_0xC[this->reg.gain][this->reg.y_res][0];
+	this->converted.z = (float)z * sens_lookup_0xC[this->reg.gain][this->reg.z_res][1];
 
 }
 
@@ -455,9 +523,11 @@ float MLX90393::get_z_data(){
 float MLX90393::get_x_calibrated(){
 	return (this->converted.x - this->correction_factors.hard_iron[0]) * this->correction_factors.soft_iron[0][0];
 }
+
 float MLX90393::get_y_calibrated(){
 	return (this->converted.y - this->correction_factors.hard_iron[1]) * this->correction_factors.soft_iron[1][1];
 }
+
 float MLX90393::get_z_calibrated(){
 	return (this->converted.z - this->correction_factors.hard_iron[2]) * this->correction_factors.soft_iron[2][2];
 }

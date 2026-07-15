@@ -1,11 +1,12 @@
-../Core/Src/main.cpp:72:5:int __io_putchar(int)	1
-../Core/Src/main.cpp:127:5:int main()	1
-../Core/Src/main.cpp:184:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:229:13:void MX_I2C3_Init()	4
-../Core/Src/main.cpp:277:13:void MX_LPUART1_UART_Init()	5
-../Core/Src/main.cpp:323:13:void MX_DMA_Init()	1
-../Core/Src/main.cpp:342:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:370:6:void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef*)	1
-../Core/Src/main.cpp:380:6:void Error_Handler()	1
-../Core/Src/main.cpp:389:1:void __static_initialization_and_destruction_0()	1
-../Core/Src/main.cpp:389:1:cpp)	1
+../Core/Src/main.cpp:89:13:void run_calibration()	1
+../Core/Src/main.cpp:107:5:int __io_putchar(int)	1
+../Core/Src/main.cpp:162:5:int main()	6
+../Core/Src/main.cpp:237:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:282:13:void MX_I2C3_Init()	4
+../Core/Src/main.cpp:330:13:void MX_LPUART1_UART_Init()	5
+../Core/Src/main.cpp:376:13:void MX_DMA_Init()	1
+../Core/Src/main.cpp:395:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:423:6:void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef*)	1
+../Core/Src/main.cpp:433:6:void Error_Handler()	1
+../Core/Src/main.cpp:442:1:void __static_initialization_and_destruction_0()	1
+../Core/Src/main.cpp:442:1:cpp)	1

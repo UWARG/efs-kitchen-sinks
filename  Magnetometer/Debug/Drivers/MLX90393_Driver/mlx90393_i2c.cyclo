@@ -1,34 +1,37 @@
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:14:1:MLX90393::MLX90393(I2C_HandleTypeDef*)	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:50:19:HAL_StatusTypeDef MLX90393::i2c_transceive(uint8_t*, uint8_t*, uint16_t, uint16_t)	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:61:19:HAL_StatusTypeDef MLX90393::i2c_transceive_IT(uint8_t*, uint8_t*, uint16_t, uint16_t)	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:72:6:bool MLX90393::i2c_SM()	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:83:6:bool MLX90393::i2c_RM()	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:94:6:bool MLX90393::i2c_EX()	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:104:6:bool MLX90393::i2c_RT()	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:114:6:bool MLX90393::i2c_WR(uint8_t, uint16_t)	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:123:6:bool MLX90393::i2c_RR(uint8_t)	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:134:6:bool MLX90393::i2c_set_gain(uint8_t)	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:144:6:bool MLX90393::i2c_get_gain()	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:153:6:bool MLX90393::i2c_set_resolution(uint8_t, uint8_t, uint8_t)	12
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:180:6:bool MLX90393::i2c_get_resolution()	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:191:6:bool MLX90393::i2c_set_filter(uint8_t)	8
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:214:6:bool MLX90393::i2c_get_filter()	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:222:6:bool MLX90393::i2c_set_oversampling(uint8_t)	8
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:245:6:bool MLX90393::i2c_get_oversampling()	2
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:254:6:bool MLX90393::i2c_has_error()	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:258:6:bool MLX90393::i2c_read_data()	3
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:269:6:bool MLX90393::calibrate_4element()	4
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:339:5:int MLX90393::zyxt_set_bits()	3
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:351:6:void MLX90393::decode()	5
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:373:9:int16_t MLX90393::decode_helper(uint8_t*)	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:377:6:void MLX90393::convert()	7
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:407:6:void MLX90393::set_zyxt(uint8_t)	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:411:6:bool MLX90393::get_rm_flag()	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:415:6:void MLX90393::set_update_flag(bool)	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:419:6:bool MLX90393::read_update_flag()	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:423:6:void MLX90393::set_wait_flag(bool)	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:427:6:bool MLX90393::read_wait_flag()	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:431:7:float MLX90393::get_x_data()	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:435:7:float MLX90393::get_y_data()	1
-../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:439:7:float MLX90393::get_z_data()	1
-C:\ST\STM32CubeIDE_2.0.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.100.202509120712\tools\bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/include/c++/13.3.1/cmath:1070:5:constexpr typename __gnu_cxx::__promote_2<_Tp, _Up>::__type std::pow(_Tp, _Up) [with _Tp = float; _Up = int]	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:14:1:MLX90393::MLX90393(I2C_HandleTypeDef*)	4
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:50:6:bool MLX90393::begin()	9
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:75:19:HAL_StatusTypeDef MLX90393::i2c_transceive(uint8_t*, uint8_t*, uint16_t, uint16_t)	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:86:19:HAL_StatusTypeDef MLX90393::i2c_transceive_IT(uint8_t*, uint8_t*, uint16_t, uint16_t)	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:97:6:bool MLX90393::i2c_SM()	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:108:6:bool MLX90393::i2c_RM()	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:122:6:bool MLX90393::i2c_EX()	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:132:6:bool MLX90393::i2c_RT()	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:142:6:bool MLX90393::i2c_WR(uint8_t, uint16_t)	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:151:6:bool MLX90393::i2c_RR(uint8_t)	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:162:6:bool MLX90393::i2c_set_gain(uint8_t)	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:172:6:bool MLX90393::i2c_get_gain()	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:181:6:bool MLX90393::i2c_set_resolution(uint8_t, uint8_t, uint8_t)	9
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:202:6:bool MLX90393::i2c_get_resolution()	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:213:6:bool MLX90393::i2c_set_filter(uint8_t)	8
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:236:6:bool MLX90393::i2c_get_filter()	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:244:6:bool MLX90393::i2c_set_oversampling(uint8_t)	8
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:267:6:bool MLX90393::i2c_get_oversampling()	2
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:276:6:bool MLX90393::i2c_has_error()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:280:6:bool MLX90393::i2c_read_data()	3
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:293:6:bool MLX90393::calibrate_4element(uint32_t)	25
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:416:5:int MLX90393::zyxt_set_bits()	3
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:428:6:void MLX90393::decode()	5
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:450:9:int16_t MLX90393::decode_helper(uint8_t*)	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:454:6:void MLX90393::convert()	8
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:487:6:void MLX90393::set_zyxt(uint8_t)	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:491:6:bool MLX90393::get_rm_flag()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:495:6:void MLX90393::set_update_flag(bool)	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:499:6:bool MLX90393::read_update_flag()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:503:6:void MLX90393::set_wait_flag(bool)	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:507:6:bool MLX90393::read_wait_flag()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:511:7:float MLX90393::get_x_data()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:515:7:float MLX90393::get_y_data()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:519:7:float MLX90393::get_z_data()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:523:7:float MLX90393::get_x_calibrated()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:527:7:float MLX90393::get_y_calibrated()	1
+../Drivers/MLX90393_Driver/mlx90393_i2c.cpp:531:7:float MLX90393::get_z_calibrated()	1

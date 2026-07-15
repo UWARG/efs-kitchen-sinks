@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "mlx90393_i2c.hpp"
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,26 +62,29 @@ static void MX_LPUART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float mag_x = -1;
-float mag_y = -1;
-float mag_z = -1;
-float mag_norm = 0;  // calibrated |B| should be ~52-56 and stay there while rotating
-float mag_raw_norm = 0;  // uncalibrated |B| for comparison
+MLX90393 mlx90393(&hi2c3);
 
+// ---- Live Expressions watch list -------------------------------------------
+// Add ALL of these. They tell the whole story without any UART.
+float mag_x = 0;
+float mag_y = 0;
+float mag_z = 0;
+float mag_norm = 0;        // calibrated |B| - should be ~52-56 and STAY there as you rotate
+float mag_raw_norm = 0;    // uncalibrated |B| - for comparison
 float hard_iron[3] = {0};
-float axis_scale[3] = {0}; // soft-iron diagonal applied per axis
-
-float cal_field_strength = 0;
-float cal_radius[3] = {0}; // span each axis sees during rotation (~40-55)
-
+float axis_scale[3] = {1, 1, 1};   // soft-iron diagonal applied per axis
+float cal_field_strength = 0;      // |B| the sphere fit itself estimated
+float cal_radius[3] = {0};         // span each axis saw during cal - ALL should reach ~40-55
 uint32_t cal_samples = 0;
-int cal_status = -1;  // -1 not run, 0 OK, 1 too few samples, 
-                       // 2 poor rotation coverage, 3 singular fit, 4 bad fit
+int cal_status = -1;       // -1 not run, 0 OK, 1 too few samples,
+                           // 2 poor rotation coverage, 3 singular fit, 4 bad fit
+bool sensor_ok = false;
 bool status = false;
 
-volatile uint8_t recalibrate = 0; // set this to 1 in Live Expressions to re-run calibration
-
-bool sensor_ok = false;
+// Set this to 1 in Live Expressions to re-run the calibration WITHOUT
+// reflashing. It clears itself when the calibration starts.
+volatile uint8_t recalibrate = 0;
+// -----------------------------------------------------------------------------
 
 static void run_calibration(void)
 {
@@ -184,7 +188,6 @@ int main(void)
   MX_I2C3_Init();
   MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  MLX90393 mlx90393(&hi2c3);
   sensor_ok = mlx90393.begin();
 
   if(sensor_ok)
@@ -197,6 +200,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  // Set recalibrate = 1 in Live Expressions to redo the calibration
+	  // without reflashing. You then have 15 s to rotate the board.
 	  if(recalibrate)
 	  {
 		  recalibrate = 0;
@@ -217,6 +222,7 @@ int main(void)
 	  }
 
 	  HAL_Delay(100);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
