@@ -1,0 +1,10 @@
+../Core/Src/main.cpp:77:6:void FDCAN_Config()	2
+../Core/Src/main.cpp:92:6:void FDCAN_Activate()	2
+../Core/Src/main.cpp:98:6:void FDCAN_Transmit()	2
+../Core/Src/main.cpp:104:6:void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef*, uint32_t)	2
+../Core/Src/main.cpp:125:5:int main()	3
+../Core/Src/main.cpp:230:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:281:13:void MX_FDCAN1_Init()	2
+../Core/Src/main.cpp:325:13:void MX_ICACHE_Init()	3
+../Core/Src/main.cpp:357:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:380:6:void Error_Handler()	1

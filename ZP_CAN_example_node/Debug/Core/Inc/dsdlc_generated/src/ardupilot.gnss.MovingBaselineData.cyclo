@@ -1,0 +1,4 @@
+../Core/Inc/dsdlc_generated/include/ardupilot.gnss.MovingBaselineData.h:55:6:_ardupilot_gnss_MovingBaselineData_encode	3
+../Core/Inc/dsdlc_generated/include/ardupilot.gnss.MovingBaselineData.h:102:6:_ardupilot_gnss_MovingBaselineData_decode	4
+../Core/Inc/dsdlc_generated/src/ardupilot.gnss.MovingBaselineData.c:12:10:ardupilot_gnss_MovingBaselineData_encode	1
+../Core/Inc/dsdlc_generated/src/ardupilot.gnss.MovingBaselineData.c:32:6:ardupilot_gnss_MovingBaselineData_decode	2
