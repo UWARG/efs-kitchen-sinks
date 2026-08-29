@@ -3,7 +3,6 @@
 #include <Servo.h>
 
 
-
 Servo gimbalY;
 Servo gimbalX;
 
@@ -58,8 +57,8 @@ void loop() {
 
 }
 
-const int SERVO_MIN_MS = 900;
-const int SERVO_MAX_MS = 2000;
+const int SERVO_MIN_MS = 400;
+const int SERVO_MAX_MS = 2500;
 
 void setGimbalY(int &percent)
 {
