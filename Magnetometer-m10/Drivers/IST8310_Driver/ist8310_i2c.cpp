@@ -1,156 +1,196 @@
-/*
- * ist8310_i2c.cpp
- *
- *  Created on: Mar 1, 2026
- *      Author: jeong
+/**
+ * @file ist8310_i2c.cpp
+ * @brief I2C driver for the iSentek IST8310 three-axis magnetometer.
  */
 #include "ist8310_i2c.hpp"
-#include "stm32l5xx_hal.h"
-#include "stm32l5xx_hal_i2c.h"
-#include <math.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include <cmath>
 
-
-ist8310_i2c::ist8310_i2c(I2C_HandleTypeDef *hi2c)
+namespace
 {
-	this -> _hi2c=hi2c;
-	this -> _addr=IST8310_I2C_ADDR;
-	this -> raw.x = 0;
-	this -> raw.y = 0;
-	this -> raw.z = 0;
-	this -> converted.x = 0;
-	this -> converted.y = 0;
-	this -> converted.z = 0;
-	this -> converted.heading = 0;
-}
+constexpr uint32_t kI2cTimeoutMilliseconds = 100U;
+constexpr uint32_t kResetDelayMilliseconds = 50U;
+constexpr uint32_t kDataReadyTimeoutMilliseconds = 20U;
+constexpr float kRadiansToDegrees = 57.29577951308232F;
+}  // namespace
 
-//I have no idea what this is for
-ist8310_i2c::~ist8310_i2c()
+Ist8310::Ist8310(I2C_HandleTypeDef *i2c, uint8_t address)
+    : i2c_(i2c), address_(address), ready_(false)
 {
 }
 
-HAL_StatusTypeDef ist8310_i2c::i2c_transceive(uint8_t *tx_data, uint8_t *rx_data, uint16_t tx_size, uint16_t rx_size)
+bool Ist8310::init()
 {
-    HAL_StatusTypeDef status;
-    status = HAL_I2C_Master_Transmit(this->_hi2c, this->	_addr, tx_data, tx_size, HAL_MAX_DELAY);
-    if(status != HAL_OK){
-        return status;
-    }
-    status = HAL_I2C_Master_Receive(this->_hi2c, this->_addr, rx_data, rx_size, HAL_MAX_DELAY);
-    return status;
+  ready_ = false;
+
+  if ((i2c_ == nullptr) || !probe())
+  {
+    return false;
+  }
+
+  if (!writeRegister(kControl2, kSoftReset))
+  {
+    return false;
+  }
+
+  HAL_Delay(kResetDelayMilliseconds);
+
+  uint8_t who_am_i = 0U;
+  if (!readRegister(kWhoAmI, who_am_i) || (who_am_i != kWhoAmIValue))
+  {
+    return false;
+  }
+
+  if (!configure())
+  {
+    return false;
+  }
+
+  ready_ = true;
+  return true;
 }
 
-bool ist8310_i2c::init(){
-    //check connectivity via who am I function
-    uint8_t reg = IST8310_REG_WAI;
-    uint8_t wai = 0;
+bool Ist8310::read(Sample &sample)
+{
+  if (!ready_ || !writeRegister(kControl1, kSingleMeasurement))
+  {
+    ready_ = false;
+    return false;
+  }
 
-    if(i2c_transceive(&reg, &wai, 1, 1) != HAL_OK)
-    {
-        return false;
-    }
+  if (!waitForDataReady())
+  {
+    ready_ = false;
+    return false;
+  }
 
-    if(wai != IST8310_WAI_VAL)
-    {
-        return false;
-    }
+  uint8_t data[6] = {};
+  if (!readRegisters(kDataXLow, data, sizeof(data)))
+  {
+    ready_ = false;
+    return false;
+  }
 
-    //reset
-    uint8_t tx_rst[2] = {IST8310_REG_CNTL2, IST8310_CNTL2_SRST};
-    if (i2c_transceive(tx_rst, nullptr, 2, 0) != HAL_OK){
-        return false;
-    }
-    HAL_Delay(50);
+  sample.x_raw = combineBytes(data[1], data[0]);
+  sample.y_raw = combineBytes(data[3], data[2]);
+  sample.z_raw = combineBytes(data[5], data[4]);
 
-    //16x averaging
-    uint8_t tx_avg[2] = {IST8310_REG_AVGCNTL, IST8310_AVGCNTL_16X};
-    if(i2c_transceive(tx_avg, nullptr, 2, 0) != HAL_OK)
-    {
-        return false;
-    }
+  sample.x_microtesla = static_cast<float>(sample.x_raw) * kMicroteslaPerLsb;
+  sample.y_microtesla = static_cast<float>(sample.y_raw) * kMicroteslaPerLsb;
+  sample.z_microtesla = static_cast<float>(sample.z_raw) * kMicroteslaPerLsb;
+  sample.heading_degrees = calculateHeading(sample.x_microtesla,
+                                            sample.y_microtesla);
 
-    //pulse duration
-    uint8_t tx_pd[2] = {IST8310_REG_PDCNTL, IST8310_PDCNTL_VAL};
-    if(i2c_transceive(tx_pd, nullptr, 2, 0) != HAL_OK){
-        return false;
-    }
+  return true;
+}
 
+uint8_t Ist8310::address() const
+{
+  return address_;
+}
+
+bool Ist8310::isReady() const
+{
+  return ready_;
+}
+
+bool Ist8310::probe()
+{
+  constexpr uint8_t kCandidateAddresses[] = {0x0E, 0x0C, 0x0D, 0x0F};
+
+  const uint8_t preferred_address = address_;
+  uint8_t who_am_i = 0U;
+  if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue))
+  {
     return true;
+  }
+
+  for (uint8_t candidate : kCandidateAddresses)
+  {
+    if (candidate == preferred_address)
+    {
+      continue;
+    }
+
+    address_ = candidate;
+
+    who_am_i = 0U;
+    if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue))
+    {
+      return true;
+    }
+  }
+
+  address_ = kDefaultAddress;
+  return false;
 }
 
-bool ist8310_i2c::read(){
-    //single measurement
-    uint8_t tx_sm[2] = {IST8310_REG_CNTL1, IST8310_CNTL1_SINGLE};
-    if(i2c_transceive(tx_sm, nullptr, 2, 0) != HAL_OK){
-		return false;
-    }
-
-    //pause for conversion
-    HAL_Delay(7);
-
-    //check the data
-    uint8_t reg_stat = IST8310_REG_STAT1;
-    uint8_t stat = 0;
-    if(i2c_transceive(&reg_stat, &stat, 1, 1) != HAL_OK)
-    {
-        return false;
-    }
-
-    if(!(stat & IST8310_STAT1_DRDY)){
-        return false;
-    }
-
-    if(!(stat & IST8310_STAT1_DRDY)){
-        HAL_Delay(3);
-        if(i2c_transceive(&reg_stat, &stat, 1, 1) != HAL_OK)
-        {
-            return false;
-        }
-
-        if(!(stat & IST8310_STAT1_DRDY))
-        {
-            return false;
-        }
-    }
-
-    //read 6 bytes raw data
-    uint8_t reg_data = IST8310_REG_DATA;
-    uint8_t buf[6];
-    if(i2c_transceive(&reg_data, buf, 1, 6) != HAL_OK)
-    {
-        return false;
-    }
-
-    //decode
-    uint8_t *p = buf;
-    this -> raw.x = (int16_t)((uint16_t)*(p + 1) << 8 | *(p + 0));
-	this -> raw.y = (int16_t)((uint16_t)*(p + 3) << 8 | *(p + 2));
-	this -> raw.z = (int16_t)((uint16_t)*(p + 5) << 8 | *(p + 4));
-
-    //convert
-    this -> converted.x = (float)this -> raw.x * IST8310_RESOLUTION_UT_LSB;
-    this -> converted.y = (float)this -> raw.y * IST8310_RESOLUTION_UT_LSB;
-    this -> converted.z = (float)this -> raw.z * IST8310_RESOLUTION_UT_LSB;
-
-    //heading
-    float heading_rad = atan2f(- this -> converted.y, this -> converted.x);
-    float heading_deg = heading_rad * (180.0f / (float) M_PI);
-    if(heading_deg < 0.0f)
-    {
-        heading_deg += 360.0f;
-    }
-    this -> converted.heading = heading_deg;
-    return true;
+bool Ist8310::configure()
+{
+  return writeRegister(kAverageControl, kAverage16) &&
+         writeRegister(kPulseDurationControl, kNormalPulseDuration);
 }
 
-float ist8310_i2c::get_x_data() {return this -> converted.x;}
-float ist8310_i2c::get_y_data() {return this -> converted.y;}
-float ist8310_i2c::get_z_data() {return this -> converted.z;}
-float ist8310_i2c::get_heading() {return this -> converted.heading;}
-int16_t ist8310_i2c::get_raw_x() {return this -> raw.x;}
-int16_t ist8310_i2c::get_raw_y() {return this -> raw.y;}
-int16_t ist8310_i2c::get_raw_z() {return this -> raw.z;}
- 
+bool Ist8310::waitForDataReady()
+{
+  const uint32_t start = HAL_GetTick();
+
+  while ((HAL_GetTick() - start) < kDataReadyTimeoutMilliseconds)
+  {
+    uint8_t status = 0U;
+    if (!readRegister(kStatus1, status))
+    {
+      return false;
+    }
+
+    if ((status & kStatusDataReady) != 0U)
+    {
+      return true;
+    }
+
+    HAL_Delay(1U);
+  }
+
+  return false;
+}
+
+bool Ist8310::writeRegister(uint8_t reg, uint8_t value)
+{
+  return HAL_I2C_Mem_Write(i2c_, static_cast<uint16_t>(address_) << 1U, reg,
+                           I2C_MEMADD_SIZE_8BIT, &value, 1U,
+                           kI2cTimeoutMilliseconds) == HAL_OK;
+}
+
+bool Ist8310::readRegister(uint8_t reg, uint8_t &value) const
+{
+  return HAL_I2C_Mem_Read(i2c_, static_cast<uint16_t>(address_) << 1U, reg,
+                          I2C_MEMADD_SIZE_8BIT, &value, 1U,
+                          kI2cTimeoutMilliseconds) == HAL_OK;
+}
+
+bool Ist8310::readRegisters(uint8_t reg, uint8_t *data,
+                            uint16_t length) const
+{
+  return HAL_I2C_Mem_Read(i2c_, static_cast<uint16_t>(address_) << 1U, reg,
+                          I2C_MEMADD_SIZE_8BIT, data, length,
+                          kI2cTimeoutMilliseconds) == HAL_OK;
+}
+
+int16_t Ist8310::combineBytes(uint8_t most_significant,
+                              uint8_t least_significant)
+{
+  return static_cast<int16_t>((static_cast<uint16_t>(most_significant) << 8U) |
+                              least_significant);
+}
+
+float Ist8310::calculateHeading(float x_microtesla, float y_microtesla)
+{
+  // Preserve the board-frame convention used by the original firmware.
+  float heading = std::atan2(-y_microtesla, x_microtesla) * kRadiansToDegrees;
+  if (heading < 0.0F)
+  {
+    heading += 360.0F;
+  }
+
+  return heading;
+}

@@ -22,6 +22,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ist8310_i2c.hpp"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,7 +54,7 @@ volatile float mag_y = 0;
 volatile float mag_z = 0;
 volatile float mag_heading = 0;
 volatile bool mag_ok = false;
-ist8310_i2c mag(&hi2c1);
+Ist8310 mag(&hi2c1);
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,7 +68,62 @@ static void MX_UART4_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void uart_print(const char *s)
+{
+  HAL_UART_Transmit(&huart4, (const uint8_t *)s, (uint16_t)strlen(s), 100);
+}
 
+/* Format a float with one decimal place using integer math, so we don't need
+ * newlib-nano's float printf support (-u _printf_float). */
+static void fmt_float1(char *buf, size_t n, float v)
+{
+  long scaled = lroundf(v * 10.0f);
+  snprintf(buf, n, "%s%ld.%ld", (scaled < 0) ? "-" : "", labs(scaled) / 10, labs(scaled) % 10);
+}
+
+/* Probe every 7-bit address on I2C1 and print who ACKs. No debugger needed —
+ * open a serial terminal on UART4 (PA0 TX), 115200 8N1. */
+static void i2c_bus_scan(void)
+{
+  char line[48];
+  int found = 0;
+
+  uart_print("I2C1 scan (PB8=SCL PB9=SDA)...\r\n");
+  for (uint8_t addr7 = 0x08; addr7 <= 0x77; addr7++)
+  {
+    /* HAL wants the 8-bit address (7-bit << 1). */
+    if (HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(addr7 << 1), 2, 50) == HAL_OK)
+    {
+      found++;
+      snprintf(line, sizeof(line), "  found 0x%02X\r\n", addr7);
+      uart_print(line);
+    }
+  }
+
+  if (found == 0)
+  {
+    uart_print("  (no devices ACK — check SCL/SDA/GND/pull-ups)\r\n");
+  }
+  else
+  {
+    snprintf(line, sizeof(line), "  %d device(s) total\r\n", found);
+    uart_print(line);
+  }
+
+  /* IST8310 is normally 0x0E; say so explicitly for this project. */
+  if (HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(0x0E << 1), 2, 50) == HAL_OK)
+  {
+    uart_print("  IST8310 addr 0x0E: PRESENT\r\n");
+  }
+  else
+  {
+    uart_print("  IST8310 addr 0x0E: NOT present\r\n");
+  }
+
+  snprintf(line, sizeof(line), "  hi2c1.ErrorCode=0x%08lX\r\n",
+           (unsigned long)hi2c1.ErrorCode);
+  uart_print(line);
+}
 /* USER CODE END 0 */
 
 /**
@@ -100,21 +159,67 @@ int main(void)
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
 
+  uart_print("\r\n=== Magnetometer-m10 bring-up ===\r\n");
+  i2c_bus_scan();
+
   mag_ok = mag.init();
+  if (mag_ok)
+  {
+    char line[48];
+    snprintf(line, sizeof(line), "IST8310 init OK at 0x%02X\r\n", mag.address());
+    uart_print(line);
+  }
+  else
+  {
+    char line[64];
+    snprintf(line, sizeof(line), "IST8310 init FAILED, ErrorCode=0x%08lX\r\n",
+             (unsigned long)hi2c1.ErrorCode);
+    uart_print(line);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  /* A failed init no longer goes unnoticed: report it, rescan the bus,
+	   * and retry until the sensor answers. */
+	  if (!mag_ok)
+	  {
+	      uart_print("IST8310 init FAILED — rescanning I2C...\r\n");
+	      i2c_bus_scan();
+	      HAL_Delay(1000);
+	      mag_ok = mag.init();
+	      continue;
+	  }
 
-	  mag.read();
-	      mag_x = mag.get_x_data();
-	      mag_y = mag.get_y_data();
-	      mag_z = mag.get_z_data();
-	      mag_heading = mag.get_heading();
+	  Ist8310::Sample sample = {};
+	  if (mag.read(sample))
+	  {
+	      mag_x = sample.x_microtesla;
+	      mag_y = sample.y_microtesla;
+	      mag_z = sample.z_microtesla;
+	      mag_heading = sample.heading_degrees;
 
-	      HAL_Delay(10);
+	      char xs[16], ys[16], zs[16], hs[16], line[96];
+	      fmt_float1(xs, sizeof(xs), mag_x);
+	      fmt_float1(ys, sizeof(ys), mag_y);
+	      fmt_float1(zs, sizeof(zs), mag_z);
+	      fmt_float1(hs, sizeof(hs), mag_heading);
+	      snprintf(line, sizeof(line), "X_uT:%s Y_uT:%s Z_uT:%s H_deg:%s\r\n",
+	               xs, ys, zs, hs);
+	      uart_print(line);
+	  }
+	  else
+	  {
+	      /* Read failures are reported instead of silently freezing the
+	       * last values. Re-initialize on the next loop iteration. */
+	      mag_ok = false;
+	      uart_print("IST8310 read failed\r\n");
+	      HAL_Delay(100);
+	  }
+
+	  HAL_Delay(10);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
