@@ -15,6 +15,10 @@ class SensorParams:
     accel_bias_cov: float          # (m/s^2)^2
     magnetometer_bias_cov: float   # unitless (normalized field)
 
+    # GPS random noise variances, GPS has no bias (optional, only used by the INS)
+    gps_position_cov: float = 0.0  # m^2
+    gps_velocity_cov: float = 0.0  # (m/s)^2
+
 @dataclass
 class ConstantSimParams:
     """Defines the flight scenario and environment for a constant motion test."""

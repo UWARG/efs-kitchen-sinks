@@ -14,6 +14,8 @@ class Measurements:
         gyro_initial: NDArray[np.float64] = np.zeros((3, 1)),
         accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
         mag_initial: NDArray[np.float64] = np.zeros((3, 1)),
+        gps_position_initial: NDArray[np.float64] = np.zeros((3, 1)),
+        gps_velocity_initial: NDArray[np.float64] = np.zeros((3, 1)),
     ):
         # convention: on initialization, both prev and new are the same
         self.gyro_prev: NDArray[np.float64] = to_col_vector(gyro_initial, 3)
@@ -22,6 +24,10 @@ class Measurements:
         self.accel_new: NDArray[np.float64] = to_col_vector(accel_initial, 3)
         self.mag_prev: NDArray[np.float64] = to_col_vector(mag_initial, 3)
         self.mag_new: NDArray[np.float64] = to_col_vector(mag_initial, 3)
+        self.gps_position_prev: NDArray[np.float64] = to_col_vector(gps_position_initial, 3)
+        self.gps_position_new: NDArray[np.float64] = to_col_vector(gps_position_initial, 3)
+        self.gps_velocity_prev: NDArray[np.float64] = to_col_vector(gps_velocity_initial, 3)
+        self.gps_velocity_new: NDArray[np.float64] = to_col_vector(gps_velocity_initial, 3)
 
         # storing bias here if not correcting sensor calibrations directly
         self.gyro_bias_accumulated: NDArray[np.float64] = np.zeros((3, 1))
@@ -39,6 +45,15 @@ class Measurements:
     def update_mag(self, mag_new: NDArray[np.float64]):
         self.mag_prev = self.mag_new
         self.mag_new = to_col_vector(mag_new, 3) - self.mag_bias_accumulated
+
+    # GPS has no bias state, position and velocity are both in the inertial frame
+    def update_gps_position(self, gps_position_new: NDArray[np.float64]):
+        self.gps_position_prev = self.gps_position_new
+        self.gps_position_new = to_col_vector(gps_position_new, 3)
+
+    def update_gps_velocity(self, gps_velocity_new: NDArray[np.float64]):
+        self.gps_velocity_prev = self.gps_velocity_new
+        self.gps_velocity_new = to_col_vector(gps_velocity_new, 3)
 
     def update_biases(
             self,
@@ -77,6 +92,8 @@ class Measurements:
             f"  Mag prev: {self.mag_prev.flatten()}\n"
             f"  Mag new: {self.mag_new.flatten()}\n"
             f"  Mag bar:  {self.mag_bar.flatten()}\n"
+            f"  GPS position new: {self.gps_position_new.flatten()}\n"
+            f"  GPS velocity new: {self.gps_velocity_new.flatten()}\n"
             f"  Gyro bias accumulated: {self.gyro_bias_accumulated.flatten()}\n"
             f"  Accel bias accumulated: {self.accel_bias_accumulated.flatten()}\n"
             f"  Mag bias accumulated: {self.mag_bias_accumulated.flatten()}\n"

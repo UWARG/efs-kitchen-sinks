@@ -1,80 +1,49 @@
 # pyekf
 
-A Python library for implementing and experimenting with Error-State Extended Kalman Filters (ES-EKF) for UAV Sensor Fusion.
+Python implementation of Error-State Multiplicative Extended Kalman Filters (ES-MEKF) for UAV sensor fusion.
+The math for each filter is written up in [`docs/`](docs/), and the filters are tested against simulated sensor
+data in [`tests/`](tests/).
 
-Currently supports gyroscope, accelerometer, and magnetometer sensors only.
+- **AHRS** (`ahrs_esmekf`): 9-state attitude filter using gyro, accelerometer, and magnetometer.
+- **INS** (`ins_esmekf`): 18-state attitude, velocity, and position filter.
 
 ## Project Structure
 
 ```
-pyekf/
+ekf-python/
 ├── src/pyekf/
-│   ├── __init__.py
-│   ├── ESMEKF.py                   # Error-State Multiplicative Extended Kalman Filter implementation
-│   ├── NominalState.py             # Nominal state propagation and correction
-│   ├── Measurements.py             # Sensor measurement handling and bias tracking
-│   ├── quaternions.py              # Quaternion operations and utilities
-│   └── utils.py                    # Utility functions (vectors, matrices, constants)
-│
-├── tests/
-│   ├── sim/
-│   ├── mission_planner/
-│   └── test_bunch_of_stuff.py
-│
-├── pyproject.toml
-├── .python-version
-├── .gitignore
-└── README.md
+│   ├── ahrs_esmekf/
+│   │   ├── AHRS_ESMEKF.py      # AHRS error-state filter (propagation, accel/mag corrections)
+│   │   └── NominalState.py     # Quaternion propagation and error injection
+│   ├── ins_esmekf/
+│   │   ├── INS_ESMEKF.py       # INS error-state filter
+│   │   └── NominalState.py     # Quaternion, velocity, displacement propagation and error injection
+│   ├── Measurements.py         # Current/previous sensor readings and accumulated bias estimates
+│   ├── quaternions.py          # Quaternion algebra and rotation matrices
+│   └── utils.py
+├── tests/                      # pytest suite + simulator, see tests/README.md
+├── docs/
+│   ├── ahrs_esmekf.md          # Math behind the AHRS filter, from Kalman filter basics
+│   └── ins_esmekf.md           # Math behind the INS filter
+├── plots/                      # Test output plots (gitignored)
+├── CHANGELOG_INS.md
+└── pyproject.toml
 ```
 
-### Key Components
+## Setup
 
-- **ESMEKF**: Core extended Kalman filter for sensor fusion combining gyroscope, accelerometer, and magnetometer data
-- **NominalState**: Manages position, velocity, and attitude (quaternion) propagation
-- **Measurements**: Stores and updates sensor readings with bias accumulation
-- **Quaternions**: Implements quaternion algebra operations essential for 3D rotation representation
-
-## Installation
-
-### Prerequisites
-
-Install `uv` (a fast Python package manager):
-
-```bash
-pip install uv
-```
-
-### Create a virtual environment
+Requires Python 3.12+ and [`uv`](https://docs.astral.sh/uv/) (`pip install uv`).
 
 ```bash
 uv venv
+uv pip install -e ".[dev]"
 ```
 
-### Install pyekf
+## Testing
 
 ```bash
-uv pip install .
+uv run pytest                               # run all tests (plots saved to plots/)
+uv run pytest tests/test_ahrs_esmekf.py -s  # one file, with printed output
 ```
 
-### Development install (with tests)
-
-```bash
-uv pip install -e .[dev]
-uv run pytest
-```
-
-## Testing (TODO)
-
-## TODOS
-
-fast inverse of psd matrices (3x3), also if check for singularity
-add better tests for different rate of mag, compared to imu
-mission planner test
-3 opts -> reset, F taylor, process noise corrs
-update readme -> outline assumptions, e.g. initial cov of sensors always independent across dims (diagonal), always col vectors, mag inertial, etc.
-
-
-ins
-gps basic + barometer
-airspeed add state
-better gps error model
+Mission Planner tests need a live SITL connection and are skipped by default. See [`tests/README.md`](tests/README.md).
