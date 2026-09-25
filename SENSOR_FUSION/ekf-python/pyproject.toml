@@ -1,0 +1,36 @@
+[project]
+name = "pyekf"
+version = "0.1.0"
+description = "A Multiplicative Quaternion Extended Kalman Filter for sensor fusion."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Aditya Bang" }]
+
+dependencies = [
+    "numpy>=2.3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pymavlink>=2.4.47",
+    "python-dotenv>=1.1.1",
+    "matplotlib>=3.10.8",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "mission_planner: marks tests that require a live connection to Mission Planner or SITL"
+]

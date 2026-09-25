@@ -1,0 +1,100 @@
+import numpy as np
+from numpy.typing import NDArray
+from typing import Optional
+
+from pyekf.utils import to_col_vector
+
+class Measurements:
+    """
+    Class needed to store current and previous timestep measurements, alongside their acumlated biases if sensor calibrations not directly corrected.
+    """
+
+    def __init__(
+        self,
+        gyro_initial: NDArray[np.float64] = np.zeros((3, 1)),
+        accel_initial: NDArray[np.float64] = np.zeros((3, 1)),
+        mag_initial: NDArray[np.float64] = np.zeros((3, 1)),
+        gps_position_initial: NDArray[np.float64] = np.zeros((3, 1)),
+        gps_velocity_initial: NDArray[np.float64] = np.zeros((3, 1)),
+    ):
+        # convention: on initialization, both prev and new are the same
+        self.gyro_prev: NDArray[np.float64] = to_col_vector(gyro_initial, 3)
+        self.gyro_new: NDArray[np.float64] = to_col_vector(gyro_initial, 3)
+        self.accel_prev: NDArray[np.float64] = to_col_vector(accel_initial, 3)
+        self.accel_new: NDArray[np.float64] = to_col_vector(accel_initial, 3)
+        self.mag_prev: NDArray[np.float64] = to_col_vector(mag_initial, 3)
+        self.mag_new: NDArray[np.float64] = to_col_vector(mag_initial, 3)
+        self.gps_position_prev: NDArray[np.float64] = to_col_vector(gps_position_initial, 3)
+        self.gps_position_new: NDArray[np.float64] = to_col_vector(gps_position_initial, 3)
+        self.gps_velocity_prev: NDArray[np.float64] = to_col_vector(gps_velocity_initial, 3)
+        self.gps_velocity_new: NDArray[np.float64] = to_col_vector(gps_velocity_initial, 3)
+
+        # storing bias here if not correcting sensor calibrations directly
+        self.gyro_bias_accumulated: NDArray[np.float64] = np.zeros((3, 1))
+        self.accel_bias_accumulated: NDArray[np.float64] = np.zeros((3, 1))
+        self.mag_bias_accumulated: NDArray[np.float64] = np.zeros((3, 1))
+
+    def update_gyro(self, gyro_new: NDArray[np.float64]):
+        self.gyro_prev = self.gyro_new
+        self.gyro_new = to_col_vector(gyro_new, 3) - self.gyro_bias_accumulated # TODO: check this + or -
+    
+    def update_accel(self, accel_new: NDArray[np.float64]):
+        self.accel_prev = self.accel_new
+        self.accel_new = to_col_vector(accel_new, 3) - self.accel_bias_accumulated
+    
+    def update_mag(self, mag_new: NDArray[np.float64]):
+        self.mag_prev = self.mag_new
+        self.mag_new = to_col_vector(mag_new, 3) - self.mag_bias_accumulated
+
+    # GPS has no bias state, position and velocity are both in the inertial frame
+    def update_gps_position(self, gps_position_new: NDArray[np.float64]):
+        self.gps_position_prev = self.gps_position_new
+        self.gps_position_new = to_col_vector(gps_position_new, 3)
+
+    def update_gps_velocity(self, gps_velocity_new: NDArray[np.float64]):
+        self.gps_velocity_prev = self.gps_velocity_new
+        self.gps_velocity_new = to_col_vector(gps_velocity_new, 3)
+
+    def update_biases(
+            self,
+            gyro_bias_new: Optional[NDArray[np.float64]],
+            accel_bias_new: Optional[NDArray[np.float64]],
+            mag_bias_new: Optional[NDArray[np.float64]]
+        ):
+        if gyro_bias_new is not None:
+            self.gyro_bias_accumulated += to_col_vector(gyro_bias_new, 3)
+        if accel_bias_new is not None:
+            self.accel_bias_accumulated += to_col_vector(accel_bias_new, 3)
+        if mag_bias_new is not None:
+            self.mag_bias_accumulated += to_col_vector(mag_bias_new, 3)
+
+    @property
+    def gyro_bar(self) -> NDArray[np.float64]:
+        return np.average([self.gyro_prev, self.gyro_new], axis=0)
+
+    @property
+    def accel_bar(self) -> NDArray[np.float64]:
+        return np.average([self.accel_prev, self.accel_new], axis=0)
+
+    @property
+    def mag_bar(self) -> NDArray[np.float64]:
+        return np.average([self.mag_prev, self.mag_new], axis=0)
+
+    def __str__(self):
+        return (
+            f"Measurements()\n"
+            f"  Gyro prev: {self.gyro_prev.flatten()}\n"
+            f"  Gyro new: {self.gyro_new.flatten()}\n"
+            f"  Gyro bar:  {self.gyro_bar.flatten()}\n"
+            f"  Accel prev: {self.accel_prev.flatten()}\n"
+            f"  Accel new: {self.accel_new.flatten()}\n"
+            f"  Accel bar:  {self.accel_bar.flatten()}\n"
+            f"  Mag prev: {self.mag_prev.flatten()}\n"
+            f"  Mag new: {self.mag_new.flatten()}\n"
+            f"  Mag bar:  {self.mag_bar.flatten()}\n"
+            f"  GPS position new: {self.gps_position_new.flatten()}\n"
+            f"  GPS velocity new: {self.gps_velocity_new.flatten()}\n"
+            f"  Gyro bias accumulated: {self.gyro_bias_accumulated.flatten()}\n"
+            f"  Accel bias accumulated: {self.accel_bias_accumulated.flatten()}\n"
+            f"  Mag bias accumulated: {self.mag_bias_accumulated.flatten()}\n"
+        )
