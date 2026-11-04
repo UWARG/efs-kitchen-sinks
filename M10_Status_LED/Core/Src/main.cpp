@@ -134,18 +134,24 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  assert(led.reset() == HAL_OK);
-  assert(led.begin() == HAL_OK);
+  // on-board red LED = I2C to the GPS LED chip failed
+  if (led.reset() != HAL_OK || led.begin() != HAL_OK)
+    BSP_LED_On(LED_RED);
 
-  uint8_t rgbw[4] = { 0, 0, 0, 100 };
+  uint8_t on[4]  = { 0, 0, 0, 100 };
+  uint8_t off[4] = { 0, 0, 0, 0 };
 
   while (1)
   {
     /* USER CODE END WHILE */
 
-	assert(led.setSolidColor(rgbw) == HAL_OK);
+	if (led.setSolidColor(on) != HAL_OK)
+	  BSP_LED_On(LED_RED);
+	HAL_Delay(500);
 
-	HAL_Delay(10000);
+	if (led.setSolidColor(off) != HAL_OK)
+	  BSP_LED_On(LED_RED);
+	HAL_Delay(500);
 
     /* USER CODE BEGIN 3 */
   }

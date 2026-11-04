@@ -30,7 +30,7 @@ HAL_StatusTypeDef IS31FL3195::begin() {
 		return status;
 
 	IS31FL3195_ShutdownCtrl shutdown_ctrl_reg = {
-			.softwareShutdownEnable = 0,
+			.softwareShutdownEnable = 1, // SSD: 0 = shutdown, 1 = normal operation
 			.sleepModeEnable = 0,
 			.chargePumpPowerUpMode = 0,
 
