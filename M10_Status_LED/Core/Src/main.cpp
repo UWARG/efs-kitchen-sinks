@@ -138,20 +138,25 @@ int main(void)
   if (led.reset() != HAL_OK || led.begin() != HAL_OK)
     BSP_LED_On(LED_RED);
 
-  uint8_t on[4]  = { 0, 0, 0, 100 };
-  uint8_t off[4] = { 0, 0, 0, 0 };
+  // TEST: cycle red, green, blue, white so we can see which channels are wired
+  uint8_t colors[4][4] = {
+    { 100, 0, 0, 0 },
+    { 0, 100, 0, 0 },
+    { 0, 0, 100, 0 },
+    { 0, 0, 0, 100 },
+  };
 
   while (1)
   {
     /* USER CODE END WHILE */
 
-	if (led.setSolidColor(on) != HAL_OK)
-	  BSP_LED_On(LED_RED);
-	HAL_Delay(500);
-
-	if (led.setSolidColor(off) != HAL_OK)
-	  BSP_LED_On(LED_RED);
-	HAL_Delay(500);
+	for (int c = 0; c < 4; c++)
+	{
+	  if (led.setSolidColor(colors[c]) != HAL_OK)
+	    BSP_LED_On(LED_RED);
+	  BSP_LED_Toggle(LED_BLUE);  // heartbeat: code is running
+	  HAL_Delay(500);
+	}
 
     /* USER CODE BEGIN 3 */
   }
