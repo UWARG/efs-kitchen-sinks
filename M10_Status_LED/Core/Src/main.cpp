@@ -135,8 +135,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   assert(led.reset() == HAL_OK);
+  assert(led.begin() == HAL_OK);
 
-  uint8_t rgbw[4] = { 10, 10, 10, 0 };
+  uint8_t rgbw[4] = { 0, 0, 0, 100 };
 
   while (1)
   {

@@ -66,13 +66,19 @@ typedef struct __attribute__((packed)) {
 	IS31FL3195_OperatingMode mode_4 :1;
 } IS31FL3195_ConfReg;
 
-typedef uint8_t IS31FL3195_Register;
+typedef struct __attribute__((packed)) {
+	// TODO: flesh out according to datasheet (custom enums, etc)
+	uint8_t softwareShutdownEnable: 1;
+	uint8_t sleepModeEnable: 2;
+	uint8_t chargePumpPowerUpMode: 1;
 
-typedef enum {
-	IS31FL3195_REG_PRODUCT_ID = 0x00,
-	IS31FL3195_REG_OPERATING_CONFIGURE = 0x02,
-	IS31FL3195_REG_RESET = 0x5F,
-} IS31FL3195_Special_Register;
+	uint8_t enable_1: 1;
+	uint8_t enable_2: 1;
+	uint8_t enable_3: 1;
+	uint8_t enable_4: 1;
+} IS31FL3195_ShutdownCtrl;
+
+typedef uint8_t IS31FL3195_Register;
 
 typedef struct {
 	IS31FL3195_Register REG_CURRENT_LEVEL;
@@ -97,12 +103,17 @@ public:
 	// (i found it via brute forcing all 256 addresses)
 	IS31FL3195(I2C_HandleTypeDef *hi2c, uint8_t address);
 
+	HAL_StatusTypeDef begin();
+
 	HAL_StatusTypeDef reset();
 
-	HAL_StatusTypeDef configure(IS31FL3195_ConfReg conf);
+	HAL_StatusTypeDef setConfigure(IS31FL3195_ConfReg conf);
+	HAL_StatusTypeDef setShutdownControl(IS31FL3195_ShutdownCtrl conf);
 
 	HAL_StatusTypeDef writeCurrentLevel(IS31FL3195_Channel &channel,
 			IS31FL3195_CurrentLevel level);
+
+	HAL_StatusTypeDef flush();
 
 	HAL_StatusTypeDef setSolidColor(IS31FL3195_CurrentLevel rgbw[4]);
 
